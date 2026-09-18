@@ -1,0 +1,32 @@
+{
+  "date": "2026-09-19",
+  "scope": "src/WorkBookmark.Windows; explicit COM method call literals reviewed",
+  "calls": [
+    {
+      "file": "ExcelAdapter.cs",
+      "operation": "scope.Call(selected.Window, \"Activate\");"
+    },
+    {
+      "file": "ExcelAdapter.cs",
+      "operation": "scope.Call(sheet, \"Activate\");"
+    },
+    {
+      "file": "ExcelAdapter.cs",
+      "operation": "scope.Call(match.Application, \"Goto\", range, true);"
+    },
+    {
+      "file": "ExplorerAdapter.cs",
+      "operation": "scope.Call(windows, \"Item\", index);"
+    },
+    {
+      "file": "ExplorerAdapter.cs",
+      "operation": "scope.Call(exactView, \"SelectedItems\");"
+    },
+    {
+      "file": "ExplorerAdapter.cs",
+      "operation": "scope.Call(selection, \"Item\", 0);"
+    }
+  ],
+  "forbiddenDocumentWritesFound": false,
+  "limitation": "Source review only; no complete native COM spy. ShellLink IPersistFile.Save in startup helper writes own .lnk, not Excel."
+}

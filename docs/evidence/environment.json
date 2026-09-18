@@ -1,0 +1,17 @@
+{
+  "date": "2026-09-19",
+  "os": "Windows 11 Pro",
+  "build": "22631",
+  "architecture": "x64",
+  "officeProduct": "Microsoft 365 O365HomePremRetail",
+  "excelVersion": "16.0.20326.20144",
+  "officeArchitecture": "x64",
+  "memoryBytes": 17060524032,
+  "logicalProcessors": 4,
+  "sdk": "10.0.401",
+  "runtime": "10.0.12",
+  "drm": "Unknown; no DRM fixture",
+  "networkShare": "Not provided",
+  "initialExcelProcesses": 0,
+  "localSdk": true
+}

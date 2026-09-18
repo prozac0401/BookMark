@@ -1,0 +1,7 @@
+Four bounded A/B/A/B samples. Activate via sky, observe state, then read-only Probes capture APP_EXE 0; no native SetForegroundWindow, keys, or document edits.
+Actual two separate Excel processes with same basename in A/B fixture folders. This is a smoke check, not the required 50-trial P0-B acceptance gate.
+1: A PASS pid=23364 hwnd=659398 path=D:\Github_REPOS\BookMark\testdata\generated\A\같은이름.xlsx sheet=확정자 cell=$F$42
+2: B PASS pid=23204 hwnd=266238 path=D:\Github_REPOS\BookMark\testdata\generated\B\같은이름.xlsx sheet=확정자 cell=$F$42
+3: A PASS pid=23364 hwnd=659398 path=D:\Github_REPOS\BookMark\testdata\generated\A\같은이름.xlsx sheet=확정자 cell=$F$42
+4: B PASS pid=23204 hwnd=266238 path=D:\Github_REPOS\BookMark\testdata\generated\B\같은이름.xlsx sheet=확정자 cell=$F$42
+4/4 passed

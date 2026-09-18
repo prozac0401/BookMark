@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0-windows7.0": {
+      "workbookmark.core": {
+        "type": "Project"
+      },
+      "workbookmark.windows": {
+        "type": "Project",
+        "dependencies": {
+          "WorkBookmark.Core": "[0.1.0, )"
+        }
+      }
+    },
+    "net10.0-windows7.0/win-x64": {}
+  }
+}

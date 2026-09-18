@@ -1,0 +1,46 @@
+.NET SDK:
+ Version:           10.0.401
+ Commit:            e34a38d2ae
+ Workload version:  10.0.400-manifests.63b36e85
+ MSBuild version:   18.9.11+e34a38d2a
+
+런타임 환경:
+ OS Name:     Windows
+ OS Version:  10.0.22631
+ OS Platform: Windows
+ RID:         win-x64
+ Base Path:   D:\Github_REPOS\BookMark\.tools\dotnet\sdk\10.0.401\
+
+설치된 .NET 워크로드:
+표시할 설치된 워크로드가 없습니다.
+새 매니페스트를 설치할 때 use workload sets 사용하도록 구성됩니다.
+워크로드 집합이 설치되어 있지 않습니다. "dotnet workload restore"를 실행하여 워크로드 집합을 설치하세요.
+
+Host:
+  Version:      10.0.12
+  Architecture: x64
+  Commit:       95017c711e
+
+.NET SDKs installed:
+  10.0.401 [D:\Github_REPOS\BookMark\.tools\dotnet\sdk]
+
+.NET runtimes installed:
+  Microsoft.AspNetCore.App 10.0.12 [D:\Github_REPOS\BookMark\.tools\dotnet\shared\Microsoft.AspNetCore.App]
+  Microsoft.NETCore.App 10.0.12 [D:\Github_REPOS\BookMark\.tools\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.WindowsDesktop.App 10.0.12 [D:\Github_REPOS\BookMark\.tools\dotnet\shared\Microsoft.WindowsDesktop.App]
+
+Other architectures found:
+  x86   [C:\Program Files (x86)\dotnet]
+    registered at [HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\x86\InstallLocation]
+
+Environment variables:
+  Not set
+
+global.json file:
+  D:\Github_REPOS\BookMark\global.json
+
+Learn more:
+  https://aka.ms/dotnet/info
+
+Download .NET:
+  https://aka.ms/dotnet/download

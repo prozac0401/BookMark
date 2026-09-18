@@ -1,0 +1,62 @@
+[
+  {
+    "test": "D11 protocol-roundtrip",
+    "status": "PASS",
+    "milliseconds": 238
+  },
+  {
+    "test": "D11 oversized-and-truncated-frames",
+    "status": "PASS",
+    "milliseconds": 7
+  },
+  {
+    "test": "D04 valid-result-id",
+    "status": "PASS",
+    "milliseconds": 459
+  },
+  {
+    "test": "D04 wrong-request-id-rejected",
+    "status": "PASS",
+    "milliseconds": 292
+  },
+  {
+    "test": "D04 capture-deadline-no-late-success",
+    "status": "PASS",
+    "milliseconds": 510
+  },
+  {
+    "test": "D05 resume-deadline-outcome-unknown",
+    "status": "PASS",
+    "milliseconds": 516
+  },
+  {
+    "test": "U12 single-flight-no-queue",
+    "status": "PASS",
+    "milliseconds": 624
+  },
+  {
+    "test": "D04 cancellation-discards-response",
+    "status": "PASS",
+    "milliseconds": 163
+  },
+  {
+    "test": "D06 worker-crash-cleanup",
+    "status": "PASS",
+    "milliseconds": 168
+  },
+  {
+    "test": "D06 worker-child-survives-timeout",
+    "status": "PASS",
+    "milliseconds": 1537
+  },
+  {
+    "test": "D06 dispose-terminates-worker-synchronously",
+    "status": "PASS",
+    "milliseconds": 334
+  },
+  {
+    "test": "D04 deadline-boundary-does-not-stick-busy",
+    "status": "PASS",
+    "milliseconds": 89
+  }
+]

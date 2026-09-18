@@ -1,0 +1,9 @@
+{
+  "executedAtUtc": "2026-09-18T22:40:10.622Z",
+  "sdk": "10.0.401",
+  "framework": "net10.0",
+  "sqlitePackage": "Microsoft.Data.Sqlite 10.0.12",
+  "processExitCode": 0,
+  "stdout": "PASS E06/X12 Windows path policy and conservative identity\r\nPASS E07 Document allowlist and executable reveal policy\r\nPASS X01/X12 Absolute single Excel cell bounds\r\nPASS U05/U06/U07 Duplicate capture preserves note and separates cells\r\nPASS U08 Sequence survives clock rollback, notes, resume, and restart\r\nPASS U10 Delete, undo, and recapture preserve identity and notes\r\n  Synthetic 1,026-record repository recent query: 2.73 ms (not UI p95).\r\nPASS U13 Full-history search, literal query, and result bounds\r\nPASS D01/D02 All mutation failures roll back without false commits\r\nPASS E09 Relink preserves metadata and rejects collisions/location edits\r\nPASS D03 Corruption and unknown schemas are preserved\r\nPASS D03 Migration creates consistent backup and rolls back on failure\r\nPASS D01 Concurrent writer serialization keeps unique monotonic sequence\r\n  Real SQLite writer lock rejected after 3.28 s.\r\nPASS D01/D02 Real SQLite writer lock fails atomically within a bounded wait\r\nRESULT: 13 passed; 0 failed. Policy/SQLite execution only; Windows/Office acceptance remains separate.\r\n",
+  "stderr": ""
+}

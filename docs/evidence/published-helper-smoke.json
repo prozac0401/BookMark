@@ -1,0 +1,18 @@
+[
+  {
+    "args": [
+      "--worker"
+    ],
+    "exitCode": 1,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "args": [
+      "--startup-worker"
+    ],
+    "exitCode": 2,
+    "stdout": "",
+    "stderr": ""
+  }
+]

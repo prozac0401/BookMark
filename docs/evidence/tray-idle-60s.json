@@ -1,0 +1,15 @@
+{
+  "scope": "Initial published app PID22404, 60-second single sample; concurrent build/test processes were running; not the 100-cycle or prolonged-idle gate.",
+  "result": {
+    "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+    "args": [
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      "$p=Get-Process -Id 22404 -ErrorAction Stop; $s=Get-Date; $c=$p.CPU; $m=$p.PrivateMemorySize64; $h=$p.HandleCount; Start-Sleep -Seconds 60; $p.Refresh(); [pscustomobject]@{pid=$p.Id;path=$p.Path;seconds=((Get-Date)-$s).TotalSeconds;cpuSecondsDelta=($p.CPU-$c);cpuPercentOneCore=(($p.CPU-$c)/((Get-Date)-$s).TotalSeconds*100);privateBytesBefore=$m;privateBytesAfter=$p.PrivateMemorySize64;handlesBefore=$h;handlesAfter=$p.HandleCount;ownProcessCount=@(Get-Process WorkBookmark -ErrorAction SilentlyContinue).Count} | ConvertTo-Json -Compress"
+    ],
+    "code": 0,
+    "stdout": "{\"pid\":22404,\"path\":\"D:\\\\github_repos\\\\bookmark\\\\artifacts\\\\publish\\\\win-x64\\\\workbookmark.exe\",\"seconds\":60.1916927,\"cpuSecondsDelta\":0.015625,\"cpuPercentOneCore\":0.025953141151029032,\"privateBytesBefore\":18427904,\"privateBytesAfter\":19783680,\"handlesBefore\":571,\"handlesAfter\":583,\"ownProcessCount\":1}\r\n",
+    "stderr": ""
+  }
+}

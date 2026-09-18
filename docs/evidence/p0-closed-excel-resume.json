@@ -1,0 +1,111 @@
+{
+  "before": [
+    {
+      "hwnd": 592540,
+      "pid": 5768,
+      "className": "CabinetWClass",
+      "visible": true,
+      "foreground": true,
+      "title": "한글 공백 & 괄호 (검증) - 파일 탐색기 [ main ⌂ ]",
+      "left": 146,
+      "top": 244,
+      "right": 1683,
+      "bottom": 835
+    },
+    {
+      "hwnd": 723520,
+      "pid": 8012,
+      "className": "CabinetWClass",
+      "visible": true,
+      "foreground": false,
+      "title": "BookMark - 파일 탐색기 [ main ⌂ ]",
+      "left": 146,
+      "top": 244,
+      "right": 1683,
+      "bottom": 835
+    },
+    {
+      "hwnd": 1051062,
+      "pid": 8012,
+      "className": "CabinetWClass",
+      "visible": true,
+      "foreground": false,
+      "title": "BookMark - 파일 탐색기 [ main ⌂ ]",
+      "left": 120,
+      "top": 218,
+      "right": 1657,
+      "bottom": 809
+    }
+  ],
+  "resume": {
+    "snapshot": {
+      "Hwnd": 592540,
+      "ProcessId": 5768,
+      "ProcessStartTimeUtcTicks": 639253679007435000,
+      "FocusHwnd": 265272,
+      "InputTick": 122672375,
+      "ActiveViewHwnd": 723726
+    },
+    "response": {
+      "ProtocolVersion": 1,
+      "RequestId": "80d8e993-b3bf-40d1-beca-6bbb6bc4314e",
+      "Code": 13,
+      "Target": null,
+      "ExternalActionStarted": true,
+      "TargetHwnd": 659398
+    }
+  },
+  "after": [
+    {
+      "hwnd": 592540,
+      "pid": 5768,
+      "className": "CabinetWClass",
+      "visible": true,
+      "foreground": true,
+      "title": "한글 공백 & 괄호 (검증) - 파일 탐색기 [ main ⌂ ]",
+      "left": 146,
+      "top": 244,
+      "right": 1683,
+      "bottom": 835
+    },
+    {
+      "hwnd": 659398,
+      "pid": 23364,
+      "className": "XLMAIN",
+      "visible": true,
+      "foreground": false,
+      "title": "같은이름 - Excel",
+      "left": 52,
+      "top": 52,
+      "right": 1492,
+      "bottom": 805
+    },
+    {
+      "hwnd": 723520,
+      "pid": 8012,
+      "className": "CabinetWClass",
+      "visible": true,
+      "foreground": false,
+      "title": "BookMark - 파일 탐색기 [ main ⌂ ]",
+      "left": 146,
+      "top": 244,
+      "right": 1683,
+      "bottom": 835
+    },
+    {
+      "hwnd": 1051062,
+      "pid": 8012,
+      "className": "CabinetWClass",
+      "visible": true,
+      "foreground": false,
+      "title": "BookMark - 파일 탐색기 [ main ⌂ ]",
+      "left": 120,
+      "top": 218,
+      "right": 1657,
+      "bottom": 809
+    }
+  ],
+  "fileSha256Before": "6ab70a7716260299b7c5cd7808553c44cd15336a8d5fd749eef73877ae1a5c9d",
+  "fileSha256After": "6ab70a7716260299b7c5cd7808553c44cd15336a8d5fd749eef73877ae1a5c9d",
+  "fixtureUnchanged": true
+}

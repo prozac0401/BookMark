@@ -1,0 +1,18 @@
+{
+  "snapshot": {
+    "Hwnd": 134010,
+    "ProcessId": 16888,
+    "ProcessStartTimeUtcTicks": 639253679713403623,
+    "FocusHwnd": 134370,
+    "InputTick": 120870281,
+    "ActiveViewHwnd": 134370
+  },
+  "response": {
+    "ProtocolVersion": 1,
+    "RequestId": "78bd9347-bbd5-4bcf-8dd0-ee1a3d5033f1",
+    "Code": 20,
+    "Target": null,
+    "ExternalActionStarted": false,
+    "TargetHwnd": 0
+  }
+}

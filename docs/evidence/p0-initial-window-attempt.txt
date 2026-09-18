@@ -1,0 +1,24 @@
+{
+  "snapshot": {
+    "Hwnd": 723520,
+    "ProcessId": 8012,
+    "ProcessStartTimeUtcTicks": 639252464060989425,
+    "FocusHwnd": 1051700,
+    "InputTick": 120870281,
+    "ActiveViewHwnd": 527422
+  },
+  "response": {
+    "ProtocolVersion": 1,
+    "RequestId": "fe294e24-588d-4c40-a870-326febf741c6",
+    "Code": 0,
+    "Target": {
+      "Kind": 0,
+      "Path": "D:\\Github_REPOS\\BookMark",
+      "SheetName": null,
+      "CellAddress": null,
+      "HadUnsavedChanges": null
+    },
+    "ExternalActionStarted": false,
+    "TargetHwnd": 0
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "snapshot": {
+    "Hwnd": 134010,
+    "ProcessId": 16888,
+    "ProcessStartTimeUtcTicks": 639253679713403623,
+    "FocusHwnd": 134370,
+    "InputTick": 120870281,
+    "ActiveViewHwnd": 134370
+  },
+  "response": {
+    "ProtocolVersion": 1,
+    "RequestId": "75413d0d-0394-4f7e-ab3a-f538689a38de",
+    "Code": 0,
+    "Target": {
+      "Kind": 2,
+      "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\A\\\uAC19\uC740\uC774\uB984.xlsx",
+      "SheetName": "\uD655\uC815\uC790",
+      "CellAddress": "$D$127",
+      "HadUnsavedChanges": false
+    },
+    "ExternalActionStarted": false,
+    "TargetHwnd": 0
+  }
+}

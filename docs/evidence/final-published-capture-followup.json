@@ -1,0 +1,22 @@
+{
+  "recordedUtc": "2026-09-18T23:15:54.168Z",
+  "method": "Root explicitly invoked Probes capture final published EXE 0 once after the initial time-out, with the same existing Excel foreground. This is a separate manual diagnostic request, not product automatic retry. Summary of observed stdout; no elapsed-performance claim.",
+  "executable": "artifacts/publish/final-win-x64/WorkBookmark.exe",
+  "exitCode": 0,
+  "status": "PASS",
+  "observed": {
+    "Hwnd": 659398,
+    "ProcessId": 23364,
+    "Code": 0,
+    "RequestId": "9ab9fe44-e239-40f2-8117-2991fea7634f",
+    "Target": {
+      "Kind": 2,
+      "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\A\\같은이름.xlsx",
+      "SheetName": "확정자",
+      "CellAddress": "$F$42",
+      "HadUnsavedChanges": false
+    },
+    "ExternalActionStarted": false
+  },
+  "interpretation": "Final binary normal unelevated capture confirmed in a follow-up. Initial 3-second timeout remains a real failure sample; its cause has not been isolated. This does not pass the 50-sample capture performance gate."
+}

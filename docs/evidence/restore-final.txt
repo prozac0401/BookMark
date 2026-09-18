@@ -1,0 +1,13 @@
+{
+  "file": "D:\\Github_REPOS\\BookMark\\.tools\\dotnet\\dotnet.exe",
+  "args": [
+    "restore",
+    "WorkBookmark.sln",
+    "--locked-mode",
+    "--configfile",
+    "NuGet.Config"
+  ],
+  "code": 0,
+  "stdout": "  복원할 프로젝트를 확인하는 중...\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Storage\\WorkBookmark.Storage.csproj을(를) 1.17초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\WorkBookmark.Core.csproj을(를) 1.14초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\WorkBookmark.Windows.csproj을(를) 1.22초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\tools\\WindowsChecks\\WindowsChecks.csproj을(를) 1.25초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\WorkBookmark.App.csproj을(를) 16밀리초 동안 복원했습니다.\r\n  복원할 9 프로젝트의 4이(가) 최신 상태입니다.\r\n",
+  "stderr": ""
+}

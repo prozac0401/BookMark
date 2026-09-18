@@ -1,0 +1,21 @@
+FAILED/BLOCKED
+One actual capture of synthetic Excel A: sky activation and state observation, then current Probes.exe capture final binary 0; no native foreground manipulation or document editing.
+{
+  "snapshot": {
+    "Hwnd": 659398,
+    "ProcessId": 23364,
+    "ProcessStartTimeUtcTicks": 639253691182472354,
+    "FocusHwnd": 199880,
+    "InputTick": 122672375,
+    "ActiveViewHwnd": 199880
+  },
+  "response": {
+    "ProtocolVersion": 1,
+    "RequestId": "5cf439be-21cd-4807-a591-6dd13aad6745",
+    "Code": 8,
+    "Target": null,
+    "ExternalActionStarted": false,
+    "TargetHwnd": 0
+  }
+}
+

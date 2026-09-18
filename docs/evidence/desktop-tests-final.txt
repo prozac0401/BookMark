@@ -1,0 +1,17 @@
+{
+  "status": "fulfilled",
+  "value": {
+    "file": "D:\\Github_REPOS\\BookMark\\.tools\\dotnet\\dotnet.exe",
+    "args": [
+      "run",
+      "--project",
+      "tests/WorkBookmark.Desktop.Tests",
+      "-c",
+      "Release",
+      "--no-build"
+    ],
+    "code": 0,
+    "stdout": "PASS: settings atomic overwrite round-trip\r\nPASS: settings no temporary leftovers\r\nPASS: corrupt settings preserved\r\nPASS: native hotkeys registered\r\nPASS: conflict fixture registered\r\nPASS: replacement collision refused\r\nPASS: old registration retained and pending reservation rolled back\r\nPASS: duplicate shortcut pair refused\r\nPASS: Windows Shell parses Unicode startup target\r\nPASS: startup ownership description parsed\r\nPASS: startup working directory parsed\r\nPASS: IME composition suppresses submission\r\nPASS: IME commit Enter has a suppression window\r\nPASS: note write failure retains editable content\r\nPASS: note retry saves retained text\r\nPASS: recent form opens with loaded first selection\r\nRESULT: 16 checks passed. Native launch, actual IME and rendered UI remain separate manual gates.\r\n",
+    "stderr": ""
+  }
+}

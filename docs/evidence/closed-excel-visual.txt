@@ -1,0 +1,11 @@
+Read-only sky observation of reopened synthetic fixture after parent P0-C worker.
+Window: "같은이름 - Excel", App: EXCEL.EXE.
+	0 창 같은이름 - Excel Secondary Actions: Raise
+								8 텍스트 셀 모드 준비
+								37 제목 표시줄 ‪같은이름‬ - 이 PC에 저장됨
+									38 메뉴 항목 (disabled) ‪같은이름‬ - 이 PC에 저장됨
+			174 창 같은이름 ID: 같은이름.xlsx
+				179 Tab 같은이름 ID: 같은이름.xlsx
+				185 창 (selectable) 시트 확정자 ID: 확정자
+						208 항목 (selectable) F42 ID: F42
+Screenshot observation: name box shows F42 and cell F42 is active; Explorer remains foreground, consistent with PositionRestoredFocusPending. Screenshot not retained because another app sidebar is visible.

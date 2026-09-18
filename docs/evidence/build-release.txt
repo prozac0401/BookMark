@@ -1,0 +1,15 @@
+  WorkBookmark.Core -> D:\Github_REPOS\BookMark\src\WorkBookmark.Core\bin\Release\net10.0\WorkBookmark.Core.dll
+  WorkBookmark.Storage -> D:\Github_REPOS\BookMark\src\WorkBookmark.Storage\bin\Release\net10.0\WorkBookmark.Storage.dll
+  WorkBookmark.Integration.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Integration.Tests\bin\Release\net10.0\WorkBookmark.Integration.Tests.dll
+  WorkBookmark.Core.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Core.Tests\bin\Release\net10.0\WorkBookmark.Core.Tests.dll
+  WorkBookmark.Windows -> D:\Github_REPOS\BookMark\src\WorkBookmark.Windows\bin\Release\net10.0-windows\WorkBookmark.Windows.dll
+  Probes -> D:\Github_REPOS\BookMark\tools\Probes\bin\Release\net10.0-windows\Probes.dll
+  WindowsChecks -> D:\Github_REPOS\BookMark\tools\WindowsChecks\bin\Release\net10.0-windows\WindowsChecks.dll
+  WorkBookmark.App -> D:\Github_REPOS\BookMark\src\WorkBookmark.App\bin\Release\net10.0-windows\win-x64\WorkBookmark.dll
+  WorkBookmark.Desktop.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\bin\Release\net10.0-windows\WorkBookmark.Desktop.Tests.dll
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:08.37

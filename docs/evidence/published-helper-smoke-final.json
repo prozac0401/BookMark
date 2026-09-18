@@ -1,0 +1,28 @@
+{
+  "executable": "D:\\Github_REPOS\\BookMark\\artifacts\\publish\\final-win-x64\\WorkBookmark.exe",
+  "sdkRequired": false,
+  "results": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "args": [
+          "--worker"
+        ],
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "args": [
+          "--startup-worker"
+        ],
+        "exitCode": 2,
+        "stdout": "",
+        "stderr": ""
+      }
+    }
+  ]
+}

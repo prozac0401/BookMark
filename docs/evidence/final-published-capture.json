@@ -1,0 +1,34 @@
+{
+  "timeUtc": "2026-09-18T23:13:01.592Z",
+  "binary": "artifacts/publish/final-win-x64/WorkBookmark.exe",
+  "method": "One actual capture of synthetic Excel A: sky activation and state observation, then current Probes.exe capture final binary 0; no native foreground manipulation or document editing.",
+  "status": "FAILED/BLOCKED",
+  "expected": {
+    "hwnd": 659398,
+    "pid": 23364,
+    "path": "D:/Github_REPOS/BookMark/testdata/generated/A/같은이름.xlsx",
+    "sheet": "확정자",
+    "cell": "$F$42"
+  },
+  "exitCode": 1,
+  "stdout": "{\r\n  \"snapshot\": {\r\n    \"Hwnd\": 659398,\r\n    \"ProcessId\": 23364,\r\n    \"ProcessStartTimeUtcTicks\": 639253691182472354,\r\n    \"FocusHwnd\": 199880,\r\n    \"InputTick\": 122672375,\r\n    \"ActiveViewHwnd\": 199880\r\n  },\r\n  \"response\": {\r\n    \"ProtocolVersion\": 1,\r\n    \"RequestId\": \"5cf439be-21cd-4807-a591-6dd13aad6745\",\r\n    \"Code\": 8,\r\n    \"Target\": null,\r\n    \"ExternalActionStarted\": false,\r\n    \"TargetHwnd\": 0\r\n  }\r\n}\r\n",
+  "stderr": "",
+  "data": {
+    "snapshot": {
+      "Hwnd": 659398,
+      "ProcessId": 23364,
+      "ProcessStartTimeUtcTicks": 639253691182472300,
+      "FocusHwnd": 199880,
+      "InputTick": 122672375,
+      "ActiveViewHwnd": 199880
+    },
+    "response": {
+      "ProtocolVersion": 1,
+      "RequestId": "5cf439be-21cd-4807-a591-6dd13aad6745",
+      "Code": 8,
+      "Target": null,
+      "ExternalActionStarted": false,
+      "TargetHwnd": 0
+    }
+  }
+}

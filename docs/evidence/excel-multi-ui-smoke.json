@@ -1,0 +1,140 @@
+{
+  "timeUtc": "2026-09-18T23:09:11.500Z",
+  "method": "Four bounded A/B/A/B samples. Activate via sky, observe state, then read-only Probes capture APP_EXE 0; no native SetForegroundWindow, keys, or document edits.",
+  "status": "4/4 passed",
+  "scope": "Actual two separate Excel processes with same basename in A/B fixture folders. This is a smoke check, not the required 50-trial P0-B acceptance gate.",
+  "samples": [
+    {
+      "fixture": "A",
+      "expectedHwnd": 659398,
+      "expectedPid": 23364,
+      "exitCode": 0,
+      "stdout": "{\r\n  \"snapshot\": {\r\n    \"Hwnd\": 659398,\r\n    \"ProcessId\": 23364,\r\n    \"ProcessStartTimeUtcTicks\": 639253691182472354,\r\n    \"FocusHwnd\": 199880,\r\n    \"InputTick\": 122672375,\r\n    \"ActiveViewHwnd\": 199880\r\n  },\r\n  \"response\": {\r\n    \"ProtocolVersion\": 1,\r\n    \"RequestId\": \"e42377a9-e455-454f-a33f-0d3e1ac6e1bf\",\r\n    \"Code\": 0,\r\n    \"Target\": {\r\n      \"Kind\": 2,\r\n      \"Path\": \"D:\\\\Github_REPOS\\\\BookMark\\\\testdata\\\\generated\\\\A\\\\\\uAC19\\uC740\\uC774\\uB984.xlsx\",\r\n      \"SheetName\": \"\\uD655\\uC815\\uC790\",\r\n      \"CellAddress\": \"$F$42\",\r\n      \"HadUnsavedChanges\": false\r\n    },\r\n    \"ExternalActionStarted\": false,\r\n    \"TargetHwnd\": 0\r\n  }\r\n}\r\n",
+      "stderr": "",
+      "data": {
+        "snapshot": {
+          "Hwnd": 659398,
+          "ProcessId": 23364,
+          "ProcessStartTimeUtcTicks": 639253691182472300,
+          "FocusHwnd": 199880,
+          "InputTick": 122672375,
+          "ActiveViewHwnd": 199880
+        },
+        "response": {
+          "ProtocolVersion": 1,
+          "RequestId": "e42377a9-e455-454f-a33f-0d3e1ac6e1bf",
+          "Code": 0,
+          "Target": {
+            "Kind": 2,
+            "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\A\\같은이름.xlsx",
+            "SheetName": "확정자",
+            "CellAddress": "$F$42",
+            "HadUnsavedChanges": false
+          },
+          "ExternalActionStarted": false,
+          "TargetHwnd": 0
+        }
+      },
+      "passed": true
+    },
+    {
+      "fixture": "B",
+      "expectedHwnd": 266238,
+      "expectedPid": 23204,
+      "exitCode": 0,
+      "stdout": "{\r\n  \"snapshot\": {\r\n    \"Hwnd\": 266238,\r\n    \"ProcessId\": 23204,\r\n    \"ProcessStartTimeUtcTicks\": 639253694816447644,\r\n    \"FocusHwnd\": 2625300,\r\n    \"InputTick\": 122672375,\r\n    \"ActiveViewHwnd\": 2625300\r\n  },\r\n  \"response\": {\r\n    \"ProtocolVersion\": 1,\r\n    \"RequestId\": \"d7cf295b-532e-4ac2-8833-4b9457139c9e\",\r\n    \"Code\": 0,\r\n    \"Target\": {\r\n      \"Kind\": 2,\r\n      \"Path\": \"D:\\\\Github_REPOS\\\\BookMark\\\\testdata\\\\generated\\\\B\\\\\\uAC19\\uC740\\uC774\\uB984.xlsx\",\r\n      \"SheetName\": \"\\uD655\\uC815\\uC790\",\r\n      \"CellAddress\": \"$F$42\",\r\n      \"HadUnsavedChanges\": false\r\n    },\r\n    \"ExternalActionStarted\": false,\r\n    \"TargetHwnd\": 0\r\n  }\r\n}\r\n",
+      "stderr": "",
+      "data": {
+        "snapshot": {
+          "Hwnd": 266238,
+          "ProcessId": 23204,
+          "ProcessStartTimeUtcTicks": 639253694816447600,
+          "FocusHwnd": 2625300,
+          "InputTick": 122672375,
+          "ActiveViewHwnd": 2625300
+        },
+        "response": {
+          "ProtocolVersion": 1,
+          "RequestId": "d7cf295b-532e-4ac2-8833-4b9457139c9e",
+          "Code": 0,
+          "Target": {
+            "Kind": 2,
+            "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\B\\같은이름.xlsx",
+            "SheetName": "확정자",
+            "CellAddress": "$F$42",
+            "HadUnsavedChanges": false
+          },
+          "ExternalActionStarted": false,
+          "TargetHwnd": 0
+        }
+      },
+      "passed": true
+    },
+    {
+      "fixture": "A",
+      "expectedHwnd": 659398,
+      "expectedPid": 23364,
+      "exitCode": 0,
+      "stdout": "{\r\n  \"snapshot\": {\r\n    \"Hwnd\": 659398,\r\n    \"ProcessId\": 23364,\r\n    \"ProcessStartTimeUtcTicks\": 639253691182472354,\r\n    \"FocusHwnd\": 199880,\r\n    \"InputTick\": 122672375,\r\n    \"ActiveViewHwnd\": 199880\r\n  },\r\n  \"response\": {\r\n    \"ProtocolVersion\": 1,\r\n    \"RequestId\": \"51f56495-a411-492f-9913-6f8f31647e72\",\r\n    \"Code\": 0,\r\n    \"Target\": {\r\n      \"Kind\": 2,\r\n      \"Path\": \"D:\\\\Github_REPOS\\\\BookMark\\\\testdata\\\\generated\\\\A\\\\\\uAC19\\uC740\\uC774\\uB984.xlsx\",\r\n      \"SheetName\": \"\\uD655\\uC815\\uC790\",\r\n      \"CellAddress\": \"$F$42\",\r\n      \"HadUnsavedChanges\": false\r\n    },\r\n    \"ExternalActionStarted\": false,\r\n    \"TargetHwnd\": 0\r\n  }\r\n}\r\n",
+      "stderr": "",
+      "data": {
+        "snapshot": {
+          "Hwnd": 659398,
+          "ProcessId": 23364,
+          "ProcessStartTimeUtcTicks": 639253691182472300,
+          "FocusHwnd": 199880,
+          "InputTick": 122672375,
+          "ActiveViewHwnd": 199880
+        },
+        "response": {
+          "ProtocolVersion": 1,
+          "RequestId": "51f56495-a411-492f-9913-6f8f31647e72",
+          "Code": 0,
+          "Target": {
+            "Kind": 2,
+            "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\A\\같은이름.xlsx",
+            "SheetName": "확정자",
+            "CellAddress": "$F$42",
+            "HadUnsavedChanges": false
+          },
+          "ExternalActionStarted": false,
+          "TargetHwnd": 0
+        }
+      },
+      "passed": true
+    },
+    {
+      "fixture": "B",
+      "expectedHwnd": 266238,
+      "expectedPid": 23204,
+      "exitCode": 0,
+      "stdout": "{\r\n  \"snapshot\": {\r\n    \"Hwnd\": 266238,\r\n    \"ProcessId\": 23204,\r\n    \"ProcessStartTimeUtcTicks\": 639253694816447644,\r\n    \"FocusHwnd\": 2625300,\r\n    \"InputTick\": 122672375,\r\n    \"ActiveViewHwnd\": 2625300\r\n  },\r\n  \"response\": {\r\n    \"ProtocolVersion\": 1,\r\n    \"RequestId\": \"06a3b626-53f2-484d-ad3d-2b9c510bba92\",\r\n    \"Code\": 0,\r\n    \"Target\": {\r\n      \"Kind\": 2,\r\n      \"Path\": \"D:\\\\Github_REPOS\\\\BookMark\\\\testdata\\\\generated\\\\B\\\\\\uAC19\\uC740\\uC774\\uB984.xlsx\",\r\n      \"SheetName\": \"\\uD655\\uC815\\uC790\",\r\n      \"CellAddress\": \"$F$42\",\r\n      \"HadUnsavedChanges\": false\r\n    },\r\n    \"ExternalActionStarted\": false,\r\n    \"TargetHwnd\": 0\r\n  }\r\n}\r\n",
+      "stderr": "",
+      "data": {
+        "snapshot": {
+          "Hwnd": 266238,
+          "ProcessId": 23204,
+          "ProcessStartTimeUtcTicks": 639253694816447600,
+          "FocusHwnd": 2625300,
+          "InputTick": 122672375,
+          "ActiveViewHwnd": 2625300
+        },
+        "response": {
+          "ProtocolVersion": 1,
+          "RequestId": "06a3b626-53f2-484d-ad3d-2b9c510bba92",
+          "Code": 0,
+          "Target": {
+            "Kind": 2,
+            "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\B\\같은이름.xlsx",
+            "SheetName": "확정자",
+            "CellAddress": "$F$42",
+            "HadUnsavedChanges": false
+          },
+          "ExternalActionStarted": false,
+          "TargetHwnd": 0
+        }
+      },
+      "passed": true
+    }
+  ]
+}

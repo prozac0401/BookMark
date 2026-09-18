@@ -1,0 +1,4 @@
+{
+  "out": "focus=True\r\nbefore={\"Hwnd\":134010,\"ProcessId\":16888,\"ProcessStartTimeUtcTicks\":639253679713403623,\"FocusHwnd\":134370,\"InputTick\":120870281,\"ActiveViewHwnd\":134370}\r\nnative=134370\r\naccessible=0\r\nwindow hwnd=134010 active=134010 same=False\r\nsheet type=-4167 cell-parent=True app-parent=True active-book=True\r\nbook-window=134010 same=False\r\nafter={\"Hwnd\":134010,\"ProcessId\":16888,\"ProcessStartTimeUtcTicks\":639253679713403623,\"FocusHwnd\":134370,\"InputTick\":120870281,\"ActiveViewHwnd\":134370}\r\ncapture={\"ProtocolVersion\":1,\"RequestId\":\"8399ffee-b44c-48ef-a469-0f392ad4be01\",\"Code\":0,\"Target\":{\"Kind\":2,\"Path\":\"D:\\\\Github_REPOS\\\\BookMark\\\\testdata\\\\generated\\\\A\\\\\\uAC19\\uC740\\uC774\\uB984.xlsx\",\"SheetName\":\"\\uD655\\uC815\\uC790\",\"CellAddress\":\"$D$127\",\"HadUnsavedChanges\":false},\"ExternalActionStarted\":false,\"TargetHwnd\":0}\r\n",
+  "errorOutput": ""
+}
