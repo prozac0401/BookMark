@@ -1,0 +1,23 @@
+{
+  "startedUtc": "2026-09-19T02:08:35.120Z",
+  "finishedUtc": "2026-09-19T02:08:59.423Z",
+  "file": "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+  "args": [
+    "publish",
+    "src/WorkBookmark.App",
+    "-c",
+    "Release",
+    "-r",
+    "win-x64",
+    "--self-contained",
+    "true",
+    "--no-restore",
+    "--disable-build-servers",
+    "-m:1",
+    "-o",
+    "D:/Github_REPOS/BookMark/artifacts/publish/user-testing-20260919"
+  ],
+  "code": 0,
+  "stdout": "  WorkBookmark.Core -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\bin\\Release\\net10.0\\win-x64\\WorkBookmark.Core.dll\r\n  WorkBookmark.Windows -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.Windows.dll\r\n  WorkBookmark.Storage -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Storage\\bin\\Release\\net10.0\\win-x64\\WorkBookmark.Storage.dll\r\n  WorkBookmark.App -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.dll\r\n  WorkBookmark.App -> D:\\Github_REPOS\\BookMark\\artifacts\\publish\\user-testing-20260919\\\r\n",
+  "stderr": ""
+}

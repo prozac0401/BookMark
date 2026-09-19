@@ -1,0 +1,14 @@
+{
+  "version": "0.1.1",
+  "installDirs": [
+    "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919",
+    "D:/WorkBookmark-0.1.0-win-x64"
+  ],
+  "installBackups": [
+    "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919.before-0.1.1-1789795278506",
+    "D:/WorkBookmark-0.1.0-win-x64.before-0.1.1-1789795289537"
+  ],
+  "exeSha256": "8bb214ee8f54e54c530507a589f28a8a1b7811cfea0b9f0c1e466455407e857c",
+  "extensionVersion": "0.2.1",
+  "extensionPathUnchanged": true
+}

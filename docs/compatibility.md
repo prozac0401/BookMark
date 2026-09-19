@@ -1,5 +1,11 @@
 # 환경별 검증 상태
 
+> 최신 변경(0.1.3): 메모장 새 문서·미저장 본문은 파일 선택 없이 자동 보관하고 복원합니다. 이전의 원본 선택/미저장 거절 설명보다 [새 보관 계약](notepad-snapshot-and-test-plan.ko.md)이 우선합니다.
+
+> 2026-09-19 0.1.1 수정: Word·PowerPoint 실제 저장/복원 각각4개, 메모장 명시적 파일 연결·열기13개, 자동검사244개 통과. 메모장 자동 커서 복원과 실제 설치된 브라우저 UI 저장은 지원/검증 완료로 표시하지 않습니다. 최신 근거는 [수정·검증 기록](capture-fixes.ko.md)을 참고하세요.
+
+> 2026-09-19 확장: Edge·Chrome 제목/URL, Word 본문 위치, PPT 슬라이드 및 실험 PDF 구현은 [확장 요구명세](extension-requirements.md)와 [별도 검증 기록](extension-validation.md)을 참조하세요. 아래 초기 지원표는 당시 기준입니다.
+
 검증일: 2026-09-19. 전체 제품 상태는 **제한된 시험판**입니다. 소스 구현과 실제 환경 지원을 구분합니다.
 
 | 환경 | 실제 상태 | 남은 확인 |
@@ -20,3 +26,5 @@
 시험 머신의 Pro 23H2는 Microsoft 업데이트 지원이 2025-11-11 종료된 빌드 계열입니다. 따라서 이 머신의 성공만으로 명세의 ‘지원 중인 Windows 11’ 조건을 충족했다고 보지 않습니다. OS를 변경하거나 업데이트하지 않았습니다. [Microsoft Lifecycle](https://learn.microsoft.com/en-us/lifecycle/announcements/windows-11-23h2-end-of-updates-home-pro)
 
 정확한 실행 증거와 시험 ID 상태는 [validation-report.md](validation-report.md), 환경 값은 [evidence/environment.json](evidence/environment.json)에 있습니다.
+
+후속 구현에서도 OS build 22631, 설치 Excel 파일 버전 16.0.20326.20144를 재확인했습니다. [현재 환경](evidence/continuation-2026-09-19/environment.json). 새 회귀시험의 성공은 이 표의 미실행 Office/환경 항목을 통과로 바꾸지 않습니다.

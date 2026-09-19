@@ -12,6 +12,10 @@ public sealed class BookmarkApplicationContext : ApplicationContext
 {
     private readonly IBookmarkRepository _repository;
     private readonly WorkerClient _worker;
+    private readonly BrowserCaptureServer _browserServer;
+    private readonly Func<WorkerRequest, CancellationToken, Task<WorkerResponse>> _captureWorker;
+    private ResumeInputMonitor? _captureInput;
+    private CancellationTokenSource? _captureCancellation;
     private readonly string _dataDirectory;
     private readonly object _repositoryLock = new();
     private readonly SemaphoreSlim _settingsGate = new(1, 1);
@@ -32,8 +36,12 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private bool _operationInFlight, _busyNotified, _exiting, _settingsInvalid;
 
     public BookmarkApplicationContext(IBookmarkRepository repository, WorkerClient worker, string dataDirectory)
+        : this(repository, worker, dataDirectory, worker.RunAsync) { }
+
+    internal BookmarkApplicationContext(IBookmarkRepository repository, WorkerClient worker, string dataDirectory,
+        Func<WorkerRequest, CancellationToken, Task<WorkerResponse>> captureWorker)
     {
-        _repository = repository; _worker = worker; _dataDirectory = dataDirectory;
+        _repository = repository; _worker = worker; _dataDirectory = dataDirectory; _captureWorker = captureWorker;
         _ = _dispatcher.Handle;
         try { _settings = UserSettings.Load(dataDirectory); }
         catch { _settings = UserSettings.Default; _settingsInvalid = true; }
@@ -42,9 +50,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         {
             if (capture)
             {
-                // Capture the external foreground before any toast, list, or dialog is shown.
-                TargetSnapshot snapshot = ForegroundSnapshot.Capture();
-                _ = CaptureAsync(snapshot);
+                _ = CaptureAsync();
             }
             else ShowRecent();
         };
@@ -65,6 +71,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _tray = new NotifyIcon { Icon = SystemIcons.Application, Text = "업무 책갈피 · 제한된 시험판", ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => ShowRecent();
         _undoTimer.Tick += (_, _) => { _undoTimer.Stop(); _undoId = null; _undoMenu.Visible = false; };
+        _browserServer = new BrowserCaptureServer(CaptureBrowserAsync);
         _dispatcher.BeginInvoke((Action)(() => _ = ShowIntroductionAsync()));
     }
 
@@ -87,36 +94,95 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _activeRequest = null; _operationInFlight = false; _busyNotified = false;
         if (!_exiting) _recent.SetBusy(false);
     }
-    private async Task CaptureAsync(TargetSnapshot snapshot)
+    private void NotifyCaptureFailure(ResultCode code)
+    {
+        DiagnosticLog.Write("capture_rejected", code);
+        Notify(UiStyle.Result(code));
+    }
+    private async Task CaptureAsync()
     {
         var id = Guid.NewGuid();
-        if (!BeginOperation(id)) return;
+        // The monitor starts before the snapshot and worker startup. A changed cell/selection
+        // can keep the same HWND, focus and view, so window identity alone is insufficient.
+        using var cancellation = new CancellationTokenSource();
+        ResumeInputMonitor? input = null;
         try
         {
+            input = new ResumeInputMonitor(cancellation.Cancel);
+            TargetSnapshot snapshot = ForegroundSnapshot.Capture();
+            if (!BeginOperation(id)) return;
+            _captureInput = input;
+            _captureCancellation = cancellation;
             var request = new WorkerRequest(1, id, Operation.Capture, DateTimeOffset.UtcNow.AddSeconds(3), Snapshot: snapshot);
-            Task<WorkerResponse> pending = _worker.RunAsync(request);
+            Task<WorkerResponse> pending = _captureWorker(request, cancellation.Token);
             Notify("현재 작업 위치를 확인하는 중…");
             WorkerResponse response = await pending;
+            DiagnosticLog.Write("capture_result", response.Code);
             if (_exiting || _activeRequest != id) return;
-            if (DateTimeOffset.UtcNow >= request.DeadlineUtc) { Notify(UiStyle.Result(ResultCode.CaptureTimedOut)); return; }
+            if (input.HasNewInput) { NotifyCaptureFailure(ResultCode.ContextChanged); return; }
+            if (cancellation.IsCancellationRequested) { NotifyCaptureFailure(ResultCode.Cancelled); return; }
+            if (DateTimeOffset.UtcNow >= request.DeadlineUtc) { NotifyCaptureFailure(ResultCode.CaptureTimedOut); return; }
             if (response.RequestId != id || response.ProtocolVersion != 1 || response.Code != ResultCode.Captured || response.Target is null)
             {
                 Notify(UiStyle.Result(response.Code)); return;
             }
+            // Accept the immutable observation on the UI thread, then stop watching. Input
+            // during the subsequent DB write does not invalidate the already captured location.
+            input.Dispose();
+            if (input.HasNewInput) { NotifyCaptureFailure(ResultCode.ContextChanged); return; }
+            if (cancellation.IsCancellationRequested) { NotifyCaptureFailure(ResultCode.Cancelled); return; }
+            _captureInput = null;
             CaptureCommit commit = await ReadAsync(() => _repository.UpsertCapture(response.Target));
             if (_exiting) return;
             DiagnosticLog.Write("capture_commit", ResultCode.CaptureCommitted);
-            string position = commit.Bookmark.Target.Kind == TargetKind.ExcelCell ? $" · {commit.Bookmark.Target.SheetName}!{commit.Bookmark.Target.CellAddress}" : "";
+            string position = UiStyle.PositionLabel(commit.Bookmark.Target);
             string retained = commit.ExistingNotePreserved ? "\n이전 메모 유지" : "";
             string restored = commit.RestoredDeleted ? "\n지웠던 책갈피를 복원했습니다." : "";
-            Notify($"책갈피를 남겼습니다 · {commit.Bookmark.DisplayName}{position}\n{commit.Bookmark.CapturedAtUtc.ToLocalTime():HH:mm}{retained}{restored}", "메모", () => _ = EditNoteAsync(commit.Bookmark.Id));
+            string snapshotNotice = commit.Bookmark.Target.Kind == TargetKind.NotepadSnapshot ? "\n내용과 선택 위치를 이 PC에 보관했습니다." : "";
+            Notify($"책갈피를 남겼습니다 · {commit.Bookmark.DisplayName}{position}\n{commit.Bookmark.CapturedAtUtc.ToLocalTime():HH:mm}{retained}{restored}{snapshotNotice}", "메모", () => _ = EditNoteAsync(commit.Bookmark.Id));
         }
         catch (Exception exception)
         {
             DiagnosticLog.Write("capture", exception is BookmarkException known ? known.Code : ResultCode.PersistenceFailed);
             Notify(UiStyle.Result(exception is BookmarkException typed ? typed.Code : ResultCode.PersistenceFailed));
         }
-        finally { EndOperation(id); }
+        finally
+        {
+            input?.Dispose();
+            if (ReferenceEquals(_captureInput, input)) _captureInput = null;
+            if (ReferenceEquals(_captureCancellation, cancellation)) _captureCancellation = null;
+            EndOperation(id);
+        }
+    }
+    internal Task<BrowserCaptureResponse> CaptureBrowserAsync(BrowserCaptureRequest request, CancellationToken cancellationToken)
+    {
+        var completion = new TaskCompletionSource<BrowserCaptureResponse>(TaskCreationOptions.RunContinuationsAsynchronously);
+        async void CommitOnUi()
+        {
+            bool began = false;
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (_exiting) { completion.TrySetResult(BrowserProtocol.Failure(request.RequestId, "AppNotRunning", "앱이 종료 중입니다.")); return; }
+                CapturedTarget target = BrowserProtocol.Validate(request);
+                began = BeginOperation(request.RequestId);
+                if (!began) { completion.TrySetResult(BrowserProtocol.Failure(request.RequestId, "AppBusy", "다른 요청이 끝난 뒤 다시 눌러 주세요.")); return; }
+                cancellationToken.ThrowIfCancellationRequested();
+                CaptureCommit commit = await ReadAsync(() => { cancellationToken.ThrowIfCancellationRequested(); return _repository.UpsertCapture(target); });
+                DiagnosticLog.Write("browser_capture_commit", ResultCode.CaptureCommitted);
+                // A notification failure must not change the outcome of a committed write.
+                completion.TrySetResult(new(request.RequestId, true, "CaptureCommitted", "책갈피를 남겼습니다."));
+                try { Notify($"책갈피를 남겼습니다 · {commit.Bookmark.DisplayName}" + (commit.ExistingNotePreserved ? "\n이전 메모 유지" : ""), "메모", () => _ = EditNoteAsync(commit.Bookmark.Id)); }
+                catch { DiagnosticLog.Write("browser_notification", ResultCode.CaptureCommitted); }
+            }
+            catch (OperationCanceledException) { completion.TrySetResult(BrowserProtocol.Failure(request.RequestId, "OutcomeUnknown", "저장 결과를 확인하지 못했습니다. 최근 목록을 확인해 주세요.")); }
+            catch (BookmarkException e) { completion.TrySetResult(BrowserProtocol.Failure(request.RequestId, e.Code.ToString(), UiStyle.Result(e.Code))); }
+            catch { completion.TrySetResult(BrowserProtocol.Failure(request.RequestId, "PersistenceFailed", "책갈피를 저장하지 못했습니다.")); }
+            finally { if (began) EndOperation(request.RequestId); }
+        }
+        try { _dispatcher.BeginInvoke((Action)CommitOnUi); }
+        catch { completion.TrySetResult(BrowserProtocol.Failure(request.RequestId, "AppNotRunning", "앱을 먼저 실행해 주세요.")); }
+        return completion.Task.WaitAsync(cancellationToken);
     }
     public void ShowRecent()
     {
@@ -190,6 +256,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private void CancelOperation()
     {
         if (!_operationInFlight) return;
+        _captureCancellation?.Cancel();
         _worker.Cancel();
         Notify("관찰 중단을 요청했습니다. 이미 전달된 열기·이동은 나중에 완료될 수 있습니다.");
     }
@@ -244,7 +311,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private async Task RelinkAsync(Bookmark bookmark)
     {
-        if (bookmark.LastResumeResult != ResultCode.TargetUnavailable || _operationInFlight) return;
+        if (bookmark.LastResumeResult != ResultCode.TargetUnavailable || bookmark.Target.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot || _operationInFlight) return;
         _recent.Hide();
         string? path = null;
         if (bookmark.Target.Kind == TargetKind.Folder)
@@ -339,7 +406,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             Notify("다른 앱과 단축키가 충돌했거나 등록할 수 없습니다.\n" + unavailable, "단축키 설정", ShowSettings, 10000);
         }
         else if (!_settings.IntroShown)
-            Notify($"업무 책갈피 · 제한된 시험판\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 최근 목록\n탐색기 실제 폴더·파일, 저장된 Excel 시트·셀", "설정", ShowSettings, 10000);
+            Notify($"업무 책갈피 · 제한된 시험판\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 최근 목록\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome은 확장 버튼에서 저장·단축키 확인", "설정", ShowSettings, 10000);
         if (!_settings.IntroShown)
         {
             await _settingsGate.WaitAsync();
@@ -364,7 +431,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     protected override void ExitThreadCore()
     {
         if (_exiting) return;
-        _exiting = true; _worker.Cancel(); StartupRegistration.StopWorker();
+        _exiting = true; _browserServer.Dispose(); _captureInput?.Dispose(); _worker.Cancel(); StartupRegistration.StopWorker();
         _tray.Visible = false; _hotkeys.Dispose(); _undoTimer.Dispose();
         _toast?.Close(); _note?.Dispose(); _settingsForm?.Dispose(); _recent.Dispose();
         _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); _dispatcher.Dispose();
@@ -379,7 +446,8 @@ internal sealed class ResumeInputMonitor : IDisposable
     private readonly HookProc _keyboardProcedure, _mouseProcedure;
     private readonly Action _cancel;
     private IntPtr _keyboard, _mouse;
-    private bool _notified;
+    private bool _notified, _disposed;
+    public bool HasNewInput => _notified;
     public ResumeInputMonitor(Action cancel)
     {
         _cancel = cancel;
@@ -400,9 +468,10 @@ internal sealed class ResumeInputMonitor : IDisposable
         if (code >= 0 && message.ToInt64() is 0x0201 or 0x0204 or 0x0207 or 0x020A or 0x020B or 0x020E) Notify();
         return CallNextHookEx(IntPtr.Zero, code, message, data);
     }
-    private void Notify() { if (!_notified) { _notified = true; _cancel(); } }
+    private void Notify() { if (!_disposed && !_notified) { _notified = true; _cancel(); } }
     public void Dispose()
     {
+        _disposed = true;
         if (_keyboard != IntPtr.Zero) { UnhookWindowsHookEx(_keyboard); _keyboard = IntPtr.Zero; }
         if (_mouse != IntPtr.Zero) { UnhookWindowsHookEx(_mouse); _mouse = IntPtr.Zero; }
     }

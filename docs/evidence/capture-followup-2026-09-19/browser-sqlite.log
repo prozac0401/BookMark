@@ -1,0 +1,16 @@
+PASS: native host cannot acknowledge before the real SQLite transaction commits
+PASS: independent SQLite connection cannot see the uncommitted bookmark
+PASS: real native host receives the correlated commit acknowledgment
+PASS: separate SQLite reads confirm durable exact URL and Unicode title
+PASS: native recapture updates title and sequence while preserving identity and note
+PASS: different URL fragment produces a separate committed bookmark
+PASS: different query ordering produces a separate committed bookmark
+PASS: native host reports the real SQLite pre-commit failure without success
+PASS: failed real transaction rolls back title, note, row count and capture sequence
+PASS: unsupported URI receives a negative native host response
+PASS: rejected URI leaves the real database unchanged
+PASS: server accepts the next explicit request after rollback and invalid input
+PASS: connected native host fails within its deadline when the application exits
+PASS: queued request cannot commit after application exit
+PASS: application shutdown leaves no listening production pipe
+RESULT: 15 browser/SQLite integration checks passed in 3720 ms. Real native host, server, UI dispatch and temporary SQLite; installed browser UI remains separate.

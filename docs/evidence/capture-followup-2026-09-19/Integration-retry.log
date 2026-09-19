@@ -1,0 +1,14 @@
+PASS D11 protocol-roundtrip
+PASS D11 oversized-and-truncated-frames
+PASS D04 valid-result-id
+PASS D04 wrong-request-id-rejected
+PASS D04 capture-deadline-no-late-success
+PASS D05 resume-deadline-outcome-unknown
+PASS U12 single-flight-no-queue
+PASS D04 cancellation-discards-response
+PASS D06 worker-crash-cleanup
+FAIL D06 worker-child-survives-timeout: The process cannot access the file 'C:\Users\wonse\AppData\Local\Temp\WorkBookmark-test-fda3e7ac434340a0942ced13c3fb31fa.pid.pending' because it is being used by another process.
+PASS D06 dispose-terminates-worker-synchronously
+PASS D04 deadline-boundary-does-not-stick-busy
+11/12 passed
+

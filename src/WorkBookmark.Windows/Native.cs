@@ -86,7 +86,9 @@ public static class ForegroundSnapshot
         var input = new Native.LastInputInfo { Size = (uint)Marshal.SizeOf<Native.LastInputInfo>() };
         Native.GetLastInputInfo(ref input);
         var cls = Native.Class(hwnd);
-        var children = cls is "CabinetWClass" or "ExploreWClass" ? Native.Children(hwnd, "SHELLDLL_DefView", true) : cls == "XLMAIN" ? Native.Children(hwnd, "EXCEL7", true) : [];
+        var children = cls is "CabinetWClass" or "ExploreWClass" ? Native.Children(hwnd, "SHELLDLL_DefView", true) : cls == "XLMAIN" ? Native.Children(hwnd, "EXCEL7", true) :
+            cls == "OpusApp" ? Native.Children(hwnd, "_WwG", true) : cls == "PPTFrameClass" ? Native.Children(hwnd, "paneClassDC", true) :
+            cls == "Notepad" ? Native.Children(hwnd, "RichEditD2DPT", true).Concat(Native.Children(hwnd, "Edit", true)).ToList() : [];
         return new TargetSnapshot(hwnd.ToInt64(), pid, Native.ProcessStamp(pid), gui.Focus.ToInt64(), input.Tick,
             children.Count == 1 ? children[0].ToInt64() : 0);
     }
@@ -97,6 +99,16 @@ public static class ForegroundSnapshot
             snapshot.ProcessStartTimeUtcTicks == 0 || now.ProcessStartTimeUtcTicks != snapshot.ProcessStartTimeUtcTicks ||
             now.ActiveViewHwnd != snapshot.ActiveViewHwnd || now.FocusHwnd != snapshot.FocusHwnd)
             throw new BookmarkException(ResultCode.ContextChanged);
+    }
+    /// <summary>Return from our file picker to the original live editor; the worker also checks its content and selection observation.</summary>
+    public static bool TryReturnToNotepad(TargetSnapshot snapshot)
+    {
+        var hwnd = (nint)snapshot.Hwnd;
+        if (!Native.IsWindow(hwnd) || Native.Class(hwnd) != "Notepad" || snapshot.ActiveViewHwnd == 0 ||
+            !Native.IsWindowVisible((nint)snapshot.ActiveViewHwnd) || !Native.IsChild(hwnd, (nint)snapshot.ActiveViewHwnd)) return false;
+        Native.GetWindowThreadProcessId(hwnd, out var pid);
+        if (pid != snapshot.ProcessId || snapshot.ProcessStartTimeUtcTicks == 0 || Native.ProcessStamp(pid) != snapshot.ProcessStartTimeUtcTicks) return false;
+        return Native.SetForegroundWindow(hwnd);
     }
 }
 

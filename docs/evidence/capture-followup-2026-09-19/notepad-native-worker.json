@@ -1,0 +1,61 @@
+{
+  "suite": "Installed Notepad explicit linking",
+  "checks": [
+    {
+      "name": "the exact synthetic window is still Notepad",
+      "passed": true
+    },
+    {
+      "name": "snapshot identifies the requested window and a single visible editor",
+      "passed": true
+    },
+    {
+      "name": "unsaved text is rejected before asking for a disk file",
+      "passed": true
+    },
+    {
+      "name": "capture requests explicit source-file linking with a transient observation",
+      "passed": true
+    },
+    {
+      "name": "native capture retains the original normalized caret and saved state",
+      "passed": true
+    },
+    {
+      "name": "explicit matching file binds to the exact native caret",
+      "passed": true
+    },
+    {
+      "name": "a changed expected caret is refused",
+      "passed": true
+    },
+    {
+      "name": "a link without the first observation cannot bypass validation",
+      "passed": true
+    },
+    {
+      "name": "equal contents under a different filename cannot be linked",
+      "passed": true
+    },
+    {
+      "name": "a real caret move during file selection invalidates capture",
+      "passed": true
+    },
+    {
+      "name": "resume reports only the exact file-open request without claiming cursor restoration",
+      "passed": true
+    },
+    {
+      "name": "an existing tab selection is unchanged by the open-only resume",
+      "passed": true
+    },
+    {
+      "name": "native checks leave the synthetic file bytes unchanged",
+      "passed": true
+    },
+    {
+      "name": "native checks restore the original selection",
+      "passed": true
+    }
+  ]
+}

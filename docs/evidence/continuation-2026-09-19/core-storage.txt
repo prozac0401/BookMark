@@ -1,0 +1,16 @@
+PASS E06/X12 Windows path policy and conservative identity
+PASS E07 Document allowlist and executable reveal policy
+PASS X01/X12 Absolute single Excel cell bounds
+PASS U05/U06/U07 Duplicate capture preserves note and separates cells
+PASS U08 Sequence survives clock rollback, notes, resume, and restart
+PASS U10 Delete, undo, and recapture preserve identity and notes
+  Synthetic 1,026-record repository recent query: 2.01 ms (not UI p95).
+PASS U13 Full-history search, literal query, and result bounds
+PASS D01/D02 All mutation failures roll back without false commits
+PASS E09 Relink preserves metadata and rejects collisions/location edits
+PASS D03 Corruption and unknown schemas are preserved
+PASS D03 Migration creates consistent backup and rolls back on failure
+PASS D01 Concurrent writer serialization keeps unique monotonic sequence
+  Real SQLite writer lock rejected after 3.29 s.
+PASS D01/D02 Real SQLite writer lock fails atomically within a bounded wait
+RESULT: 13 passed; 0 failed. Policy/SQLite execution only; Windows/Office acceptance remains separate.

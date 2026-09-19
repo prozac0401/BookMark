@@ -1,0 +1,46 @@
+{
+  "suite": "Windows adapter regressions",
+  "checks": [
+    {
+      "name": "native Shell reproduces ZIP-as-folder namespace",
+      "passed": true
+    },
+    {
+      "name": "selected ZIP persists as file and uses reveal policy",
+      "passed": true
+    },
+    {
+      "name": "real selected directory remains a folder",
+      "passed": true
+    },
+    {
+      "name": "shortcut remains a file without following its target",
+      "passed": true
+    },
+    {
+      "name": "removed selection cannot produce a normal captured target",
+      "passed": true
+    },
+    {
+      "name": "interaction change during PIDL parsing prevents reveal and frees both PIDLs",
+      "passed": true
+    },
+    {
+      "name": "stable reveal checks interaction after parsing and opens exactly once",
+      "passed": true
+    },
+    {
+      "name": "expired whole-request deadline prevents reveal after parsing",
+      "passed": true
+    },
+    {
+      "name": "second parse failure frees the first PIDL without opening",
+      "passed": true
+    },
+    {
+      "name": "Shell refusal clears external-action flag and releases both PIDLs",
+      "passed": true
+    }
+  ],
+  "limitation": "Actual local ZIP namespace; injected reveal delays. Does not replace P0-A tab capture or D07 full UI."
+}

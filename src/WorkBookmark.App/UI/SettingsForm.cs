@@ -16,7 +16,7 @@ internal sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
         ClientSize = new Size(610, 418);
         var title = new Label { Text = "업무 책갈피", Font = new Font(Font, FontStyle.Bold), Location = new Point(20, 18), Size = new Size(560, 28) };
-        var description = new Label { Text = "탐색기 실제 폴더·단일 파일 / 저장된 Excel 시트·셀\nWindows·Office 실기 검증이 필요한 제한된 시험판입니다.", Location = new Point(20, 51), Size = new Size(570, 48) };
+        var description = new Label { Text = "탐색기 · Excel · Word · PowerPoint · 메모장(미저장 내용 자동 보관)\nEdge·Chrome: 확장 버튼에서 저장·실제 단축키 확인", Location = new Point(20, 51), Size = new Size(570, 48) };
         Controls.AddRange([title, description]);
         Controls.Add(new Label { Text = "현재 위치 남기기", Location = new Point(20, 115), Size = new Size(170, 27) });
         Controls.Add(new Label { Text = "최근 책갈피 열기", Location = new Point(20, 158), Size = new Size(170, 27) });
@@ -33,7 +33,7 @@ internal sealed class SettingsForm : Form
         data.LinkClicked += (_, _) => openData(); logs.LinkClicked += (_, _) => openLogs();
         Controls.AddRange([data, logs]);
         var tip = new ToolTip(); tip.SetToolTip(data, directory); Disposed += (_, _) => tip.Dispose();
-        _status = new Label { Text = "기록의 경로와 메모는 이 PC의 DB에 평문으로 보관됩니다.", ForeColor = UiStyle.Muted, Location = new Point(20, 312), Size = new Size(570, 48) };
+        _status = new Label { Text = "경로·메모와 메모장에 기록한 본문·선택 위치는 이 PC의 DB에 보관됩니다.", ForeColor = UiStyle.Muted, Location = new Point(20, 312), Size = new Size(570, 48) };
         _apply = new Button { Text = "적용", Location = new Point(408, 371), Size = new Size(80, 30) };
         var close = new Button { Text = "닫기", Location = new Point(503, 371), Size = new Size(80, 30), DialogResult = DialogResult.Cancel };
         _apply.Click += async (_, _) =>

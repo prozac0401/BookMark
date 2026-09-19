@@ -1,0 +1,25 @@
+{
+  "suite": "Installed Notepad conservative reopen",
+  "checks": [
+    {
+      "name": "preexisting tab is opened without guessing its saved position",
+      "passed": true,
+      "code": "OpenedPositionFailed",
+      "fileUnchanged": true,
+      "selectionStart": 0,
+      "selectionEnd": 0,
+      "editorChanged": false
+    },
+    {
+      "name": "new editor from explicit file open restores the saved caret",
+      "passed": true,
+      "code": "PositionRestored",
+      "fileUnchanged": true,
+      "selectionStart": 42,
+      "selectionEnd": 42,
+      "editorChanged": true
+    }
+  ],
+  "status": "superseded",
+  "reason": "Prototype new-editor heuristic removed because new HWND, basename and matching contents do not prove the exact file path with session restoration. Final implementation only requests file opening and never moves selection."
+}

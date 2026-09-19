@@ -1,0 +1,37 @@
+{
+  "checkedUtc": "2026-09-19T05:42:10.347Z",
+  "scope": "Read-only inspection of WorkBookmark extension configuration; no browsing history, page content, registry, installed files, process state or user DB modified.",
+  "installedExtensionId": "dgpnfldabohoijkpmnenglfaopbmhneo",
+  "chromeDefault": {
+    "loaded": true,
+    "disabledReasons": [],
+    "assignedCommand": "capture-current-tab",
+    "assignedShortcut": "Ctrl+Shift+Y"
+  },
+  "edgeDefault": {
+    "loaded": true,
+    "disabledReasons": [],
+    "captureCommandSuggestedShortcut": "Ctrl+Shift+Y",
+    "captureCommandAssigned": false
+  },
+  "officialConflictSource": "https://support.microsoft.com/en-us/edge/keyboard-shortcuts-in-microsoft-edge",
+  "diagnosticEvidence": {
+    "browserCommitCount": 1,
+    "lastBrowserCommitUtc": "2026-09-19T05:27:30.0718152+00:00",
+    "lastGlobalBrowserGuidanceUtc": "2026-09-19T05:28:57.9001921+00:00",
+    "limitation": "Commit logging does not identify the browser or invoking action. Later shortcut failure has no app commit."
+  },
+  "sourceFix": {
+    "version": "0.2.2",
+    "suggestedShortcut": "Ctrl+Shift+9",
+    "existingAssignments": "Preserved; user must verify the actual assigned shortcut in browser settings.",
+    "popup": "Actual assignment or explicit unassigned/unknown message with browser shortcut settings button."
+  },
+  "tests": {
+    "command": "node --test browser-extension/tests/capture.test.mjs browser-extension/tests/shortcuts.test.mjs",
+    "passed": 23,
+    "failed": 0,
+    "scope": "Browser API doubles; command event dispatch, commit acknowledgement, context change rejection and shortcut setup UX."
+  },
+  "actualBrowserShortcutToDatabaseRoundtrip": "Not run in this subtask."
+}

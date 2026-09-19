@@ -1,0 +1,17 @@
+{
+  "checks": [
+    {
+      "test": "help",
+      "code": 0,
+      "stdout": "WindowsChecks commands:\n  session APP_EXE PLAN_JSON OUTPUT_JSON\n  series APP_EXE EXCEL_EXE FIXTURE_ROOT OUTPUT_JSON [COUNT] [A_CELL] [B_CELL]\n  session-selftest | evidence-selftest | adapter-checks\n  HWND [resume]\nUse synthetic fixtures only; see tools/WindowsChecks/README.md.\r\n",
+      "stderr": ""
+    },
+    {
+      "test": "invalid series startup",
+      "code": 1,
+      "stdout": "{\"output\":\"D:\\\\Github_REPOS\\\\BookMark\\\\docs\\\\evidence\\\\continuation-2026-09-19\\\\series-startup-rejection.json\",\"attempts\":0,\"pass\":0,\"wrongTarget\":0,\"failure\":\"ArgumentException: Invalid executable/count.\",\"GateStatus\":\"Blocked\",\"SeparateProcessCaseStatus\":\"Blocked\"}\r\n",
+      "stderr": ""
+    }
+  ],
+  "seriesStartupRejectionVerified": true
+}

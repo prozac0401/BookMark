@@ -1,0 +1,11 @@
+{
+  "startedUtc": "2026-09-19T02:07:56.760Z",
+  "finishedUtc": "2026-09-19T02:08:01.034Z",
+  "file": "D:/Github_REPOS/BookMark/tests/WorkBookmark.Desktop.Tests/bin/Release/net10.0-windows/WorkBookmark.Desktop.Tests.exe",
+  "args": [
+    "D:/Github_REPOS/BookMark/docs/evidence/user-testing-2026-09-19/desktop-results.json"
+  ],
+  "code": 0,
+  "stdout": "PASS: settings atomic overwrite round-trip\r\nPASS: settings no temporary leftovers\r\nPASS: corrupt settings preserved\r\nPASS: native hotkeys registered\r\nPASS: conflict fixture registered\r\nPASS: replacement collision refused\r\nPASS: old registration retained and pending reservation rolled back\r\nPASS: duplicate shortcut pair refused\r\nPASS: Windows Shell parses Unicode startup target\r\nPASS: startup ownership description parsed\r\nPASS: startup working directory parsed\r\nPASS: IME composition suppresses submission\r\nPASS: IME commit Enter has a suppression window\r\nPASS: note write failure retains editable content\r\nPASS: note retry saves retained text\r\nPASS: recent form opens with loaded first selection\r\nPASS: capture shortcut key-up preserves the observed target\r\nPASS: new key before worker response prevents capture commit\r\nPASS: new mouse button before worker response prevents capture commit\r\nPASS: wheel input before worker response prevents capture commit\r\nPASS: new input wins against an already returned capture response\r\nPASS: accepted capture survives new work during the database write\r\nPASS: browser success waits for repository commit\r\nPASS: browser simultaneous request returns busy without another write\r\nPASS: browser exact acknowledgment follows committed capture\r\nPASS: browser repository failure cannot report successful capture\r\nPASS: browser cancelled queued request cannot write\r\nPASS: browser invalid URI cannot reach repository\r\nRESULT: 28 checks passed. Native launch, actual IME and rendered UI remain separate manual gates.\r\n",
+  "stderr": ""
+}

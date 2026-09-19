@@ -26,25 +26,41 @@ internal static class UiStyle
         Rectangle area = Screen.FromPoint(Cursor.Position).WorkingArea;
         form.Location = new Point(area.Right - form.Width - 20, area.Bottom - form.Height - 20);
     }
-    public static string Location(Bookmark bookmark) => bookmark.Target.Kind == TargetKind.ExcelCell
-        ? $"{bookmark.Target.SheetName} · {bookmark.Target.CellAddress}   {bookmark.Target.Path}" : bookmark.Target.Path;
+    public static string PositionLabel(CapturedTarget target) => target.Kind switch
+    {
+        TargetKind.ExcelCell => $" · {target.SheetName}!{target.CellAddress}",
+        TargetKind.WordPosition => $" · 본문 문자 위치 {target.WordStart + 1}",
+        TargetKind.PowerPointSlide => $" · 슬라이드 {target.SlideNumber} (저장 당시)",
+        TargetKind.PdfPage => $" · {target.PdfPage}쪽",
+        TargetKind.NotepadPosition => $" · 메모장 문자 위치 {target.TextOffset + 1}",
+        TargetKind.NotepadSnapshot => target.TextSelectionEnd > target.TextOffset
+            ? $" · 메모장 선택 {target.TextOffset + 1}–{target.TextSelectionEnd}"
+            : $" · 메모장 문자 위치 {target.TextOffset + 1}",
+        _ => ""
+    };
+    public static string Location(Bookmark bookmark) => bookmark.Target.Kind == TargetKind.NotepadSnapshot
+        ? PositionLabel(bookmark.Target).Trim(' ', '·') + "   자동 보관한 내용 · 원본 파일 저장 불필요"
+        : PositionLabel(bookmark.Target).Trim(' ', '·') + (PositionLabel(bookmark.Target).Length > 0 ? "   " : "") + bookmark.Target.Path;
     public static string Result(ResultCode code) => code switch
     {
         ResultCode.CaptureCommitted => "책갈피를 남겼습니다.",
         ResultCode.UnsupportedTarget => "이 화면의 작업 위치는 아직 지원하지 않습니다.",
+        ResultCode.BrowserExtensionRequired => "브라우저 도구 모음의 업무 책갈피 → ‘이 페이지 저장’을 눌러 주세요. 저장 단축키는 확장 화면에서 확인·설정할 수 있습니다.",
+        ResultCode.NotepadFileRequired => "메모장 캡처 요청을 완료하지 못했습니다. 최신 앱을 다시 실행해 주세요.",
+        ResultCode.NotepadOpenRequested => "이전 메모장 파일 책갈피의 열기를 요청했습니다. 이 항목은 내용 보관본이 아닙니다.",
         ResultCode.AmbiguousTarget or ResultCode.ContextChanged => "현재 작업 위치를 정확히 확인하지 못했습니다. 다시 눌러 주세요.",
         ResultCode.MultipleSelection => "파일이나 폴더를 하나만 선택해 주세요.",
-        ResultCode.UnsavedWorkbook => "파일로 저장한 뒤 책갈피를 남겨 주세요.",
+        ResultCode.UnsavedWorkbook or ResultCode.UnsavedDocument => "파일로 저장한 뒤 책갈피를 남겨 주세요.",
         ResultCode.AppBusy => "편집이나 대화상자를 마친 뒤 다시 눌러 주세요.",
         ResultCode.CaptureTimedOut => "위치를 확인하지 못해 책갈피를 남기지 않았습니다.",
         ResultCode.PersistenceFailed => "책갈피를 저장하지 못했습니다. 기존 기록은 유지됩니다.",
         ResultCode.OpenRequested => "열기를 요청했습니다.",
         ResultCode.RevealRequested => "파일 위치 표시를 요청했습니다.",
-        ResultCode.PositionRestored => "기록한 셀로 이동했습니다.",
-        ResultCode.PositionRestoredFocusPending => "셀로 이동했습니다. Excel 창을 선택해 주세요.",
-        ResultCode.OpenedPositionFailed => "파일은 열렸지만 기록한 셀로 이동하지 못했습니다.",
+        ResultCode.PositionRestored => "기록한 위치로 이동했습니다.",
+        ResultCode.PositionRestoredFocusPending => "기록한 위치로 이동했습니다. 대상 앱 창을 선택해 주세요.",
+        ResultCode.OpenedPositionFailed => "파일은 열렸지만 기록한 위치로 이동하지 못했습니다.",
         ResultCode.ResumeOutcomeUnknown => "처리 결과를 확인하지 못했습니다. 대상 앱을 확인해 주세요.",
-        ResultCode.TargetUnavailable => "파일 또는 폴더에 접근할 수 없습니다.",
+        ResultCode.TargetUnavailable => "저장한 대상에 접근할 수 없습니다.",
         ResultCode.EnumerationIncomplete => "열린 문서를 모두 확인하지 못했습니다. 대상 앱을 확인해 주세요.",
         ResultCode.DuplicateTarget => "같은 위치의 책갈피가 이미 있습니다. 기존 기록은 유지됩니다.",
         ResultCode.Cancelled => "요청을 중단했습니다.",

@@ -1,0 +1,30 @@
+{
+  "test": "Word synthetic capture and resume",
+  "startedUtc": "2026-09-19T05:00:31.1360174+00:00",
+  "finishedUtc": "2026-09-19T05:00:32.5727377+00:00",
+  "beforeSha256": "61B660745465EFA6E0153E563888BEAF0FA3A680F56550033F651C447519DBDF",
+  "afterSha256": "61B660745465EFA6E0153E563888BEAF0FA3A680F56550033F651C447519DBDF",
+  "passed": false,
+  "failure": "InvalidOperationException: capture records the independently requested synthetic body offset 37",
+  "checks": [
+    {
+      "name": "capture records the independently requested synthetic body offset 37",
+      "passed": false,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "59875e87-8d67-4841-bcd0-110a3daf69e9",
+        "Code": 2,
+        "Target": null,
+        "ExternalActionStarted": false,
+        "TargetHwnd": 0
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "direct-capture",
+      "exception": "System.Reflection.TargetInvocationException: Exception has been thrown by the target of an invocation.\r\n ---\u003E System.Runtime.InteropServices.COMException (0x800A16E6): \u0027Item\u0027\uC740(\uB294) \uC18D\uC131\uC774 \uC544\uB2D9\uB2C8\uB2E4.\r\n   --- End of inner exception stack trace ---\r\n   at System.RuntimeType.InvokeDispMethod(String name, BindingFlags invokeAttr, Object target, Object[] args, Boolean[] byrefModifiers, Int32 culture, String[] namedParameters)\r\n   at System.RuntimeType.InvokeMember(String name, BindingFlags bindingFlags, Binder binder, Object target, Object[] providedArgs, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParams)\r\n   at System.Type.InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target, Object[] args, CultureInfo culture)\r\n   at WorkBookmark.Windows.ComScope.Invoke(Object instance, String name, BindingFlags flags, Object[] args) in D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\ComSupport.cs:line 16\r\n   at WorkBookmark.Windows.ComScope.Get(Object instance, String name, Object[] args) in D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\ComSupport.cs:line 12\r\n   at WorkBookmark.Windows.WordAdapter.VerifyDocumentWindow(Object document, ConnectedWindow connection, ComScope scope, RequestContext context) in D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\WordAdapter.cs:line 208\r\n   at WorkBookmark.Windows.WordAdapter.ReadPosition(ConnectedWindow connection, ComScope scope, RequestContext context, Boolean requireActive) in D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\WordAdapter.cs:line 77\r\n   at WorkBookmark.Windows.WordAdapter.Capture(TargetSnapshot snapshot, RequestContext context) in D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\WordAdapter.cs:line 24\r\n   at WordNativeChecks.Run(String[] args) in D:\\Github_REPOS\\BookMark\\tools\\WindowsChecks\\WordNativeChecks.cs:line 65"
+    }
+  ],
+  "limitations": "One native Word window and saved .docx. Does not establish multiple windows, edit drift, headers/footnotes, .doc/.docm/.rtf, Office 32-bit, protected view, or 50-capture gate. No document text read, document saved/closed, or process terminated."
+}

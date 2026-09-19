@@ -70,9 +70,16 @@ internal static class ExplorerAdapter
         if (!scope.Flag(selected, "IsFileSystem")) throw new BookmarkException(ResultCode.UnsupportedTarget);
         var selectedPath = scope.Text(selected, "Path");
         PathPolicy.Normalize(selectedPath);
-        var target = new CapturedTarget(scope.Flag(selected, "IsFolder") ? TargetKind.Folder : TargetKind.File, selectedPath);
-        if (scope.Flag(selected, "IsLink")) target = target with { Kind = TargetKind.File }; // Never follow shortcut targets.
+        var target = ClassifySelection(selectedPath, scope.Flag(selected, "IsLink"));
         context.Check();
         return target;
+    }
+    // Shell folders include ZIP namespace files. Persist the filesystem kind, not navigation semantics.
+    internal static CapturedTarget ClassifySelection(string path, bool isLink)
+    {
+        PathPolicy.Normalize(path);
+        var attributes = File.GetAttributes(path);
+        var kind = !isLink && (attributes & FileAttributes.Directory) != 0 ? TargetKind.Folder : TargetKind.File;
+        return new CapturedTarget(kind, path);
     }
 }

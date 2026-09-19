@@ -1,0 +1,15 @@
+D:\Github_REPOS\BookMark\.tools\dotnet\sdk\10.0.401\Sdks\Microsoft.NET.Sdk\targets\Microsoft.PackageDependencyResolution.targets(266,5): error NETSDK1060: 자산 파일 잠금 파일 'D:\Github_REPOS\BookMark\src\WorkBookmark.App\obj\project.assets.json'을(를) 로드하는 동안 오류 발생: Value cannot be null. (Parameter 'path1')을(를) 읽는 동안 오류가 발생했습니다. [D:\Github_REPOS\BookMark\src\WorkBookmark.App\WorkBookmark.App.csproj]
+  WorkBookmark.Core -> D:\Github_REPOS\BookMark\src\WorkBookmark.Core\bin\Release\net10.0\WorkBookmark.Core.dll
+  WorkBookmark.Storage -> D:\Github_REPOS\BookMark\src\WorkBookmark.Storage\bin\Release\net10.0\WorkBookmark.Storage.dll
+  WorkBookmark.Integration.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Integration.Tests\bin\Release\net10.0\WorkBookmark.Integration.Tests.dll
+  WorkBookmark.Windows -> D:\Github_REPOS\BookMark\src\WorkBookmark.Windows\bin\Release\net10.0-windows\WorkBookmark.Windows.dll
+  Probes -> D:\Github_REPOS\BookMark\tools\Probes\bin\Release\net10.0-windows\Probes.dll
+  WorkBookmark.Core.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Core.Tests\bin\Release\net10.0\WorkBookmark.Core.Tests.dll
+
+빌드하지 못했습니다.
+
+D:\Github_REPOS\BookMark\.tools\dotnet\sdk\10.0.401\Sdks\Microsoft.NET.Sdk\targets\Microsoft.PackageDependencyResolution.targets(266,5): error NETSDK1060: 자산 파일 잠금 파일 'D:\Github_REPOS\BookMark\src\WorkBookmark.App\obj\project.assets.json'을(를) 로드하는 동안 오류 발생: Value cannot be null. (Parameter 'path1')을(를) 읽는 동안 오류가 발생했습니다. [D:\Github_REPOS\BookMark\src\WorkBookmark.App\WorkBookmark.App.csproj]
+    경고 0개
+    오류 1개
+
+경과 시간: 00:00:15.40

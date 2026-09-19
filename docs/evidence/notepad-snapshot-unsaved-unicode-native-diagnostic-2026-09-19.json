@@ -1,0 +1,54 @@
+{
+  "suite": "Installed Notepad snapshot capture and recovery",
+  "executedAtUtc": "2026-09-19T08:49:35.0896578+00:00",
+  "sourceHwnd": 3476162,
+  "sourceEditorClass": "RichEditD2DPT",
+  "characters": 5463,
+  "selection": "(5449, 5463)",
+  "capturedKind": "NotepadSnapshot",
+  "resumeCode": "ResumeOutcomeUnknown",
+  "recoveryHwnd": 0,
+  "checks": [
+    {
+      "name": "the explicitly prepared synthetic Notepad window is foreground with one editor",
+      "passed": true
+    },
+    {
+      "name": "only a blank or clearly marked synthetic test tab is accepted",
+      "passed": true
+    },
+    {
+      "name": "new document captures immediately as a text snapshot without source-file linking",
+      "passed": true
+    },
+    {
+      "name": "capture contains the full exact LF-normalized editor text, including blank content",
+      "passed": true
+    },
+    {
+      "name": "capture retains both ends of the actual source selection",
+      "passed": true
+    },
+    {
+      "name": "capturing creates no recovery file and requires no user-chosen save location",
+      "passed": true
+    },
+    {
+      "name": "snapshot text, title, state and selection survive JSON persistence transport",
+      "passed": true
+    },
+    {
+      "name": "installed Notepad confirms the new recovery document content and selection",
+      "passed": false
+    }
+  ],
+  "trace": [
+    "input=False:original=3476162:foreground=3476162:permitted=False",
+    "input=False:original=3476162:foreground=3476162:permitted=False",
+    "Notepad activation recovery=C:\\Users\\wonse\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\WorkBookmark\\NotepadRecovery\\Bookmark-c9b150991dd74eaa997725e33026d6d6.txt",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "snapshot worker failure=AppBusy exception=BookmarkException HRESULT=80131500"
+  ],
+  "failure": "installed Notepad confirms the new recovery document content and selection",
+  "limitation": "Actual native Notepad UI plus JSON transport. SQLite restart, hotkey/tray UX and active typing races are covered separately. No source document is saved or closed; recovery windows are left open for inspection."
+}

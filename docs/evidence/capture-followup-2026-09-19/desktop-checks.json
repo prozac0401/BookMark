@@ -1,0 +1,146 @@
+{
+  "suite": "Desktop checks",
+  "checks": [
+    {
+      "name": "settings atomic overwrite round-trip",
+      "passed": true
+    },
+    {
+      "name": "settings no temporary leftovers",
+      "passed": true
+    },
+    {
+      "name": "corrupt settings preserved",
+      "passed": true
+    },
+    {
+      "name": "native hotkeys registered",
+      "passed": true
+    },
+    {
+      "name": "conflict fixture registered",
+      "passed": true
+    },
+    {
+      "name": "replacement collision refused",
+      "passed": true
+    },
+    {
+      "name": "old registration retained and pending reservation rolled back",
+      "passed": true
+    },
+    {
+      "name": "duplicate shortcut pair refused",
+      "passed": true
+    },
+    {
+      "name": "Windows Shell parses Unicode startup target",
+      "passed": true
+    },
+    {
+      "name": "startup ownership description parsed",
+      "passed": true
+    },
+    {
+      "name": "startup working directory parsed",
+      "passed": true
+    },
+    {
+      "name": "IME composition suppresses submission",
+      "passed": true
+    },
+    {
+      "name": "IME commit Enter has a suppression window",
+      "passed": true
+    },
+    {
+      "name": "note write failure retains editable content",
+      "passed": true
+    },
+    {
+      "name": "note retry saves retained text",
+      "passed": true
+    },
+    {
+      "name": "recent form opens with loaded first selection",
+      "passed": true
+    },
+    {
+      "name": "capture shortcut key-up preserves the observed target",
+      "passed": true
+    },
+    {
+      "name": "new key before worker response prevents capture commit",
+      "passed": true
+    },
+    {
+      "name": "new mouse button before worker response prevents capture commit",
+      "passed": true
+    },
+    {
+      "name": "wheel input before worker response prevents capture commit",
+      "passed": true
+    },
+    {
+      "name": "new input wins against an already returned capture response",
+      "passed": true
+    },
+    {
+      "name": "accepted capture survives new work during the database write",
+      "passed": true
+    },
+    {
+      "name": "Notepad verified second observation commits once: source selection and original observation survive IPC before any commit",
+      "passed": true
+    },
+    {
+      "name": "Notepad verified second observation commits once",
+      "passed": true
+    },
+    {
+      "name": "Notepad file picker cancellation cannot commit or start another worker",
+      "passed": true
+    },
+    {
+      "name": "Notepad missing observation cannot show picker or commit",
+      "passed": true
+    },
+    {
+      "name": "Notepad failed editor return cannot start another worker or commit",
+      "passed": true
+    },
+    {
+      "name": "Notepad changed document after picker cannot commit: source selection and original observation survive IPC before any commit",
+      "passed": true
+    },
+    {
+      "name": "Notepad changed document after picker cannot commit",
+      "passed": true
+    },
+    {
+      "name": "browser success waits for repository commit",
+      "passed": true
+    },
+    {
+      "name": "browser simultaneous request returns busy without another write",
+      "passed": true
+    },
+    {
+      "name": "browser exact acknowledgment follows committed capture",
+      "passed": true
+    },
+    {
+      "name": "browser repository failure cannot report successful capture",
+      "passed": true
+    },
+    {
+      "name": "browser cancelled queued request cannot write",
+      "passed": true
+    },
+    {
+      "name": "browser invalid URI cannot reach repository",
+      "passed": true
+    }
+  ],
+  "limitations": "Synthetic IME messages test event suppression only; actual Korean IME and rendered interaction require manual verification."
+}

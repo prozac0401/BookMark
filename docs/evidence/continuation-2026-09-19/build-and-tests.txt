@@ -1,0 +1,7 @@
+Restore failed.
+��ġ D:\Github_REPOS\BookMark\scripts\build.ps1:15 ����:32
++     if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }
++                                ~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Restore failed.:String) [], RuntimeException
+    + FullyQualifiedErrorId : Restore failed.
+ 

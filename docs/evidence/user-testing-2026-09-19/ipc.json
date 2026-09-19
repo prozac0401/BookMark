@@ -1,0 +1,12 @@
+{
+  "startedUtc": "2026-09-19T02:07:16.752Z",
+  "finishedUtc": "2026-09-19T02:07:24.347Z",
+  "file": "D:/Github_REPOS/BookMark/tests/WorkBookmark.Integration.Tests/bin/Release/net10.0/WorkBookmark.Integration.Tests.exe",
+  "args": [
+    "--output",
+    "D:/Github_REPOS/BookMark/docs/evidence/user-testing-2026-09-19/ipc-results.json"
+  ],
+  "code": 0,
+  "stdout": "PASS D11 protocol-roundtrip\r\nPASS D11 oversized-and-truncated-frames\r\nPASS D04 valid-result-id\r\nPASS D04 wrong-request-id-rejected\r\nPASS D04 capture-deadline-no-late-success\r\nPASS D05 resume-deadline-outcome-unknown\r\nPASS U12 single-flight-no-queue\r\nPASS D04 cancellation-discards-response\r\nPASS D06 worker-crash-cleanup\r\nPASS D06 worker-child-survives-timeout\r\nPASS D06 dispose-terminates-worker-synchronously\r\nPASS D04 deadline-boundary-does-not-stick-busy\r\n12/12 passed\r\n",
+  "stderr": ""
+}

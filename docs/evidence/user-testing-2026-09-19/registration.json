@@ -1,0 +1,13 @@
+{
+  "startedUtc": "2026-09-19T02:07:16.820Z",
+  "finishedUtc": "2026-09-19T02:07:19.460Z",
+  "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-File",
+    "D:/Github_REPOS/BookMark/tools/WindowsChecks/BrowserRegistrationOwnershipChecks.ps1"
+  ],
+  "code": 0,
+  "stdout": "PASS no registration remains unowned\r\nPASS 32-bit owned registration recognized\r\nPASS 64-bit owned registration recognized\r\nPASS both owned views recognized\r\nPASS foreign 32-bit shadow is refused\r\nPASS foreign 64-bit shadow is refused\r\nPASS machine-wide shadow is refused\r\nRESULT: seven mock ownership checks; no registry accessed or modified.\r\n",
+  "stderr": ""
+}

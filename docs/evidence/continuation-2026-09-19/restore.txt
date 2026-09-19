@@ -1,0 +1,10 @@
+  복원할 프로젝트를 확인하는 중...
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Storage\WorkBookmark.Storage.csproj을(를) 10.11초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Windows\WorkBookmark.Windows.csproj을(를) 10.07초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tools\WindowsChecks\WindowsChecks.csproj을(를) 10.11초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Core\WorkBookmark.Core.csproj을(를) 10.06초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.App\WorkBookmark.App.csproj을(를) 23밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Integration.Tests\WorkBookmark.Integration.Tests.csproj을(를) 7밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\WorkBookmark.Desktop.Tests.csproj을(를) 23밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Core.Tests\WorkBookmark.Core.Tests.csproj을(를) 11밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tools\Probes\Probes.csproj을(를) 10밀리초 동안 복원했습니다.

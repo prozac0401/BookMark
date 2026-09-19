@@ -1,0 +1,54 @@
+[
+  {
+    "name": "malformed-length",
+    "passed": true,
+    "code": 1,
+    "killed": false,
+    "ms": 2111,
+    "stderr": "",
+    "response": null
+  },
+  {
+    "name": "validate-fixture-folder",
+    "passed": false,
+    "code": 0,
+    "killed": false,
+    "ms": 1045,
+    "stderr": "",
+    "response": {
+      "ProtocolVersion": 1,
+      "RequestId": "9f5aff7c-1e89-4da0-94b1-efd53fb6430c",
+      "Code": 19,
+      "Target": {
+        "Kind": 0,
+        "Path": "D:/Github_REPOS/BookMark/testdata/generated/A",
+        "SheetName": null,
+        "CellAddress": null,
+        "HadUnsavedChanges": null,
+        "WordStart": null,
+        "SlideId": null,
+        "SlideNumber": null,
+        "PdfPage": null,
+        "PageTitle": null
+      },
+      "ExternalActionStarted": false,
+      "TargetHwnd": 0
+    }
+  },
+  {
+    "name": "reject-script-url",
+    "passed": true,
+    "code": 0,
+    "killed": false,
+    "ms": 515,
+    "stderr": "",
+    "response": {
+      "ProtocolVersion": 1,
+      "RequestId": "e56ca282-94aa-46ac-a164-4ae2da9982e9",
+      "Code": 2,
+      "Target": null,
+      "ExternalActionStarted": false,
+      "TargetHwnd": 0
+    }
+  }
+]

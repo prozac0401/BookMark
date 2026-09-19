@@ -1,0 +1,12 @@
+{
+  "utc": "2026-09-19T02:17:14.521Z",
+  "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-Command",
+    "Get-Process -Id 22892 | Select-Object Id,CPU,Handles,WorkingSet64,PrivateMemorySize64,StartTime | ConvertTo-Json -Compress"
+  ],
+  "code": 0,
+  "stdout": "{\"Id\":22892,\"CPU\":1.125,\"Handles\":372,\"WorkingSet64\":59641856,\"PrivateMemorySize64\":14282752,\"StartTime\":\"\\/Date(1789784028889)\\/\"}\r\n",
+  "stderr": ""
+}

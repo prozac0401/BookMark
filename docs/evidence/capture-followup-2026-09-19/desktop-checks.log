@@ -1,0 +1,36 @@
+PASS: settings atomic overwrite round-trip
+PASS: settings no temporary leftovers
+PASS: corrupt settings preserved
+PASS: native hotkeys registered
+PASS: conflict fixture registered
+PASS: replacement collision refused
+PASS: old registration retained and pending reservation rolled back
+PASS: duplicate shortcut pair refused
+PASS: Windows Shell parses Unicode startup target
+PASS: startup ownership description parsed
+PASS: startup working directory parsed
+PASS: IME composition suppresses submission
+PASS: IME commit Enter has a suppression window
+PASS: note write failure retains editable content
+PASS: note retry saves retained text
+PASS: recent form opens with loaded first selection
+PASS: capture shortcut key-up preserves the observed target
+PASS: new key before worker response prevents capture commit
+PASS: new mouse button before worker response prevents capture commit
+PASS: wheel input before worker response prevents capture commit
+PASS: new input wins against an already returned capture response
+PASS: accepted capture survives new work during the database write
+PASS: Notepad verified second observation commits once: source selection and original observation survive IPC before any commit
+PASS: Notepad verified second observation commits once
+PASS: Notepad file picker cancellation cannot commit or start another worker
+PASS: Notepad missing observation cannot show picker or commit
+PASS: Notepad failed editor return cannot start another worker or commit
+PASS: Notepad changed document after picker cannot commit: source selection and original observation survive IPC before any commit
+PASS: Notepad changed document after picker cannot commit
+PASS: browser success waits for repository commit
+PASS: browser simultaneous request returns busy without another write
+PASS: browser exact acknowledgment follows committed capture
+PASS: browser repository failure cannot report successful capture
+PASS: browser cancelled queued request cannot write
+PASS: browser invalid URI cannot reach repository
+RESULT: 35 checks passed. Native launch, actual IME and rendered UI remain separate manual gates.

@@ -1,0 +1,15 @@
+PASS: the exact synthetic window is still Notepad
+PASS: snapshot identifies the requested window and a single visible editor
+PASS: unsaved text is rejected before asking for a disk file
+PASS: capture requests explicit source-file linking with a transient observation
+PASS: native capture retains the original normalized caret and saved state
+PASS: explicit matching file binds to the exact native caret
+PASS: a changed expected caret is refused
+PASS: a link without the first observation cannot bypass validation
+PASS: equal contents under a different filename cannot be linked
+PASS: a real caret move during file selection invalidates capture
+PASS: resume reports only the exact file-open request without claiming cursor restoration
+PASS: an existing tab selection is unchanged by the open-only resume
+PASS: native checks leave the synthetic file bytes unchanged
+PASS: native checks restore the original selection
+RESULT: 14 installed Notepad checks passed.

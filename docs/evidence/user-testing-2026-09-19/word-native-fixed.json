@@ -1,0 +1,65 @@
+{
+  "test": "Word synthetic capture and resume",
+  "startedUtc": "2026-09-19T05:01:40.2920771+00:00",
+  "finishedUtc": "2026-09-19T05:01:46.5711751+00:00",
+  "beforeSha256": "61B660745465EFA6E0153E563888BEAF0FA3A680F56550033F651C447519DBDF",
+  "afterSha256": "61B660745465EFA6E0153E563888BEAF0FA3A680F56550033F651C447519DBDF",
+  "passed": true,
+  "failure": null,
+  "checks": [
+    {
+      "name": "capture records the independently requested synthetic body offset 37",
+      "passed": true,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "9c7263d5-fda5-4dd6-bfbc-c48ddb4d275f",
+        "Code": 0,
+        "Target": {
+          "Kind": 3,
+          "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\office-extension\\workbookmark-word-fixture.docx",
+          "SheetName": null,
+          "CellAddress": null,
+          "HadUnsavedChanges": false,
+          "WordStart": 37,
+          "SlideId": null,
+          "SlideNumber": null,
+          "PdfPage": null,
+          "PageTitle": null
+        },
+        "ExternalActionStarted": false,
+        "TargetHwnd": 0
+      }
+    },
+    {
+      "name": "resume restores offset 37 after deliberate navigation to zero",
+      "passed": true,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "f98d19f0-105c-44b4-ba06-aee5ae744d5b",
+        "Code": 12,
+        "Target": null,
+        "ExternalActionStarted": true,
+        "TargetHwnd": 265600
+      }
+    },
+    {
+      "name": "offset beyond document end refuses navigation without external action",
+      "passed": true,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "171cb3ee-5866-4d0f-a11f-eab0ecf50311",
+        "Code": 14,
+        "Target": null,
+        "ExternalActionStarted": false,
+        "TargetHwnd": 265600
+      }
+    },
+    {
+      "name": "fixture bytes, Saved state and document length remain unchanged",
+      "passed": true,
+      "response": null
+    }
+  ],
+  "diagnostics": [],
+  "limitations": "One native Word window and saved .docx. Does not establish multiple windows, edit drift, headers/footnotes, .doc/.docm/.rtf, Office 32-bit, protected view, or 50-capture gate. No document text read, document saved/closed, or process terminated."
+}

@@ -1,5 +1,9 @@
 # Codex에 전달할 작업 지시문
 
+> 최신 변경(0.1.3): 메모장 새 문서·미저장 본문은 파일 선택 없이 자동 보관하고 복원합니다. 이전의 원본 선택/미저장 거절 설명보다 [새 보관 계약](docs/notepad-snapshot-and-test-plan.ko.md)이 우선합니다.
+
+> 최신 요구 변경(2026-09-19): 사용자의 명시적 요청에 따라 Edge·Chrome과 Word·PowerPoint·실험 PDF 내부 위치 구현이 추가되었습니다. [확장 요구명세](docs/extension-requirements.md)가 이 문서의 초기 제외 범위보다 우선합니다. 초기 계획과 필수 실기 기준은 이력으로 보존합니다.
+
 아래 지시문과 같은 폴더의 `01_IMPLEMENTATION_SPEC.md`, `02_DELIVERY_PLAN_AND_ACCEPTANCE.md`를 함께 Codex에 전달하세요. ZIP을 작업 폴더에 풀고 이 파일을 읽도록 지시하면 됩니다.
 
 현재 전달물은 **구현 명세와 개발 계획**입니다. 실행파일이나 구현 완료 소스가 아닙니다.

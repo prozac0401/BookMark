@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "WorkBookmark · 현재 페이지",
+  "version": "0.2.2",
+  "description": "현재 페이지의 주소와 제목을 이 PC의 WorkBookmark에 저장합니다.",
+  "permissions": [
+    "activeTab",
+    "nativeMessaging"
+  ],
+  "incognito": "not_allowed",
+  "minimum_chrome_version": "110",
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "WorkBookmark · 현재 페이지 저장",
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "capture-current-tab": {
+      "suggested_key": {
+        "windows": "Ctrl+Shift+9"
+      },
+      "description": "현재 페이지를 WorkBookmark에 저장"
+    }
+  }
+}

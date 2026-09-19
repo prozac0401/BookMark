@@ -1,0 +1,12 @@
+{
+  "utc": "2026-09-19T02:21:22.692Z",
+  "edge": {
+    "exitCode": 0,
+    "rows": []
+  },
+  "chrome": {
+    "exitCode": 0,
+    "rows": []
+  },
+  "note": "Browser registration is verified separately; rows only prove saved metadata. User UI result is required for capture attribution."
+}

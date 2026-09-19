@@ -1,0 +1,23 @@
+PASS: settings atomic overwrite round-trip
+PASS: settings no temporary leftovers
+PASS: corrupt settings preserved
+PASS: native hotkeys registered
+PASS: conflict fixture registered
+PASS: replacement collision refused
+PASS: old registration retained and pending reservation rolled back
+PASS: duplicate shortcut pair refused
+PASS: Windows Shell parses Unicode startup target
+PASS: startup ownership description parsed
+PASS: startup working directory parsed
+PASS: IME composition suppresses submission
+PASS: IME commit Enter has a suppression window
+PASS: note write failure retains editable content
+PASS: note retry saves retained text
+PASS: recent form opens with loaded first selection
+PASS: capture shortcut key-up preserves the observed target
+PASS: new key before worker response prevents capture commit
+PASS: new mouse button before worker response prevents capture commit
+PASS: wheel input before worker response prevents capture commit
+PASS: new input wins against an already returned capture response
+PASS: accepted capture survives new work during the database write
+RESULT: 22 checks passed. Native launch, actual IME and rendered UI remain separate manual gates.

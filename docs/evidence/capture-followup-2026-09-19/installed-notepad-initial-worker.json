@@ -1,0 +1,4 @@
+{
+  "code": 0,
+  "response": "{\"ProtocolVersion\":1,\"RequestId\":\"3f9133e4-e9f5-4171-9391-1b53ebc25aa6\",\"Code\":24,\"Target\":null,\"ExternalActionStarted\":false,\"TargetHwnd\":0,\"NotepadObservation\":{\"ContentFingerprint\":\"F61E9F9584D038C9D8EC9B9F9D14089832CD5DAC217C6EB190379190B61252E3\",\"TextOffset\":0,\"SelectionEnd\":0,\"HadUnsavedChanges\":false}}"
+}

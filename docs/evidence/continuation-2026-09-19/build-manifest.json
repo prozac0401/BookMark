@@ -1,0 +1,26 @@
+{
+  "baseCommit": "a48987ab9f099d7e242e32ebbcb9a7666d039ee1",
+  "workingTreeChanges": true,
+  "sourceIdentity": "Exact sources supplied in the local Source.zip; no new commit or remote release created.",
+  "buildUtc": "2026-09-19T00:15:08.153Z",
+  "sdk": "10.0.401",
+  "runtime": "10.0.12",
+  "publishDirectory": "artifacts/publish/continuation-20260919",
+  "binarySha256": {
+    "WorkBookmark.exe": "89cac4a30f693a53a20d1e9915ff65e9c22e6c6c41ecbcbeab629640297c3d58",
+    "WorkBookmark.dll": "f96dcc7109dcb28c4400441521e850673ce5ee066343efa07707173a52902d79",
+    "WorkBookmark.Core.dll": "29ff428977c55f98a0e21c05004ef94355f53c36aa6ade233f20cc3ba2989747",
+    "WorkBookmark.Windows.dll": "99dd3fdc027564f4c0fa616853222088ea376cdff9560fd14e7b53f3eafcb9bb",
+    "WorkBookmark.Storage.dll": "8360fe6c10701e595c06fb9abcf47c0af0f4f3789092f191e71baaa5e3df1dfd"
+  },
+  "checks": {
+    "coreStorage": 13,
+    "ipc": 12,
+    "desktop": 22,
+    "adapter": 10,
+    "seriesEvidence": 13,
+    "sessionEvidence": 14,
+    "total": 84
+  },
+  "status": "Limited preview; native P0 and full UI acceptance gates remain outstanding."
+}

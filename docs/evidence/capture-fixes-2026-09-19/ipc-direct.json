@@ -1,0 +1,7 @@
+{
+  "name": "ipc",
+  "startedUtc": "2026-09-19T05:14:04.603Z",
+  "finishedUtc": "2026-09-19T05:14:11.502Z",
+  "stdout": "PASS D11 protocol-roundtrip\r\nPASS D11 oversized-and-truncated-frames\r\nPASS D04 valid-result-id\r\nPASS D04 wrong-request-id-rejected\r\nPASS D04 capture-deadline-no-late-success\r\nPASS D05 resume-deadline-outcome-unknown\r\nPASS U12 single-flight-no-queue\r\nPASS D04 cancellation-discards-response\r\nPASS D06 worker-crash-cleanup\r\nPASS D06 worker-child-survives-timeout\r\nPASS D06 dispose-terminates-worker-synchronously\r\nPASS D04 deadline-boundary-does-not-stick-busy\r\n12/12 passed\r\n",
+  "stderr": ""
+}

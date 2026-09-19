@@ -1,0 +1,71 @@
+{
+  "checkedUtc": "2026-09-19T04:59:11.170Z",
+  "registeredExtensionId": "dgpnfldabohoijkpmnenglfaopbmhneo",
+  "registrations": {
+    "Chrome": {
+      "valid": true,
+      "extensionLoadedPath": "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/browser-extension",
+      "hostExecutable": "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/browser-host/WorkBookmark.BrowserHost.exe"
+    },
+    "Edge": {
+      "valid": true,
+      "extensionLoadedPath": "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/browser-extension",
+      "hostExecutable": "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/browser-host/WorkBookmark.BrowserHost.exe"
+    }
+  },
+  "runningApplication": {
+    "pid": 1680,
+    "path": "D:/WorkBookmark-0.1.0-win-x64/WorkBookmark.exe",
+    "matchesDocumentedInstall": true,
+    "uiAssemblySha256": "0b9055a5b50571c7fa771d6d5b782d03d02875de7800ee40225ddda8c9b228bd",
+    "windowsAssemblySha256": "23915747456725cb3175c12d16fe2755374d3aa8e53388f18cea6a16bd0f2c14",
+    "browserPipePresent": true
+  },
+  "nativeHostProbe": {
+    "scope": "real installed executable, rejected file URL; no DB write",
+    "exitCode": 0,
+    "responseCode": "UnsupportedTarget",
+    "responseIdMatched": true,
+    "stderrEmpty": true
+  },
+  "extensionTests": {
+    "command": "node --test browser-extension/tests/capture.test.mjs",
+    "passed": 17,
+    "failed": 0,
+    "scope": "browser API doubles; startup failures, popup sender and lastError callback, commit validation, privacy and context boundaries"
+  },
+  "actualBrowserRoundtrip": {
+    "status": "blocked; extension capture not performed",
+    "connectedBrowserTool": "Only Codex In-app Browser is connected; Chrome unavailable",
+    "nativeBrowserFallback": {
+      "browser": "Chrome",
+      "fixtureUrl": "https://example.com/?wb=chrome-fix-20260919#capture",
+      "windowId": 658160,
+      "opened": true,
+      "haltReason": "Computer Use stopped this turn because it could not determine the current browser URL with enough confidence to enforce policy. No shortcut or extension click was performed."
+    }
+  },
+  "reportedFailure": {
+    "text": "저장 실패. 이 화면의 작업위치는 아직 지원하지 않습니다.",
+    "finding": "This text belongs to native global capture handling, not extension or native messaging host. Registrations and loaded extension IDs are valid; no evidence of a native-host defect."
+  },
+  "filesUpdated": [
+    "browser-extension/capture.mjs",
+    "browser-extension/service-worker.js",
+    "browser-extension/popup.html",
+    "browser-extension/popup.css",
+    "browser-extension/manifest.json",
+    "browser-extension/tests/capture.test.mjs",
+    "browser-extension/README.md"
+  ],
+  "installedExtension": {
+    "path": "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/browser-extension",
+    "version": "0.2.0",
+    "modifiedByThisTask": false
+  },
+  "nativeIntegrationScope": {
+    "hostSuite": "27 checks exercise real native host executable with mock pipe; no real app or SQLite",
+    "sqliteSuite": "15 checks exercise real published host, production app context/server/UI dispatcher and temporary SQLite in the Desktop.Tests process; no installed app/browser UI or user DB",
+    "installedHostProbe": "Valid native frame for rejected file URL; tests host execution and protocol only; no DB commit"
+  }
+}

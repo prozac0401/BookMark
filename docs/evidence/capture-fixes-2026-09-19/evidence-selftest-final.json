@@ -1,0 +1,7 @@
+{
+  "name": "evidence-selftest",
+  "startedUtc": "2026-09-19T05:17:50.738Z",
+  "finishedUtc": "2026-09-19T05:17:51.128Z",
+  "stdout": "PASS ExcelSeries evidence verdict: 13 checks; no Office or UI interaction.\r\n",
+  "stderr": ""
+}

@@ -7,7 +7,8 @@ namespace WorkBookmark.Core;
 public static class FrameProtocol
 {
     public const int Version = 1;
-    public const int MaximumFrameBytes = 256 * 1024;
+    // A maximum-size UTF-16 snapshot may expand to 12 MiB when JSON escapes each character.
+    public const int MaximumFrameBytes = 16 * 1024 * 1024;
     private static readonly JsonSerializerOptions Options = new() { MaxDepth = 16, PropertyNameCaseInsensitive = false };
 
     public static async Task WriteAsync<T>(Stream stream, T message, CancellationToken cancellationToken = default)

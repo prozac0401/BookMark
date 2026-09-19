@@ -42,3 +42,11 @@ Windows Shell을 한 번만 호출하고, 정확한 경로의 Excel 문서가 �
 ## 판단
 
 구현을 계속할 기술적 근거는 확보했습니다. 정상 경로의 실제 성공을 일부 확인했으나, P0 전체 Gate와 지원 중인 OS의 필수 시험이 남아 있으므로 정식 v1 완료를 선언하지 않습니다.
+
+## 2026-09-19 후속 정확도 보완
+
+다중 탭/창 50회 Gate는 아직 통과하지 않았습니다. 전면 전환을 강제하지 않는 수동 단축키 세션과 사전 기대값 계획을 추가했습니다. 실행법과 표본 계획은 [WindowsChecks 안내](../tools/WindowsChecks/README.md), 결정 배경은 [후속 진행 기록](implementation-progress.md)에 있습니다.
+
+별개로 실제 로컬 Windows Shell에서 합성 ZIP의 IsFolder=true를 재현했고, 같은 경로를 파일 책갈피로 분류하여 위치 표시 정책을 선택하는 것을 확인했습니다. Shell 경로 해석 중 이탈/기한 경과·실패 시 호출 차단과 PIDL 해제는 주입 시험으로 검증했습니다. [회귀시험 원문](evidence/continuation-2026-09-19/adapter-checks.txt). 이것은 전체 Explorer UI나 다중 탭 수용시험의 대체가 아닙니다.
+
+앱의 캡처 입력 감시도 보완했습니다. 단축키를 놓는 입력은 무시하고, worker 관찰을 승인하기 전 새 키/버튼/휠이 있으면 DB에 저장하지 않습니다. 합성 입력 콜백을 이용한 실제 ApplicationContext 시험이 통과했으며 실제 Office 입력은 별도입니다. [Desktop 회귀시험](evidence/continuation-2026-09-19/desktop.txt).

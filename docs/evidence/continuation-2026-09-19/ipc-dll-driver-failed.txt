@@ -1,0 +1,13 @@
+PASS D11 protocol-roundtrip
+PASS D11 oversized-and-truncated-frames
+FAIL D04 valid-result-id: Invalid frame size.
+FAIL D04 wrong-request-id-rejected: Invalid frame size.
+FAIL D04 capture-deadline-no-late-success: Invalid frame size.
+PASS D05 resume-deadline-outcome-unknown
+FAIL U12 single-flight-no-queue: Invalid frame size.
+PASS D04 cancellation-discards-response
+FAIL D06 worker-crash-cleanup: Invalid frame size.
+FAIL D06 worker-child-survives-timeout: Invalid frame size.
+FAIL D06 dispose-terminates-worker-synchronously: Worker did not start.
+PASS D04 deadline-boundary-does-not-stick-busy
+5/12 passed

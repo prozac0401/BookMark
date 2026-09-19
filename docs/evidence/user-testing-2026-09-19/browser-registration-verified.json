@@ -1,0 +1,13 @@
+{
+  "startedUtc": "2026-09-19T02:18:01.668Z",
+  "finishedUtc": "2026-09-19T02:18:03.569Z",
+  "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-Command",
+    "$ErrorActionPreference='Stop';$r=@();foreach($b in @('Google\\Chrome','Microsoft\\Edge')){$p='HKCU:\\Software\\'+$b+'\\NativeMessagingHosts\\com.workbookmark.capture';$k=Get-Item -LiteralPath $p;$m=$k.GetValue('');$j=Get-Content -LiteralPath $m -Raw|ConvertFrom-Json;$r+=[pscustomobject]@{Browser=$b;Manifest=$m;Owner=$k.GetValue('WorkBookmarkOwner');Host=$j.path;Origins=$j.allowed_origins;ExecutableExists=(Test-Path -LiteralPath $j.path)}};$r|ConvertTo-Json -Depth 4"
+  ],
+  "code": 0,
+  "stdout": "[\r\n    {\r\n        \"Browser\":  \"Google\\\\Chrome\",\r\n        \"Manifest\":  \"C:\\\\Users\\\\wonse\\\\AppData\\\\Local\\\\WorkBookmark\\\\BrowserHosts\\\\chrome.com.workbookmark.capture.json\",\r\n        \"Owner\":  \"WorkBookmark.NativeMessaging.v1\",\r\n        \"Host\":  \"C:\\\\Users\\\\wonse\\\\AppData\\\\Local\\\\Programs\\\\WorkBookmark-Preview-20260919\\\\browser-host\\\\WorkBookmark.BrowserHost.exe\",\r\n        \"Origins\":  [\r\n                        \"chrome-extension://dgpnfldabohoijkpmnenglfaopbmhneo/\"\r\n                    ],\r\n        \"ExecutableExists\":  true\r\n    },\r\n    {\r\n        \"Browser\":  \"Microsoft\\\\Edge\",\r\n        \"Manifest\":  \"C:\\\\Users\\\\wonse\\\\AppData\\\\Local\\\\WorkBookmark\\\\BrowserHosts\\\\edge.com.workbookmark.capture.json\",\r\n        \"Owner\":  \"WorkBookmark.NativeMessaging.v1\",\r\n        \"Host\":  \"C:\\\\Users\\\\wonse\\\\AppData\\\\Local\\\\Programs\\\\WorkBookmark-Preview-20260919\\\\browser-host\\\\WorkBookmark.BrowserHost.exe\",\r\n        \"Origins\":  [\r\n                        \"chrome-extension://dgpnfldabohoijkpmnenglfaopbmhneo/\"\r\n                    ],\r\n        \"ExecutableExists\":  true\r\n    }\r\n]\r\n",
+  "stderr": ""
+}

@@ -1,0 +1,12 @@
+{
+  "startedUtc": "2026-09-19T02:20:06.733Z",
+  "finishedUtc": "2026-09-19T02:20:46.251Z",
+  "file": "C:/Users/wonse/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+  "args": [
+    "D:/Github_REPOS/BookMark/artifacts/package-user-testing.py",
+    "D:/Github_REPOS/BookMark/artifacts/user-testing-package-plan.json"
+  ],
+  "code": 0,
+  "stdout": "{\"createdUtc\": \"2026-09-19T02:20:46.233811+00:00\", \"archives\": [{\"name\": \"WorkBookmark-0.1.0-win-x64.zip\", \"entries\": 627, \"bytes\": 87307143, \"sha256\": \"5f9d35f41dacebac2a8aa81b790e486b74ae4e8c27caa81707a9c13c99a0cde1\", \"verified\": true}, {\"name\": \"Source.zip\", \"entries\": 240, \"bytes\": 497165, \"sha256\": \"8a2af1a6d682960eb95fc5bccffb8e9fcc754c5d67a13714aab67e411868968c\", \"verified\": true}], \"allEntryHashesMatch\": true, \"sourceScope\": \"Current working tree; excludes .git/.tools/bin/obj/node_modules/artifacts/.artifacts/%SystemDrive% and Office lock files\"}\r\n",
+  "stderr": ""
+}

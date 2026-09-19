@@ -1,0 +1,12 @@
+{
+  "startedUtc": "2026-09-19T02:12:18.868Z",
+  "finishedUtc": "2026-09-19T02:12:34.867Z",
+  "file": "D:/Github_REPOS/BookMark/tests/WorkBookmark.Desktop.Tests/bin/Release/net10.0-windows/WorkBookmark.Desktop.Tests.exe",
+  "args": [
+    "--browser-sqlite",
+    "D:/Github_REPOS/BookMark/artifacts/publish/user-testing-20260919/browser-host/WorkBookmark.BrowserHost.exe"
+  ],
+  "code": 0,
+  "stdout": "PASS: native host cannot acknowledge before the real SQLite transaction commits\r\nPASS: independent SQLite connection cannot see the uncommitted bookmark\r\nPASS: real native host receives the correlated commit acknowledgment\r\nPASS: separate SQLite reads confirm durable exact URL and Unicode title\r\nPASS: native recapture updates title and sequence while preserving identity and note\r\nPASS: different URL fragment produces a separate committed bookmark\r\nPASS: different query ordering produces a separate committed bookmark\r\nPASS: native host reports the real SQLite pre-commit failure without success\r\nPASS: failed real transaction rolls back title, note, row count and capture sequence\r\nPASS: unsupported URI receives a negative native host response\r\nPASS: rejected URI leaves the real database unchanged\r\nPASS: server accepts the next explicit request after rollback and invalid input\r\nPASS: connected native host fails within its deadline when the application exits\r\nPASS: queued request cannot commit after application exit\r\nPASS: application shutdown leaves no listening production pipe\r\nRESULT: 15 browser/SQLite integration checks passed in 12293 ms. Real native host, server, UI dispatch and temporary SQLite; installed browser UI remains separate.\r\n",
+  "stderr": ""
+}

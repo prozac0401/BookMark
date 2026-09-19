@@ -1,0 +1,24 @@
+:root { color-scheme: light dark; font: 14px/1.55 "Segoe UI", "Malgun Gothic", sans-serif; }
+body { width: 340px; margin: 0; background: #f8faf8; color: #18302b; }
+main { padding: 22px; }
+.eyebrow { margin: 0; font-size: 10px; font-weight: 700; letter-spacing: 1.7px; color: #507269; }
+h1 { margin: 8px 0 18px; font-size: 21px; line-height: 1.3; letter-spacing: -.7px; }
+.page-title { margin: 0 0 4px; font-weight: 600; overflow-wrap: anywhere; max-height: 4.65em; overflow: auto; }
+.page-address { color: #596c66; margin: 0 0 18px; font-size: 12px; overflow-wrap: anywhere; max-height: 4.65em; overflow: auto; }
+button { width: 100%; border: 0; border-radius: 8px; background: #256d47; color: white; padding: 12px; font: inherit; font-weight: 700; cursor: pointer; }
+button:focus-visible, summary:focus-visible { outline: 3px solid #5196d8; outline-offset: 3px; }
+button:disabled { opacity: .5; cursor: default; }
+#shortcut { margin: 8px 0 0; font-size: 12px; }
+#shortcut-settings { width: auto; margin-top: 6px; padding: 4px 0; background: transparent; color: inherit; font-size: 12px; font-weight: 400; text-decoration: underline; }
+#status { min-height: 2em; margin: 12px 0; font-size: 13px; }
+#status[data-state="error"] { color: #9a4700; }
+details { border-top: 1px solid #dbe4df; padding-top: 12px; color: #596c66; font-size: 12px; }
+summary { cursor: pointer; color: #18302b; }
+details p { margin: 10px 0 0; }
+@media (prefers-color-scheme: dark) {
+  body { background: #16251f; color: #edf3ef; }
+  .eyebrow, .page-address, details { color: #aec6b9; }
+  summary { color: #edf3ef; }
+  details { border-color: #395145; }
+  #status[data-state="error"] { color: #ffbd82; }
+}

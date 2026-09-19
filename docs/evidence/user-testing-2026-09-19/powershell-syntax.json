@@ -1,0 +1,13 @@
+{
+  "startedUtc": "2026-09-19T02:10:25.406Z",
+  "finishedUtc": "2026-09-19T02:10:26.196Z",
+  "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-Command",
+    "$bad=0; Get-ChildItem -LiteralPath 'D:\\Github_REPOS\\BookMark\\scripts','D:\\Github_REPOS\\BookMark\\tools\\WindowsChecks' -Filter '*.ps1' | ForEach-Object { $t=$null; $e=$null; [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName,[ref]$t,[ref]$e); if($e.Count){$bad++; $e | ForEach-Object {$_.ToString()}} else { 'PASS '+$_.Name } }; if($bad){exit 1}"
+  ],
+  "code": 0,
+  "stdout": "PASS bootstrap-sdk.ps1\r\nPASS browser-registration-common.ps1\r\nPASS build.ps1\r\nPASS package.ps1\r\nPASS register-browser-host.ps1\r\nPASS unregister-browser-host.ps1\r\nPASS BrowserRegistrationOwnershipChecks.ps1\r\nPASS InspectPowerPointWindow.ps1\r\n",
+  "stderr": ""
+}

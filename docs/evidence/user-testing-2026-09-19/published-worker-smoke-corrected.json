@@ -1,0 +1,27 @@
+{
+  "name": "validate-fixture-folder",
+  "passed": true,
+  "expectedValidated": 19,
+  "actual": {
+    "ProtocolVersion": 1,
+    "RequestId": "dd2ffdfc-9290-43c9-bf39-113ec6ab53a8",
+    "Code": 19,
+    "Target": {
+      "Kind": 0,
+      "Path": "D:/Github_REPOS/BookMark/testdata/generated/A",
+      "SheetName": null,
+      "CellAddress": null,
+      "HadUnsavedChanges": null,
+      "WordStart": null,
+      "SlideId": null,
+      "SlideNumber": null,
+      "PdfPage": null,
+      "PageTitle": null
+    },
+    "ExternalActionStarted": false,
+    "TargetHwnd": 0
+  },
+  "code": 0,
+  "ms": 431,
+  "reasonForRerun": "Initial ad-hoc smoke used incorrect enum integer 24; source defines Validated=19. Product response was correct."
+}

@@ -1,0 +1,18 @@
+{
+  "startedUtc": "2026-09-19T02:12:01.720Z",
+  "finishedUtc": "2026-09-19T02:12:10.717Z",
+  "file": "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+  "args": [
+    "build",
+    "tests/WorkBookmark.Desktop.Tests",
+    "-c",
+    "Release",
+    "--no-restore",
+    "--disable-build-servers",
+    "-m:1",
+    "-p:BuildProjectReferences=false"
+  ],
+  "code": 0,
+  "stdout": "  WorkBookmark.Desktop.Tests -> D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Desktop.Tests\\bin\\Release\\net10.0-windows\\WorkBookmark.Desktop.Tests.dll\r\n\r\n빌드했습니다.\r\n    경고 0개\r\n    오류 0개\r\n\r\n경과 시간: 00:00:07.75\r\n",
+  "stderr": ""
+}

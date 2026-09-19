@@ -1,0 +1,11 @@
+{
+  "test": "PowerPoint synthetic capture and resume",
+  "startedUtc": "2026-09-19T00:50:05.8504774+00:00",
+  "finishedUtc": "2026-09-19T00:50:05.9190522+00:00",
+  "beforeSha256": "9B51465393C5CF0342C235D30A3278220A425DBC2A792BAF5BF2E76F759CD457",
+  "afterSha256": "9B51465393C5CF0342C235D30A3278220A425DBC2A792BAF5BF2E76F759CD457",
+  "passed": false,
+  "failure": "InvalidOperationException: Native document window identity is ambiguous.",
+  "checks": [],
+  "limitations": "One native editing window and saved .pptx. Does not establish multiple windows, reordered/deleted real slides, .ppt/.pptm, Office 32-bit, protected view, or 50-capture gate. No Office document saved, closed or process terminated."
+}

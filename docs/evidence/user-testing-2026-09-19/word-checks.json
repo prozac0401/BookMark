@@ -1,0 +1,11 @@
+{
+  "startedUtc": "2026-09-19T02:07:49.342Z",
+  "finishedUtc": "2026-09-19T02:07:50.920Z",
+  "file": "D:/Github_REPOS/BookMark/tools/WindowsChecks/bin/Release/net10.0-windows/WindowsChecks.exe",
+  "args": [
+    "word-checks"
+  ],
+  "code": 0,
+  "stdout": "PASS: saved empty Word body accepts its first insertion point\r\nPASS: normal body selection records its start without requiring selected text\r\nPASS: header coordinate cannot masquerade as a body offset\r\nPASS: footnote coordinate cannot masquerade as a body offset\r\nPASS: text-frame coordinate cannot masquerade as a body offset\r\nPASS: discontinuous block selection is refused\r\nPASS: shape selection is refused\r\nPASS: no-selection state is refused\r\nPASS: negative capture offset is refused\r\nPASS: reversed capture coordinates are refused\r\nPASS: selection that outlived a shortened body is refused\r\nPASS: restore accepts zero offset in an empty body\r\nPASS: restore rejects negative offsets\r\nPASS: restore never clamps an offset after the document shrinks\r\nPASS: restore refuses unavailable main-story bounds\r\nPASS: offset comparison does not overflow at COM Long maximum\r\nRESULT: 16 Word coordinate checks passed. This does not certify installed Word COM capture or full UI behavior.\r\n",
+  "stderr": ""
+}

@@ -6,3 +6,6 @@ artifacts/
 *.user
 .artifacts/
 ~$*
+outputs/
+**/node_modules/
+testdata/generated/e2e-six-*/

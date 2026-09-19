@@ -1,0 +1,67 @@
+{
+  "done": true,
+  "current": null,
+  "results": [
+    {
+      "name": "adapter-checks",
+      "passed": true,
+      "summary": "ile and uses reveal policy\r\nPASS: real selected directory remains a folder\r\nPASS: shortcut remains a file without following its target\r\nPASS: removed selection cannot produce a normal captured target\r\nPASS: interaction change during PIDL parsing prevents reveal and frees both PIDLs\r\nPASS: stable reveal checks interaction after parsing and opens exactly once\r\nPASS: expired whole-request deadline prevents reveal after parsing\r\nPASS: second parse failure frees the first PIDL without opening\r\nPASS: Shell refusal clears external-action flag and releases both PIDLs\r\nRESULT: 10 adapter checks passed. Synthetic filesystem/Shell metadata and injected call boundary; no full Explorer UI gate claimed.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "evidence-selftest",
+      "passed": true,
+      "summary": "PASS ExcelSeries evidence verdict: 13 checks; no Office or UI interaction.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "session-selftest",
+      "passed": true,
+      "summary": "jection oracle passes its own case\r\nPASS Unexpected successful capture in a rejection case stops\r\nPASS Same view group cannot silently switch tabs\r\nPASS Distinct tab labels cannot reuse one active view\r\nPASS Same Excel process group cannot change PID\r\nPASS Fixture prefix sibling is outside root\r\nPASS One successful capture is not a 50-case gate\r\nPASS Fifty copies of one view do not satisfy scenario coverage\r\nPASS Focused checks never establish a P0 gate\r\nPASS Exact transition captures do not inflate the stable sample count\r\nPASS Complete synthetic two-window two-tab oracle can satisfy capture coverage\r\nCapture session verdict checks: 14 passed. Synthetic assertions only; no live P0 result.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "word-checks",
+      "passed": true,
+      "summary": "oordinate cannot masquerade as a body offset\r\nPASS: discontinuous block selection is refused\r\nPASS: shape selection is refused\r\nPASS: no-selection state is refused\r\nPASS: negative capture offset is refused\r\nPASS: reversed capture coordinates are refused\r\nPASS: selection that outlived a shortened body is refused\r\nPASS: restore accepts zero offset in an empty body\r\nPASS: restore rejects negative offsets\r\nPASS: restore never clamps an offset after the document shrinks\r\nPASS: restore refuses unavailable main-story bounds\r\nPASS: offset comparison does not overflow at COM Long maximum\r\nRESULT: 16 Word coordinate checks passed. This does not certify installed Word COM capture or full UI behavior.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "notepad-checks",
+      "passed": true,
+      "summary": "ithout losing surrogate units\r\nPASS: UTF-16 offset 1 round trips across CRLF without losing surrogate units\r\nPASS: UTF-16 offset 2 round trips across CRLF without losing surrogate units\r\nPASS: UTF-16 offset 3 round trips across CRLF without losing surrogate units\r\nPASS: UTF-16 offset 4 round trips across CRLF without losing surrogate units\r\nPASS: UTF-16 offset 5 round trips across CRLF without losing surrogate units\r\nPASS: UTF-16 offset 6 round trips across CRLF without losing surrogate units\r\nPASS: native selection transport preserves start and end beyond 65,535\r\nPASS: read-only selection transport does not change text or selection\r\nRESULT: 31 Notepad binding and coordinate checks passed.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "pdf-checks",
+      "passed": true,
+      "summary": "ts\r\nPASS: embedded NUL cannot truncate an open path\r\nPASS: open does not force refresh or deliberately create another window\r\nPASS: native DDE preserves Unicode path without command-line escaping\r\nPASS: command-injection quote in a pathname refused\r\nPASS: native DDE binds response to requested HWND among two servers\r\nPASS: native DDE executes only on selected HWND\r\nPASS: execute acknowledgement with wrong actual page remains unconfirmed\r\nPASS: unmatched requested HWND does not fall back to another DDE server\r\nPASS: expired whole-request deadline prevents DDE connection\r\nRESULT: 28 PDF checks passed. Real Windows DDE transport with synthetic servers; SumatraPDF application remains untested.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "browser-host",
+      "passed": true,
+      "summary": "PASS: host rejects mismatched response ID\r\nPASS: host rejects success flag with failure code\r\nPASS: host rejects failure flag with commit code\r\nPASS: valid application failure is relayed without success\r\nPASS: host rejects oversized native frame\r\nPASS: host rejects truncated native frame\r\nPASS: host rejects truncated native header\r\nPASS: host rejects invalid UTF-8 JSON\r\nPASS: host rejects null JSON request\r\nPASS: oversized app response cannot report a commit\r\nPASS: absent application pipe reports AppNotRunning within host connect deadline\r\nRESULT: 27 browser checks passed in 10671 ms. Real BrowserHost process + private mock pipe; no GUI, extension loading or actual database commit claimed.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "browser-sqlite",
+      "passed": true,
+      "summary": "l SQLite pre-commit failure without success\r\nPASS: failed real transaction rolls back title, note, row count and capture sequence\r\nPASS: unsupported URI receives a negative native host response\r\nPASS: rejected URI leaves the real database unchanged\r\nPASS: server accepts the next explicit request after rollback and invalid input\r\nPASS: connected native host fails within its deadline when the application exits\r\nPASS: queued request cannot commit after application exit\r\nPASS: application shutdown leaves no listening production pipe\r\nRESULT: 15 browser/SQLite integration checks passed in 5975 ms. Real native host, server, UI dispatch and temporary SQLite; installed browser UI remains separate.\r\n",
+      "stderr": ""
+    },
+    {
+      "name": "extension",
+      "passed": true,
+      "summary": "1.9013ms)\n✔ host timeout is unknown and never automatically retries (12.1986ms)\n✔ native connection loss cannot be reported as confirmed failure or success (0.7368ms)\n✔ known host startup errors identify setup failure; disconnects remain unknown without retries (3.2535ms)\n✔ wrong request ID, malformed replies and noncommit successes are never success (0.3389ms)\n✔ host database refusal is displayed as failure without retry (0.2863ms)\n✔ service worker accepts only its popup and confirms a saved unchanged page (8.0045ms)\n✔ a late commit for the previous URL never decorates the new page (3.5605ms)\nℹ tests 17\nℹ suites 0\nℹ pass 17\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 292.1854\n",
+      "stderr": ""
+    },
+    {
+      "name": "registration",
+      "passed": true,
+      "summary": "PASS no registration remains unowned\r\nPASS 32-bit owned registration recognized\r\nPASS 64-bit owned registration recognized\r\nPASS both owned views recognized\r\nPASS foreign 32-bit shadow is refused\r\nPASS foreign 64-bit shadow is refused\r\nPASS machine-wide shadow is refused\r\nRESULT: seven mock ownership checks; no registry accessed or modified.\r\n",
+      "stderr": ""
+    }
+  ],
+  "waitingForNative": false
+}

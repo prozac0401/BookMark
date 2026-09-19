@@ -1,0 +1,76 @@
+{
+  "test": "PowerPoint synthetic capture and resume",
+  "startedUtc": "2026-09-19T05:02:03.7436719+00:00",
+  "finishedUtc": "2026-09-19T05:02:08.449257+00:00",
+  "beforeSha256": "9B51465393C5CF0342C235D30A3278220A425DBC2A792BAF5BF2E76F759CD457",
+  "afterSha256": "9B51465393C5CF0342C235D30A3278220A425DBC2A792BAF5BF2E76F759CD457",
+  "passed": true,
+  "failure": null,
+  "checks": [
+    {
+      "name": "capture matches independent Open XML slide ID oracle",
+      "passed": true,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "0d8a1eb6-0bc5-445b-ab03-e4cddd3080f3",
+        "Code": 0,
+        "Target": {
+          "Kind": 4,
+          "Path": "D:\\Github_REPOS\\BookMark\\testdata\\generated\\office-extension\\workbookmark-powerpoint-fixture.pptx",
+          "SheetName": null,
+          "CellAddress": null,
+          "HadUnsavedChanges": false,
+          "WordStart": null,
+          "SlideId": 257,
+          "SlideNumber": 2,
+          "PdfPage": null,
+          "PageTitle": null
+        },
+        "ExternalActionStarted": false,
+        "TargetHwnd": 0
+      }
+    },
+    {
+      "name": "resume restores captured slide after deliberate navigation away",
+      "passed": true,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "085c7fb4-3ee2-4fce-9473-6c82364c9597",
+        "Code": 12,
+        "Target": null,
+        "ExternalActionStarted": true,
+        "TargetHwnd": 331330
+      }
+    },
+    {
+      "name": "missing slide ID refuses navigation without external action",
+      "passed": true,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "924a6078-b864-43b3-a0a3-3cf86a17e1ae",
+        "Code": 14,
+        "Target": null,
+        "ExternalActionStarted": false,
+        "TargetHwnd": 331330
+      }
+    },
+    {
+      "name": "fixture bytes and Saved state remain unchanged",
+      "passed": true,
+      "response": null
+    }
+  ],
+  "diagnostics": [
+    {
+      "stage": "native-panes",
+      "rootHwnd": 331330,
+      "candidateClass": "mdiClass",
+      "visiblePaneCount": 1
+    },
+    {
+      "stage": "native-windows",
+      "connectedWindowCount": 1
+    }
+  ],
+  "limitations": "One native editing window and saved .pptx. Does not establish multiple windows, reordered/deleted real slides, .ppt/.pptm, Office 32-bit, protected view, or 50-capture gate. No Office document saved, closed or process terminated."
+}

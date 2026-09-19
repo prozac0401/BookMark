@@ -1,0 +1,22 @@
+{
+  "name": "full-validation",
+  "exe": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "D:/Github_REPOS/BookMark/scripts/build.ps1",
+    "-DotNetPath",
+    "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+    "-NodePath",
+    "C:/Program Files/nodejs/node.exe"
+  ],
+  "startedUtc": "2026-09-19T05:10:39.907Z",
+  "stdout": "",
+  "stderr": "Restore failed.\r\n��ġ D:\\Github_REPOS\\BookMark\\scripts\\build.ps1:15 ����:32\r\n+     if ($LASTEXITCODE -ne 0) { throw 'Restore failed.' }\r\n+                                ~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : OperationStopped: (Restore failed.:String) [], RuntimeException\r\n    + FullyQualifiedErrorId : Restore failed.\r\n \r\n",
+  "code": 1,
+  "done": true,
+  "pid": 22980,
+  "finishedUtc": "2026-09-19T05:10:41.276Z"
+}

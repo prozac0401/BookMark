@@ -6,8 +6,23 @@ internal static class Program
 {
     [STAThread] static int Main(string[] args)
     {
+        if (args.Length == 0 || args[0] is "help" or "--help" or "-h")
+        {
+            Console.WriteLine("WindowsChecks commands:\n  session APP_EXE PLAN_JSON OUTPUT_JSON\n  series APP_EXE EXCEL_EXE FIXTURE_ROOT OUTPUT_JSON [COUNT] [A_CELL] [B_CELL]\n  session-selftest | evidence-selftest | adapter-checks\n  HWND [resume]\nUse synthetic fixtures only; see tools/WindowsChecks/README.md.");
+            return args.Length == 0 ? 2 : 0;
+        }
         if (args.Length > 0 && args[0] == "series") return ExcelSeries.Run(args);
-        var hwnd = (nint)long.Parse(args[0]);
+        if (args.Length > 0 && args[0] == "session") return CaptureSession.Run(args);
+        if (args.Length > 0 && args[0] == "session-selftest") return CaptureSession.RunSelfTests();
+        if (args.Length > 0 && args[0] == "evidence-selftest") return ExcelSeries.RunEvidenceSelfTests();
+        if (args.Length > 0 && args[0] == "adapter-checks") return AdapterRegressionChecks.Run(args);
+        if (args[0] == "word-native-checks") return WordNativeChecks.Run(args);
+        if (args[0] == "word-checks") return WordAdapterChecks.Run(args);
+        if (args[0] == "powerpoint-checks") return PowerPointAdapterChecks.Run(args);
+        if (args[0] == "pdf-checks") return PdfAdapterChecks.Run(args);
+        if (args[0] == "notepad-checks") return NotepadAdapterChecks.Run(args);
+        if (!long.TryParse(args[0], out long rawHwnd) || rawHwnd <= 0) { Console.Error.WriteLine("Unknown command. Run WindowsChecks --help."); return 2; }
+        var hwnd = (nint)rawHwnd;
         Console.WriteLine("focus=" + Native.SetForegroundWindow(hwnd)); Thread.Sleep(200);
         var before = ForegroundSnapshot.Capture(); Console.WriteLine("before=" + JsonSerializer.Serialize(before));
         using var scope = new ComScope();

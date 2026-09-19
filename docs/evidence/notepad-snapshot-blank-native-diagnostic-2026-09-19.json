@@ -1,0 +1,50 @@
+{
+  "suite": "Installed Notepad snapshot capture and recovery",
+  "executedAtUtc": "2026-09-19T08:31:38.7323548+00:00",
+  "sourceHwnd": 1117782,
+  "sourceEditorClass": "RichEditD2DPT",
+  "characters": 0,
+  "selection": "(0, 0)",
+  "capturedKind": "NotepadSnapshot",
+  "resumeCode": "ResumeOutcomeUnknown",
+  "recoveryHwnd": 0,
+  "checks": [
+    {
+      "name": "the explicitly prepared synthetic Notepad window is foreground with one editor",
+      "passed": true
+    },
+    {
+      "name": "only a blank or clearly marked synthetic test tab is accepted",
+      "passed": true
+    },
+    {
+      "name": "new document captures immediately as a text snapshot without source-file linking",
+      "passed": true
+    },
+    {
+      "name": "capture contains the full exact LF-normalized editor text, including blank content",
+      "passed": true
+    },
+    {
+      "name": "capture retains both ends of the actual source selection",
+      "passed": true
+    },
+    {
+      "name": "capturing creates no recovery file and requires no user-chosen save location",
+      "passed": true
+    },
+    {
+      "name": "snapshot text, title, state and selection survive JSON persistence transport",
+      "passed": true
+    },
+    {
+      "name": "installed Notepad confirms the new recovery document content and selection",
+      "passed": false
+    }
+  ],
+  "trace": [
+    "launch pid=26564 exe=C:\\Windows\\system32\\notepad.exe recovery=C:\\Users\\wonse\\AppData\\Local\\WorkBookmark\\NotepadRecovery\\Bookmark-e89be9a4beab46d486ca94ba0c4e7ae4.txt"
+  ],
+  "failure": "installed Notepad confirms the new recovery document content and selection",
+  "limitation": "Actual native Notepad UI plus JSON transport. SQLite restart, hotkey/tray UX and active typing races are covered separately. No source document is saved or closed; recovery windows are left open for inspection."
+}

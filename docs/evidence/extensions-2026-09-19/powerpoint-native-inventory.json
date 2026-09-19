@@ -1,0 +1,34 @@
+{
+    "root":  7278502,
+    "pid":  21952,
+    "classes":  {
+                    "DropShadow:visible":  1,
+                    "MsoCommandBarDock:hidden":  2,
+                    "MsoCommandBarDock:visible":  2,
+                    "MsoCommandBar:visible":  2,
+                    "MsoWorkPane:visible":  2,
+                    "NUIPane:visible":  2,
+                    "NetUIHWND:visible":  2,
+                    "NetUICtrlNotifySink:hidden":  3,
+                    "RICHEDIT60W:hidden":  3,
+                    "MDIClient:visible":  1,
+                    "mdiClass:visible":  1,
+                    "MsoWorkPane:hidden":  2
+                },
+    "panes":  [
+                  {
+                      "className":  "mdiClass",
+                      "hwnd":  2625076,
+                      "visible":  true,
+                      "pid":  21952,
+                      "hresult":  0,
+                      "windowIdentity":  2200520612440,
+                      "appIdentity":  2200520613304,
+                      "activeWindowIdentity":  2200520612440,
+                      "presentationIdentity":  2200520611576,
+                      "path":  "D:\\Github_REPOS\\BookMark\\testdata\\generated\\office-extension\\workbookmark-powerpoint-fixture.pptx",
+                      "viewType":  9,
+                      "hwndReadError":  "TargetInvocationException:-2146232828"
+                  }
+              ]
+}

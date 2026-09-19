@@ -1,0 +1,13 @@
+{
+  "startedUtc": "2026-09-19T02:17:11.860Z",
+  "finishedUtc": "2026-09-19T02:17:12.785Z",
+  "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-Command",
+    "$t=$null;$e=$null;[void][System.Management.Automation.Language.Parser]::ParseFile('D:\\Github_REPOS\\BookMark\\scripts\\build.ps1',[ref]$t,[ref]$e);if($e.Count){$e;exit 1};'PASS updated build.ps1'"
+  ],
+  "code": 0,
+  "stdout": "PASS updated build.ps1\r\n",
+  "stderr": ""
+}

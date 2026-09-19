@@ -22,3 +22,17 @@
 | 출시 표기 | 필수 실기 Gate를 모두 통과하기 전 UI·문서에 ‘제한된 시험판’을 유지. 컴파일/자동시험과 Office 실기를 구분. |
 
 공식 근거: [QueryActiveShellView](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-ishellbrowser-queryactiveshellview), [AccessibleObjectFromWindow](https://learn.microsoft.com/en-us/windows/win32/api/oleacc/nf-oleacc-accessibleobjectfromwindow), [.NET 10 릴리스 메타데이터](https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/10.0/releases.json), [Microsoft.Data.Sqlite 10.0.12](https://www.nuget.org/packages/Microsoft.Data.Sqlite/10.0.12).
+
+## 2026-09-19 후속 구현
+
+각 결정의 당시 상황·문제·근거·사용자 영향·검증 범위는 [후속 진행 기록](implementation-progress.md)에 자세히 남깁니다.
+
+| 결정 | 근거와 사용자 영향 |
+|---|---|
+| 새 기능보다 P0 검증과 확인된 결함을 우선 | 이미 시험판 기능은 존재합니다. 다른 파일/셀 저장을 막는 정확성이 먼저입니다. |
+| 캡처 시작부터 응답 승인까지 새 입력 감시 | 창이 같아도 선택이 달라질 수 있습니다. 새 입력이 있으면 저장하지 않으며, 시작 키 해제는 무시합니다. 확정된 DTO의 DB 저장 중에는 다음 작업을 허용합니다. |
+| 선택한 ZIP은 파일시스템 종류로 분류 | Shell의 폴더 탐색 속성과 실제 디렉터리는 다릅니다. ZIP은 파일로 저장하고 위치 표시 정책을 적용합니다. |
+| Shell 경로 해석 뒤 사용자 이탈 재확인 | 지연 중 다른 작업을 시작했다면 추가 위치 표시 요청을 보내지 않습니다. 이미 전달한 명령의 취소를 보장하지 않습니다. |
+| 수동 단축키 P0 세션 + 사전 고정 기대값 | 시험 도구의 전면 전환 거부 문제를 피하면서 실제 선택한 대상의 정확도를 검증합니다. 시험 응답을 정답으로 사용하지 않습니다. |
+| 작은 표본·해시 실패·전체 Gate 구분 | 50회 미만과 별도 프로세스 사례만으로 전체 P0-B를 통과시키지 않습니다. 준비 실패 시간은 캡처 p95가 아닙니다. |
+| 3초 캡처 기한 유지 | 첫 캡처 지연의 원인이 아직 밝혀지지 않았습니다. 측정 없이 시간을 늘려 문제를 숨기지 않습니다. |

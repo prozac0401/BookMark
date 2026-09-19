@@ -1,0 +1,7 @@
+{
+  "test": "self-contained worker rejects invalid frame without SDK environment",
+  "passed": true,
+  "code": 1,
+  "stdout": "",
+  "stderr": ""
+}

@@ -1,0 +1,11 @@
+PASS: native Shell reproduces ZIP-as-folder namespace
+PASS: selected ZIP persists as file and uses reveal policy
+PASS: real selected directory remains a folder
+PASS: shortcut remains a file without following its target
+PASS: removed selection cannot produce a normal captured target
+PASS: interaction change during PIDL parsing prevents reveal and frees both PIDLs
+PASS: stable reveal checks interaction after parsing and opens exactly once
+PASS: expired whole-request deadline prevents reveal after parsing
+PASS: second parse failure frees the first PIDL without opening
+PASS: Shell refusal clears external-action flag and releases both PIDLs
+RESULT: 10 adapter checks passed. Synthetic filesystem/Shell metadata and injected call boundary; no full Explorer UI gate claimed.

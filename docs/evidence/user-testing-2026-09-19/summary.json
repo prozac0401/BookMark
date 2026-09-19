@@ -1,0 +1,91 @@
+{
+  "utc": "2026-09-19T02:13:11.586Z",
+  "sdk": "10.0.401",
+  "os": "Windows 11 10.0.22631 x64",
+  "totalPassed": 207,
+  "suites": [
+    {
+      "name": "core",
+      "passed": 21,
+      "exitCode": 0
+    },
+    {
+      "name": "ipc",
+      "passed": 12,
+      "exitCode": 0
+    },
+    {
+      "name": "desktop",
+      "passed": 28,
+      "exitCode": 0
+    },
+    {
+      "name": "adapter-checks",
+      "passed": 10,
+      "exitCode": 0
+    },
+    {
+      "name": "evidence-selftest",
+      "passed": 13,
+      "exitCode": 0
+    },
+    {
+      "name": "session-selftest",
+      "passed": 14,
+      "exitCode": 0
+    },
+    {
+      "name": "word-checks",
+      "passed": 16,
+      "exitCode": 0
+    },
+    {
+      "name": "pdf-checks",
+      "passed": 28,
+      "exitCode": 0
+    },
+    {
+      "name": "browserHost",
+      "passed": 27,
+      "exitCode": 0
+    },
+    {
+      "name": "extension",
+      "passed": 16,
+      "exitCode": 0
+    },
+    {
+      "name": "registration",
+      "passed": 7,
+      "exitCode": 0
+    },
+    {
+      "name": "browserSqlite",
+      "passed": 15,
+      "exitCode": 0
+    }
+  ],
+  "limitations": [
+    "Installed Chrome/Edge UI not yet executed",
+    "Korean IME, Explorer active tabs, Office native flows and Sumatra remain separate manual gates"
+  ],
+  "additional": {
+    "powershellSyntax": 8,
+    "publishedWorkerFinal": 3
+  },
+  "findings": [
+    {
+      "id": "K01",
+      "severity": "minor",
+      "kind": "source-review",
+      "file": "src/WorkBookmark.App/UI/RecentForm.cs",
+      "line": 96,
+      "description": "Empty recent query with HasMore (>20 records) displays 100 search results rather than recent 20; no product edit in this validation task."
+    }
+  ],
+  "environmentNotes": [
+    "Default exec_command unavailable (CreateProcess os error 5)",
+    "Initial NuGet restore failed with missing environment directories; explicit standard child-process environment and isolated build servers restore succeeded",
+    "Initial ad-hoc worker test used wrong enum expected value (24); source-defined Validated=19 passed on rerun"
+  ]
+}

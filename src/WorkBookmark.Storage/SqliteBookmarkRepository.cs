@@ -12,8 +12,12 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
     private readonly Action<string>? _beforeCommit;
     private readonly Func<DateTimeOffset> _utcNow;
     private bool _disposed;
-    private const int SchemaVersion = 1;
-    private const string Columns = "id,kind,path,normalized_path,sheet_name,cell_address,display_name,note,created_at_utc,captured_at_utc,capture_sequence,note_updated_at_utc,had_unsaved_changes,last_resume_at_utc,last_resume_result,deleted_at_utc";
+    private const int SchemaVersion = 4;
+    private const string LegacyColumns = "id,kind,path,normalized_path,sheet_name,cell_address,display_name,note,created_at_utc,captured_at_utc,capture_sequence,note_updated_at_utc,had_unsaved_changes,last_resume_at_utc,last_resume_result,deleted_at_utc";
+
+    private const string VersionTwoColumns = LegacyColumns + ",word_start,slide_id,slide_number,pdf_page,page_title";
+    private const string VersionThreeColumns = VersionTwoColumns + ",text_offset";
+    private const string Columns = VersionThreeColumns + ",text_content,text_selection_end,snapshot_title";
 
     // Hooks are local test injection only; product construction supplies just databasePath.
     public SqliteBookmarkRepository(string databasePath, Action<string>? beforeCommit = null, Func<DateTimeOffset>? utcNow = null)
@@ -44,9 +48,17 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
                 using var reader = verify.ExecuteReader();
                 return;
             }
-            // v0 is only a truly empty SQLite schema. Unknown tables are never overwritten.
-            using (var tables = Command(db, null, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"))
+            if (version == 0)
+            {
+                // Only a truly empty v0 schema may be initialized. Unknown user tables are preserved.
+                using var tables = Command(db, null, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
                 if (Convert.ToInt64(tables.ExecuteScalar(), CultureInfo.InvariantCulture) != 0) throw new BookmarkException(ResultCode.PersistenceFailed);
+            }
+            else
+            {
+                using var verify = Command(db, null, "SELECT " + (version == 1 ? LegacyColumns : version == 2 ? VersionTwoColumns : VersionThreeColumns) + " FROM bookmarks LIMIT 0");
+                using var reader = verify.ExecuteReader();
+            }
             if (existed)
             {
                 string backupPath = fullPath + ".pre-migration-" + DateTimeOffset.UtcNow.ToString("yyyyMMddTHHmmssfffffff", CultureInfo.InvariantCulture) + "-" + Guid.NewGuid().ToString("N") + ".bak";
@@ -55,10 +67,35 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
                 db.BackupDatabase(backup);
             }
             using var tx = db.BeginTransaction();
-            using (var create = Command(db, tx, @"
+            if (version is 1 or 2 or 3)
+            {
+                using var rename = Command(db, tx, "ALTER TABLE bookmarks RENAME TO bookmarks_previous; DROP INDEX bookmark_target; DROP INDEX bookmark_recent;");
+                rename.ExecuteNonQuery();
+            }
+            using (var create = Command(db, tx, SchemaSql)) create.ExecuteNonQuery();
+            if (version is 1 or 2 or 3)
+            {
+                var preservedColumns = version == 1 ? LegacyColumns : version == 2 ? VersionTwoColumns : VersionThreeColumns;
+                using var copy = Command(db, tx, "INSERT INTO bookmarks (" + preservedColumns + ") SELECT " + preservedColumns + " FROM bookmarks_previous; DROP TABLE bookmarks_previous;");
+                copy.ExecuteNonQuery();
+            }
+            else
+            {
+                using var metadata = Command(db, tx, "CREATE TABLE metadata (name TEXT PRIMARY KEY NOT NULL,value INTEGER NOT NULL); INSERT INTO metadata(name,value) VALUES('capture_sequence',0);");
+                metadata.ExecuteNonQuery();
+            }
+            using (var setVersion = Command(db, tx, "PRAGMA user_version=4;")) setVersion.ExecuteNonQuery();
+            _beforeCommit?.Invoke("migration");
+            tx.Commit();
+        }
+        catch (BookmarkException) { throw; }
+        catch { throw new BookmarkException(ResultCode.PersistenceFailed); }
+    }
+
+    private const string SchemaSql = @"
 CREATE TABLE bookmarks (
  id TEXT PRIMARY KEY NOT NULL,
- kind INTEGER NOT NULL CHECK(kind BETWEEN 0 AND 2),
+ kind INTEGER NOT NULL CHECK(kind BETWEEN 0 AND 8),
  path TEXT NOT NULL,
  normalized_path TEXT COLLATE BINARY NOT NULL,
  sheet_name TEXT COLLATE BINARY,
@@ -73,25 +110,35 @@ CREATE TABLE bookmarks (
  last_resume_at_utc TEXT,
  last_resume_result INTEGER,
  deleted_at_utc TEXT,
- CHECK((kind=2 AND sheet_name IS NOT NULL AND cell_address IS NOT NULL AND had_unsaved_changes IS NOT NULL) OR
-       (kind<>2 AND sheet_name IS NULL AND cell_address IS NULL AND had_unsaved_changes IS NULL))
+ word_start INTEGER CHECK(word_start>=0),
+ slide_id INTEGER CHECK(slide_id>0),
+ slide_number INTEGER CHECK(slide_number>0),
+ pdf_page INTEGER CHECK(pdf_page>0),
+ page_title TEXT CHECK(length(page_title)<=256),
+ text_offset INTEGER CHECK(text_offset>=0),
+ text_content TEXT CHECK(text_content IS NULL OR (length(text_content)<=2097152 AND instr(text_content,char(0))=0 AND instr(text_content,char(13))=0)),
+ text_selection_end INTEGER CHECK(text_selection_end>=0 AND text_selection_end<=2097152),
+ snapshot_title TEXT CHECK(length(snapshot_title) BETWEEN 1 AND 256),
+ CHECK((kind IN (7,8) AND text_offset IS NOT NULL) OR (kind NOT IN (7,8) AND text_offset IS NULL)),
+ CHECK((kind=8 AND text_content IS NOT NULL AND text_selection_end IS NOT NULL AND snapshot_title IS NOT NULL AND text_offset<=text_selection_end
+        AND length(path)=81 AND substr(path,1,17)='notepad-snapshot:' AND substr(path,18) NOT GLOB '*[^0-9A-F]*' AND normalized_path=path) OR
+       (kind<>8 AND text_content IS NULL AND text_selection_end IS NULL AND snapshot_title IS NULL)),
+ CHECK((kind=6 AND page_title IS NOT NULL) OR (kind<>6 AND page_title IS NULL)),
+ CHECK((kind IN (0,1) AND sheet_name IS NULL AND cell_address IS NULL AND had_unsaved_changes IS NULL AND word_start IS NULL AND slide_id IS NULL AND slide_number IS NULL AND pdf_page IS NULL) OR
+       (kind=2 AND sheet_name IS NOT NULL AND cell_address IS NOT NULL AND had_unsaved_changes IS NOT NULL AND word_start IS NULL AND slide_id IS NULL AND slide_number IS NULL AND pdf_page IS NULL) OR
+       (kind=3 AND sheet_name IS NULL AND cell_address IS NULL AND had_unsaved_changes IS NOT NULL AND word_start IS NOT NULL AND slide_id IS NULL AND slide_number IS NULL AND pdf_page IS NULL) OR
+       (kind=4 AND sheet_name IS NULL AND cell_address IS NULL AND had_unsaved_changes IS NOT NULL AND word_start IS NULL AND slide_id IS NOT NULL AND slide_number IS NOT NULL AND pdf_page IS NULL) OR
+       (kind=5 AND sheet_name IS NULL AND cell_address IS NULL AND had_unsaved_changes IS NULL AND word_start IS NULL AND slide_id IS NULL AND slide_number IS NULL AND pdf_page IS NOT NULL) OR
+       (kind=6 AND sheet_name IS NULL AND cell_address IS NULL AND had_unsaved_changes IS NULL AND word_start IS NULL AND slide_id IS NULL AND slide_number IS NULL AND pdf_page IS NULL) OR
+       (kind IN (7,8) AND sheet_name IS NULL AND cell_address IS NULL AND had_unsaved_changes IS NOT NULL AND word_start IS NULL AND slide_id IS NULL AND slide_number IS NULL AND pdf_page IS NULL))
 );
-CREATE UNIQUE INDEX bookmark_target ON bookmarks(kind, normalized_path, ifnull(sheet_name,''), ifnull(cell_address,''));
-CREATE INDEX bookmark_recent ON bookmarks(deleted_at_utc,capture_sequence DESC);
-CREATE TABLE metadata (name TEXT PRIMARY KEY NOT NULL,value INTEGER NOT NULL);
-INSERT INTO metadata(name,value) VALUES('capture_sequence',0);
-PRAGMA user_version=1;")) create.ExecuteNonQuery();
-            _beforeCommit?.Invoke("migration");
-            tx.Commit();
-        }
-        catch (BookmarkException) { throw; }
-        catch { throw new BookmarkException(ResultCode.PersistenceFailed); }
-    }
+CREATE UNIQUE INDEX bookmark_target ON bookmarks(kind, normalized_path, ifnull(sheet_name,''), ifnull(cell_address,''), ifnull(word_start,-1), ifnull(slide_id,-1), ifnull(pdf_page,-1), ifnull(text_offset,-1), ifnull(text_selection_end,-1));
+CREATE INDEX bookmark_recent ON bookmarks(deleted_at_utc,capture_sequence DESC);";
 
     public CaptureCommit UpsertCapture(CapturedTarget target)
     {
         target = PathPolicy.Validate(target);
-        string normalized = PathPolicy.Normalize(target.Path);
+        string normalized = PathPolicy.NormalizeLocation(target);
         return Write("capture", (db, tx) =>
         {
             Bookmark? old = FindTarget(db, tx, target, normalized);
@@ -105,19 +152,21 @@ PRAGMA user_version=1;")) create.ExecuteNonQuery();
             if (old is null)
             {
                 using var insert = Command(db, tx, @"INSERT INTO bookmarks
-(id,kind,path,normalized_path,sheet_name,cell_address,display_name,note,created_at_utc,captured_at_utc,capture_sequence,had_unsaved_changes)
-VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,$unsaved)",
+(id,kind,path,normalized_path,sheet_name,cell_address,display_name,note,created_at_utc,captured_at_utc,capture_sequence,had_unsaved_changes,word_start,slide_id,slide_number,pdf_page,page_title,text_offset,text_content,text_selection_end,snapshot_title)
+VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,$unsaved,$word,$slide,$slideNumber,$pdf,$title,$text,$content,$textEnd,$snapshotTitle)",
                     ("$id", id.ToString()), ("$kind", (int)target.Kind), ("$path", target.Path), ("$normalized", normalized),
-                    ("$sheet", target.SheetName), ("$cell", target.CellAddress), ("$display", PathPolicy.DisplayName(target.Path)),
-                    ("$now", now), ("$sequence", sequence), ("$unsaved", target.HadUnsavedChanges));
+                    ("$sheet", target.SheetName), ("$cell", target.CellAddress), ("$display", PathPolicy.DisplayName(target)),
+                    ("$now", now), ("$sequence", sequence), ("$unsaved", target.HadUnsavedChanges),
+                    ("$word", target.WordStart), ("$slide", target.SlideId), ("$slideNumber", target.SlideNumber), ("$pdf", target.PdfPage), ("$title", target.PageTitle), ("$text", target.TextOffset),
+                    ("$content", target.TextContent), ("$textEnd", target.TextSelectionEnd), ("$snapshotTitle", target.SnapshotTitle));
                 insert.ExecuteNonQuery();
             }
             else
             {
                 using var update = Command(db, tx, @"UPDATE bookmarks SET path=$path,display_name=$display,captured_at_utc=$now,
- capture_sequence=$sequence,had_unsaved_changes=$unsaved,deleted_at_utc=NULL WHERE id=$id",
-                    ("$path", target.Path), ("$display", PathPolicy.DisplayName(target.Path)), ("$now", now),
-                    ("$sequence", sequence), ("$unsaved", target.HadUnsavedChanges), ("$id", id.ToString()));
+ capture_sequence=$sequence,had_unsaved_changes=$unsaved,slide_number=$slideNumber,page_title=$title,deleted_at_utc=NULL WHERE id=$id",
+                    ("$path", target.Path), ("$display", PathPolicy.DisplayName(target)), ("$now", now),
+                    ("$sequence", sequence), ("$unsaved", target.HadUnsavedChanges), ("$slideNumber", target.SlideNumber), ("$title", target.PageTitle), ("$id", id.ToString()));
                 update.ExecuteNonQuery();
             }
             return new CaptureCommit(FindId(db, tx, id)!, !string.IsNullOrEmpty(old?.Note), old?.DeletedAtUtc != null);
@@ -167,16 +216,18 @@ VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,
     public void Relink(Guid id, CapturedTarget validatedTarget)
     {
         PathPolicy.Validate(validatedTarget);
+        if (validatedTarget.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot) throw new BookmarkException(ResultCode.InvalidRequest);
         string normalized = PathPolicy.Normalize(validatedTarget.Path);
         Write("relink", (db, tx) =>
         {
             Bookmark old = FindId(db, tx, id) ?? throw new BookmarkException(ResultCode.TargetUnavailable);
             if (old.Target.Kind != validatedTarget.Kind || !string.Equals(old.Target.SheetName, validatedTarget.SheetName, StringComparison.Ordinal)
-                || !string.Equals(old.Target.CellAddress, validatedTarget.CellAddress, StringComparison.Ordinal)) throw new BookmarkException(ResultCode.InvalidRequest);
+                || !string.Equals(old.Target.CellAddress, validatedTarget.CellAddress, StringComparison.Ordinal)
+                || old.Target.WordStart != validatedTarget.WordStart || old.Target.SlideId != validatedTarget.SlideId || old.Target.PdfPage != validatedTarget.PdfPage || old.Target.TextOffset != validatedTarget.TextOffset) throw new BookmarkException(ResultCode.InvalidRequest);
             Bookmark? duplicate = FindTarget(db, tx, validatedTarget, normalized);
             if (duplicate != null && duplicate.Id != id) throw new BookmarkException(ResultCode.DuplicateTarget);
             return ExecuteExisting(db, tx, id, "UPDATE bookmarks SET path=$path,normalized_path=$normalized,display_name=$display WHERE id=$id",
-                ("$path", validatedTarget.Path), ("$normalized", normalized), ("$display", PathPolicy.DisplayName(validatedTarget.Path)));
+                ("$path", validatedTarget.Path), ("$normalized", normalized), ("$display", PathPolicy.DisplayName(validatedTarget)));
         });
     }
 
@@ -244,18 +295,27 @@ VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,
 
     private static Bookmark? FindTarget(SqliteConnection db, SqliteTransaction tx, CapturedTarget target, string normalized)
     {
-        using var command = Command(db, tx, "SELECT " + Columns + " FROM bookmarks WHERE kind=$kind AND normalized_path=$path AND ifnull(sheet_name,'')=$sheet AND ifnull(cell_address,'')=$cell",
-            ("$kind", (int)target.Kind), ("$path", normalized), ("$sheet", target.SheetName ?? ""), ("$cell", target.CellAddress ?? ""));
+        using var command = Command(db, tx, "SELECT " + Columns + " FROM bookmarks WHERE kind=$kind AND normalized_path=$path AND ifnull(sheet_name,'')=$sheet AND ifnull(cell_address,'')=$cell AND ifnull(word_start,-1)=$word AND ifnull(slide_id,-1)=$slide AND ifnull(pdf_page,-1)=$pdf AND ifnull(text_offset,-1)=$text AND ifnull(text_selection_end,-1)=$textEnd",
+            ("$kind", (int)target.Kind), ("$path", normalized), ("$sheet", target.SheetName ?? ""), ("$cell", target.CellAddress ?? ""), ("$word", target.WordStart ?? -1), ("$slide", target.SlideId ?? -1), ("$pdf", target.PdfPage ?? -1), ("$text", target.TextOffset ?? -1), ("$textEnd", target.TextSelectionEnd ?? -1));
         using var reader = command.ExecuteReader();
         return reader.Read() ? Materialize(reader) : null;
     }
 
     private static Bookmark Materialize(SqliteDataReader row) => new(
         Guid.Parse(row.GetString(0)),
-        new CapturedTarget((TargetKind)row.GetInt32(1), row.GetString(2), StringOrNull(row, 4), StringOrNull(row, 5), row.IsDBNull(12) ? null : row.GetBoolean(12)),
+        ValidatedTarget(new CapturedTarget((TargetKind)row.GetInt32(1), row.GetString(2), StringOrNull(row, 4), StringOrNull(row, 5), row.IsDBNull(12) ? null : row.GetBoolean(12),
+            row.IsDBNull(16) ? null : row.GetInt32(16), row.IsDBNull(17) ? null : row.GetInt32(17), row.IsDBNull(18) ? null : row.GetInt32(18), row.IsDBNull(19) ? null : row.GetInt32(19), StringOrNull(row, 20), row.IsDBNull(21) ? null : row.GetInt32(21),
+            StringOrNull(row, 22), row.IsDBNull(23) ? null : row.GetInt32(23), StringOrNull(row, 24))),
         row.GetString(3), row.GetString(6), row.GetString(7), DateTimeOffset.Parse(row.GetString(8), CultureInfo.InvariantCulture),
         DateTimeOffset.Parse(row.GetString(9), CultureInfo.InvariantCulture), row.GetInt64(10), DateOrNull(row, 11), DateOrNull(row, 13),
         row.IsDBNull(14) ? null : (ResultCode)row.GetInt32(14), DateOrNull(row, 15));
+
+    private static CapturedTarget ValidatedTarget(CapturedTarget target)
+    {
+        if (target.Kind != TargetKind.NotepadSnapshot) return target;
+        try { return NotepadSnapshotPolicy.Validate(target); }
+        catch (BookmarkException) { throw new BookmarkException(ResultCode.PersistenceFailed); }
+    }
 
     private static string? StringOrNull(SqliteDataReader row, int index) => row.IsDBNull(index) ? null : row.GetString(index);
     private static DateTimeOffset? DateOrNull(SqliteDataReader row, int index) => row.IsDBNull(index) ? null : DateTimeOffset.Parse(row.GetString(index), CultureInfo.InvariantCulture);

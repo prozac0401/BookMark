@@ -1,0 +1,26 @@
+{
+  "name": "publish-app-final",
+  "exe": "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+  "args": [
+    "publish",
+    "src/WorkBookmark.App",
+    "-c",
+    "Release",
+    "-r",
+    "win-x64",
+    "--self-contained",
+    "true",
+    "--no-restore",
+    "-o",
+    "D:/Github_REPOS/BookMark/artifacts/publish/capture-fixes-0.1.1/win-x64",
+    "-m:1",
+    "-nodeReuse:false"
+  ],
+  "startedUtc": "2026-09-19T05:18:22.295Z",
+  "stdout": "  WorkBookmark.Core -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\bin\\Release\\net10.0\\win-x64\\WorkBookmark.Core.dll\r\n  WorkBookmark.Windows -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.Windows.dll\r\n  WorkBookmark.Storage -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Storage\\bin\\Release\\net10.0\\win-x64\\WorkBookmark.Storage.dll\r\n  WorkBookmark.App -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.dll\r\n  WorkBookmark.App -> D:\\Github_REPOS\\BookMark\\artifacts\\publish\\capture-fixes-0.1.1\\win-x64\\\r\n",
+  "stderr": "",
+  "code": 0,
+  "done": true,
+  "pid": 18236,
+  "finishedUtc": "2026-09-19T05:18:31.068Z"
+}

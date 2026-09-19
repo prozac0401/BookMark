@@ -1,0 +1,63 @@
+ M 00_CODEX_START_HERE.md
+ M 01_IMPLEMENTATION_SPEC.md
+ M 02_DELIVERY_PLAN_AND_ACCEPTANCE.md
+ M README.md
+ M WorkBookmark.sln
+ M docs/compatibility.md
+ M docs/decisions.md
+ M docs/evidence/README.md
+ M docs/feasibility-report.md
+ M docs/quick-start.ko.md
+ M docs/validation-report.md
+ M scripts/build.ps1
+ M src/WorkBookmark.App/BookmarkApplicationContext.cs
+ M src/WorkBookmark.App/UI/RecentForm.cs
+ M src/WorkBookmark.App/UI/RelinkPreviewForm.cs
+ M src/WorkBookmark.App/UI/UiStyle.cs
+ M src/WorkBookmark.Core/Contracts.cs
+ M src/WorkBookmark.Core/PathPolicy.cs
+ M src/WorkBookmark.Storage/SqliteBookmarkRepository.cs
+ M src/WorkBookmark.Windows/ExplorerAdapter.cs
+ M src/WorkBookmark.Windows/Native.cs
+ M src/WorkBookmark.Windows/WindowsAdapter.cs
+ M tests/WorkBookmark.Core.Tests/Program.cs
+ M tests/WorkBookmark.Desktop.Tests/Program.cs
+ M tests/WorkBookmark.Integration.Tests/Program.cs
+ M tools/WindowsChecks/ExcelSeries.cs
+ M tools/WindowsChecks/Program.cs
+ M tools/WindowsChecks/README.md
+?? browser-extension/
+?? docs/evidence/continuation-2026-09-19/
+?? docs/evidence/extensions-2026-09-19/
+?? docs/evidence/user-testing-2026-09-19/
+?? docs/extension-requirements.md
+?? docs/extension-validation.md
+?? docs/implementation-progress.md
+?? docs/manual-test-guide.ko.md
+?? docs/manual-test-results.ko.md
+?? docs/user-testing-report.ko.md
+?? scripts/browser-registration-common.ps1
+?? scripts/register-browser-host.ps1
+?? scripts/unregister-browser-host.ps1
+?? src/WorkBookmark.App/BrowserCaptureServer.cs
+?? src/WorkBookmark.App/BrowserPipeName.cs
+?? src/WorkBookmark.BrowserHost/
+?? src/WorkBookmark.Core/BrowserProtocol.cs
+?? src/WorkBookmark.Windows/PdfAdapter.cs
+?? src/WorkBookmark.Windows/PdfDdeClient.cs
+?? src/WorkBookmark.Windows/PowerPointAdapter.cs
+?? src/WorkBookmark.Windows/WordAdapter.cs
+?? testdata/generated/office-extension/
+?? testdata/p0-capture-plan.sample.json
+?? tests/WorkBookmark.Browser.Tests/
+?? tests/WorkBookmark.Core.Tests/ExtendedTargetChecks.cs
+?? tests/WorkBookmark.Desktop.Tests/BrowserSqliteChecks.cs
+?? tools/WindowsChecks/AdapterRegressionChecks.cs
+?? tools/WindowsChecks/BrowserRegistrationOwnershipChecks.ps1
+?? tools/WindowsChecks/CaptureSession.cs
+?? tools/WindowsChecks/InspectPowerPointWindow.ps1
+?? tools/WindowsChecks/PdfAdapterChecks.cs
+?? tools/WindowsChecks/PowerPointAdapterChecks.cs
+?? tools/WindowsChecks/WordAdapterChecks.cs
+?? tools/WindowsChecks/WordNativeChecks.cs
+?? tools/WindowsChecks/generate-office-fixtures.py

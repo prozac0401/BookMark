@@ -1,0 +1,74 @@
+{
+  "suite": "Installed Notepad snapshot capture and recovery",
+  "executedAtUtc": "2026-09-19T08:42:57.0068012+00:00",
+  "sourceHwnd": 3476162,
+  "sourceEditorClass": "RichEditD2DPT",
+  "characters": 0,
+  "selection": "(0, 0)",
+  "capturedKind": "NotepadSnapshot",
+  "resumeCode": "PositionRestored",
+  "recoveryHwnd": 3476162,
+  "checks": [
+    {
+      "name": "the explicitly prepared synthetic Notepad window is foreground with one editor",
+      "passed": true
+    },
+    {
+      "name": "only a blank or clearly marked synthetic test tab is accepted",
+      "passed": true
+    },
+    {
+      "name": "new document captures immediately as a text snapshot without source-file linking",
+      "passed": true
+    },
+    {
+      "name": "capture contains the full exact LF-normalized editor text, including blank content",
+      "passed": true
+    },
+    {
+      "name": "capture retains both ends of the actual source selection",
+      "passed": true
+    },
+    {
+      "name": "capturing creates no recovery file and requires no user-chosen save location",
+      "passed": true
+    },
+    {
+      "name": "snapshot text, title, state and selection survive JSON persistence transport",
+      "passed": true
+    },
+    {
+      "name": "installed Notepad confirms the new recovery document content and selection",
+      "passed": true
+    },
+    {
+      "name": "resume identifies the actual recovery window after an explicit Notepad launch",
+      "passed": true
+    },
+    {
+      "name": "recovery never overwrites a nonempty source editor (Notepad may reuse a blank tab)",
+      "passed": true
+    },
+    {
+      "name": "independent native read verifies all recovered Unicode text and line breaks",
+      "passed": true
+    },
+    {
+      "name": "independent native read verifies the restored caret and selection range",
+      "passed": true
+    },
+    {
+      "name": "restore creates exactly one automatically managed working copy",
+      "passed": true
+    },
+    {
+      "name": "the source text, title and selection remain unchanged throughout capture and restore",
+      "passed": true
+    }
+  ],
+  "trace": [
+    "Notepad activation recovery=C:\\Users\\wonse\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\WorkBookmark\\NotepadRecovery\\Bookmark-908a9591c2324ad39e71624ed9bd6c6a.txt"
+  ],
+  "failure": null,
+  "limitation": "Actual native Notepad UI plus JSON transport. SQLite restart, hotkey/tray UX and active typing races are covered separately. No source document is saved or closed; recovery windows are left open for inspection."
+}

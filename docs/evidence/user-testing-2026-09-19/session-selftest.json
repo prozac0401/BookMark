@@ -1,0 +1,11 @@
+{
+  "startedUtc": "2026-09-19T02:07:49.329Z",
+  "finishedUtc": "2026-09-19T02:07:50.696Z",
+  "file": "D:/Github_REPOS/BookMark/tools/WindowsChecks/bin/Release/net10.0-windows/WindowsChecks.exe",
+  "args": [
+    "session-selftest"
+  ],
+  "code": 0,
+  "stdout": "PASS Exact predeclared target passes\r\nPASS Same filename in another path stops\r\nPASS Stable timeout cannot pass\r\nPASS Explicit rejection oracle passes its own case\r\nPASS Unexpected successful capture in a rejection case stops\r\nPASS Same view group cannot silently switch tabs\r\nPASS Distinct tab labels cannot reuse one active view\r\nPASS Same Excel process group cannot change PID\r\nPASS Fixture prefix sibling is outside root\r\nPASS One successful capture is not a 50-case gate\r\nPASS Fifty copies of one view do not satisfy scenario coverage\r\nPASS Focused checks never establish a P0 gate\r\nPASS Exact transition captures do not inflate the stable sample count\r\nPASS Complete synthetic two-window two-tab oracle can satisfy capture coverage\r\nCapture session verdict checks: 14 passed. Synthetic assertions only; no live P0 result.\r\n",
+  "stderr": ""
+}

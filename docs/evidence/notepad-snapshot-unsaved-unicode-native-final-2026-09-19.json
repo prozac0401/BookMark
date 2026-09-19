@@ -1,0 +1,93 @@
+{
+  "suite": "Installed Notepad snapshot capture and recovery",
+  "executedAtUtc": "2026-09-19T08:50:31.4373103+00:00",
+  "sourceHwnd": 3476162,
+  "sourceEditorClass": "RichEditD2DPT",
+  "characters": 5463,
+  "selection": "(5449, 5463)",
+  "capturedKind": "NotepadSnapshot",
+  "resumeCode": "PositionRestored",
+  "recoveryHwnd": 3476162,
+  "checks": [
+    {
+      "name": "the explicitly prepared synthetic Notepad window is foreground with one editor",
+      "passed": true
+    },
+    {
+      "name": "only a blank or clearly marked synthetic test tab is accepted",
+      "passed": true
+    },
+    {
+      "name": "new document captures immediately as a text snapshot without source-file linking",
+      "passed": true
+    },
+    {
+      "name": "capture contains the full exact LF-normalized editor text, including blank content",
+      "passed": true
+    },
+    {
+      "name": "capture retains both ends of the actual source selection",
+      "passed": true
+    },
+    {
+      "name": "capturing creates no recovery file and requires no user-chosen save location",
+      "passed": true
+    },
+    {
+      "name": "snapshot text, title, state and selection survive JSON persistence transport",
+      "passed": true
+    },
+    {
+      "name": "installed Notepad confirms the new recovery document content and selection",
+      "passed": true
+    },
+    {
+      "name": "resume identifies the actual recovery window after an explicit Notepad launch",
+      "passed": true
+    },
+    {
+      "name": "recovery never overwrites a nonempty source editor (Notepad may reuse a blank tab)",
+      "passed": true
+    },
+    {
+      "name": "independent native read verifies all recovered Unicode text and line breaks",
+      "passed": true
+    },
+    {
+      "name": "independent native read verifies the restored caret and selection range",
+      "passed": true
+    },
+    {
+      "name": "restoring a distant selected range scrolls the actual Notepad view beyond the initial page",
+      "passed": true
+    },
+    {
+      "name": "restore creates exactly one automatically managed working copy",
+      "passed": true
+    },
+    {
+      "name": "source editor text and selection remain unchanged; the window title may reflect the restored active tab",
+      "passed": true
+    }
+  ],
+  "trace": [
+    "input=False:original=3476162:foreground=3476162:permitted=False",
+    "input=False:original=3476162:foreground=3476162:permitted=False",
+    "Notepad activation recovery=C:\\Users\\wonse\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\WorkBookmark\\NotepadRecovery\\Bookmark-15cf5b83ce8840d79064ad5f3ce750e4.txt",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "waiting for busy recovery editor",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "recovery initial characters=5463 normalized=5463 modified=False selection=0:0",
+    "recovery text verified characters=5463",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "input=False:original=3476162:foreground=3476162:permitted=True",
+    "recovery selection observed=5449:5463 expected=5449:5463",
+    "input=False:original=3476162:foreground=3476162:permitted=True"
+  ],
+  "failure": null,
+  "limitation": "Actual native Notepad UI plus JSON transport. SQLite restart, hotkey/tray UX and active typing races are covered separately. No source document is saved or closed; recovery windows are left open for inspection."
+}

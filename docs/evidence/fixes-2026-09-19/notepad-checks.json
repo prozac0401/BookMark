@@ -1,0 +1,130 @@
+{
+  "suite": "Notepad binding and caret safety",
+  "checks": [
+    {
+      "name": "editing while the file picker is open invalidates the original observation",
+      "passed": true
+    },
+    {
+      "name": "moving the caret while linking cannot save a later position",
+      "passed": true
+    },
+    {
+      "name": "a document-name change with equal text invalidates linking",
+      "passed": true
+    },
+    {
+      "name": "changing the dirty state invalidates linking",
+      "passed": true
+    },
+    {
+      "name": "transient observation contains only a fingerprint, not document text",
+      "passed": true
+    },
+    {
+      "name": "Korean title matches the complete explicitly chosen basename",
+      "passed": true
+    },
+    {
+      "name": "modified title marker does not change file-name identity",
+      "passed": true
+    },
+    {
+      "name": "filename-prefix collisions cannot authorize a different file",
+      "passed": true
+    },
+    {
+      "name": "another document cannot be bound by equal contents alone",
+      "passed": true
+    },
+    {
+      "name": "untitled documents cannot be bound to an existing file",
+      "passed": true
+    },
+    {
+      "name": "same saved text accepts RichEdit and file newline representations",
+      "passed": true
+    },
+    {
+      "name": "a different disk file or unsaved editor text fails the link",
+      "passed": true
+    },
+    {
+      "name": "a dirty document requires saving even if text happens to match",
+      "passed": true
+    },
+    {
+      "name": "stale selections beyond the document are rejected",
+      "passed": true
+    },
+    {
+      "name": "wrong filename asks for the source file instead of trusting text equality",
+      "passed": true
+    },
+    {
+      "name": "classic CRLF caret converts to a stable LF offset",
+      "passed": true
+    },
+    {
+      "name": "stable LF offset converts back to a classic caret",
+      "passed": true
+    },
+    {
+      "name": "RichEdit already counts a line break as one character",
+      "passed": true
+    },
+    {
+      "name": "an impossible caret inside a CRLF pair fails closed",
+      "passed": true
+    },
+    {
+      "name": "empty documents preserve the initial caret",
+      "passed": true
+    },
+    {
+      "name": "reopen never clamps a caret after text becomes shorter",
+      "passed": true
+    },
+    {
+      "name": "negative offsets cannot be restored",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 0 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 1 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 2 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 3 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 4 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 5 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 6 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "native selection transport preserves start and end beyond 65,535",
+      "passed": true
+    },
+    {
+      "name": "read-only selection transport does not change text or selection",
+      "passed": true
+    }
+  ],
+  "limitation": "Synthetic control and pure policy checks; installed Notepad capture and reopen are separate validation."
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "test": "D11 protocol-roundtrip",
+    "status": "PASS",
+    "milliseconds": 258
+  },
+  {
+    "test": "D11 oversized-and-truncated-frames",
+    "status": "PASS",
+    "milliseconds": 10
+  },
+  {
+    "test": "D04 valid-result-id",
+    "status": "PASS",
+    "milliseconds": 1106
+  },
+  {
+    "test": "D04 wrong-request-id-rejected",
+    "status": "PASS",
+    "milliseconds": 901
+  },
+  {
+    "test": "D04 capture-deadline-no-late-success",
+    "status": "PASS",
+    "milliseconds": 578
+  },
+  {
+    "test": "D05 resume-deadline-outcome-unknown",
+    "status": "PASS",
+    "milliseconds": 514
+  },
+  {
+    "test": "U12 single-flight-no-queue",
+    "status": "PASS",
+    "milliseconds": 673
+  },
+  {
+    "test": "D04 cancellation-discards-response",
+    "status": "PASS",
+    "milliseconds": 163
+  },
+  {
+    "test": "D06 worker-crash-cleanup",
+    "status": "PASS",
+    "milliseconds": 203
+  },
+  {
+    "test": "D06 worker-child-survives-timeout",
+    "status": "FAIL",
+    "error": "The process cannot access the file \u0027C:\\Users\\wonse\\AppData\\Local\\Temp\\WorkBookmark-test-fda3e7ac434340a0942ced13c3fb31fa.pid.pending\u0027 because it is being used by another process."
+  },
+  {
+    "test": "D06 dispose-terminates-worker-synchronously",
+    "status": "PASS",
+    "milliseconds": 3785
+  },
+  {
+    "test": "D04 deadline-boundary-does-not-stick-busy",
+    "status": "PASS",
+    "milliseconds": 113
+  }
+]

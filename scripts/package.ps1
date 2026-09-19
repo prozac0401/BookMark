@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$PublishDirectory)
+param([Parameter(Mandatory=$true)][string]$PublishDirectory, [string]$GitPath)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $taskRoot = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
@@ -8,32 +8,16 @@ if (-not (Test-Path -LiteralPath (Join-Path $publishPath 'WorkBookmark.exe'))) {
 $stamp = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss-fff')
 $releaseDirectory = Join-Path $taskRoot ('artifacts/releases/' + $stamp)
 New-Item -ItemType Directory -Path $releaseDirectory -Force | Out-Null
-$binaryZip = Join-Path $releaseDirectory 'WorkBookmark-0.1.0-win-x64.zip'
+$packageVersion = ((Get-Item -LiteralPath (Join-Path $publishPath 'WorkBookmark.exe')).VersionInfo.ProductVersion -split '\+')[0]
+if ($packageVersion -notmatch '^\d+\.\d+\.\d+([-.][A-Za-z0-9.-]+)?$') { throw 'Invalid package version.' }
+$binaryZip = Join-Path $releaseDirectory ("WorkBookmark-$packageVersion-win-x64.zip")
 [IO.Compression.ZipFile]::CreateFromDirectory($publishPath, $binaryZip, [IO.Compression.CompressionLevel]::Optimal, $false)
 $sourceZip = Join-Path $releaseDirectory 'Source.zip'
-$zip = [IO.Compression.ZipFile]::Open($sourceZip, [IO.Compression.ZipArchiveMode]::Create)
-try {
-    Get-ChildItem -LiteralPath $taskRoot -File -Recurse -Force | Where-Object {
-        $relative = $_.FullName.Substring($taskRoot.Length + 1)
-        $relative -notmatch '(^|[\\/])(\.git|\.tools|bin|obj|artifacts|\.artifacts|\.vs)([\\/]|$)' -and $relative -notlike '*.user' -and $_.Name -notlike '~$*'
-    } | Sort-Object FullName | ForEach-Object {
-        $relative = $_.FullName.Substring($taskRoot.Length + 1).Replace('\', '/')
-        $inputStream = $null; $outputStream = $null
-        try {
-            # Synthetic workbooks may still be open in Excel; take a read-only shared stream.
-            $share = [IO.FileShare]::ReadWrite -bor [IO.FileShare]::Delete
-            $inputStream = [IO.File]::Open($_.FullName, [IO.FileMode]::Open, [IO.FileAccess]::Read, $share)
-            $entry = $zip.CreateEntry($relative, [IO.Compression.CompressionLevel]::Optimal)
-            $outputStream = $entry.Open()
-            $inputStream.CopyTo($outputStream)
-        }
-        finally {
-            if ($outputStream) { $outputStream.Dispose() }
-            if ($inputStream) { $inputStream.Dispose() }
-        }
-    }
-}
-finally { $zip.Dispose() }
+if (-not $GitPath) { $GitPath = (Get-Command git -ErrorAction Stop).Source }
+& $GitPath -C $taskRoot diff --quiet HEAD --
+if ($LASTEXITCODE -ne 0) { throw 'Commit tracked changes before packaging so Source.zip matches the release commit.' }
+& $GitPath -C $taskRoot archive --format=zip --output=$sourceZip HEAD
+if ($LASTEXITCODE -ne 0) { throw 'Source archive failed.' }
 $hashes = @($binaryZip, $sourceZip, (Join-Path $publishPath 'WorkBookmark.exe')) | ForEach-Object { Get-FileHash -LiteralPath $_ -Algorithm SHA256 }
 $hashes | ForEach-Object { $_.Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($_.Path) } | Set-Content -LiteralPath (Join-Path $releaseDirectory 'SHA256SUMS.txt') -Encoding ASCII
 Write-Output $releaseDirectory

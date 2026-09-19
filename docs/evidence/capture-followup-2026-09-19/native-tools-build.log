@@ -1,0 +1,11 @@
+  WorkBookmark.Core -> D:\Github_REPOS\BookMark\src\WorkBookmark.Core\bin\Release\net10.0\WorkBookmark.Core.dll
+  WorkBookmark.Storage -> D:\Github_REPOS\BookMark\src\WorkBookmark.Storage\bin\Release\net10.0\WorkBookmark.Storage.dll
+  WorkBookmark.Windows -> D:\Github_REPOS\BookMark\src\WorkBookmark.Windows\bin\Release\net10.0-windows\WorkBookmark.Windows.dll
+  WorkBookmark.App -> D:\Github_REPOS\BookMark\src\WorkBookmark.App\bin\Release\net10.0-windows\win-x64\WorkBookmark.dll
+  WindowsChecks -> D:\Github_REPOS\BookMark\tools\WindowsChecks\bin\Release\net10.0-windows\WindowsChecks.dll
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:07.26

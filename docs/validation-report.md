@@ -1,10 +1,35 @@
 # 검증 및 인수 보고서
 
+> 2026-09-19 0.1.1 수정: Word·PowerPoint 실제 저장/복원 각각4개, 메모장 명시적 파일 연결·열기13개, 자동검사244개 통과. 메모장 자동 커서 복원과 실제 설치된 브라우저 UI 저장은 지원/검증 완료로 표시하지 않습니다. 최신 근거는 [수정·검증 기록](capture-fixes.ko.md)을 참고하세요.
+
 2026-09-19 · WorkBookmark 0.1.0 · **제한된 시험판**
 
-## 출시 판단
+## 2026-09-19 후속 구현 검증
 
-구현과 self-contained win-x64 실행 파일을 제공합니다. 최종 전체 빌드는 경고 0개·오류 0개이며, 자동시험은 Core/Storage 13개, IPC 12개, Desktop 구성요소 16개로 **41개 모두 통과**했습니다. 이 결과는 명세의 실기 Gate 전체 통과를 뜻하지 않습니다. 지원 중인 Windows 11에서의 재검증, 탐색기 다중 탭/Excel 다중 창 반복 시험, 실제 IME 등 필수 시험이 남아 있어 정식 v1로 승인하지 않습니다.
+현재 작업 트리에서는 캡처 입력 경쟁, 선택 ZIP 분류, Shell 경로 해석 후 사용자 이탈 처리를 수정했습니다. 고정 기대값 기반의 수동 P0 캡처 세션과 보수적인 증거 판정도 추가했습니다. **전체 Release 빌드 경고 0·오류 0, 제품/검증 도구 자동검증 84개 통과**입니다. 상황과 결정은 [후속 진행 기록](implementation-progress.md)에 있습니다.
+
+| 검증 | 결과 | 증거 |
+|---|---|---|
+| Locked restore / 전체 빌드 | 통과 | [restore](evidence/continuation-2026-09-19/restore.txt), [build](evidence/continuation-2026-09-19/build-final.txt) |
+| Core/Storage | 13/13 | [실행 로그](evidence/continuation-2026-09-19/core-storage.txt) |
+| IPC 실제 프로세스 | 12/12 | [EXE 실행 로그](evidence/continuation-2026-09-19/ipc.txt) |
+| Desktop 구성요소 + 캡처 입력 경쟁 | 22/22 | [실행 로그](evidence/continuation-2026-09-19/desktop.txt). 입력 경쟁은 합성 콜백 + 실제 ApplicationContext |
+| Windows 어댑터 회귀 | 10/10 | [실행 로그](evidence/continuation-2026-09-19/adapter-checks-final.txt). 실제 ZIP Shell 속성 + 지연/실패 주입 |
+| Excel 반복 시험의 증거 판정 | 13/13 | [실행 로그](evidence/continuation-2026-09-19/evidence-selftest-final.txt). Office 실행 아님 |
+| 수동 P0 세션의 기대값/구성 판정 | 14/14 | [실행 로그](evidence/continuation-2026-09-19/session-selftest-final.txt). 실제 50회 실기 아님 |
+| self-contained publish / helper | 통과 | [publish](evidence/continuation-2026-09-19/publish.txt), [SDK 환경 없는 invalid-frame 거절](evidence/continuation-2026-09-19/published-worker-smoke.json) |
+| CLI 도움말 / 시작 실패 증거 | 통과 | [명령 결과](evidence/continuation-2026-09-19/cli-checks.json). Office 호출 0회인 실패를 Blocked로 보존 |
+| PowerShell build.ps1 전체 실행 | 차단 | [실패 로그](evidence/continuation-2026-09-19/build-and-tests.txt). 이 호스트의 PowerShell 내부 외부 EXE 호출이 실행 결과를 만들지 않음. 동일 SDK/명령을 직접 실행한 결과를 위에 구분 |
+
+기준 커밋은 a48987a이며 **커밋하지 않은 후속 변경**을 포함합니다. 실행 디렉터리는 artifacts/publish/continuation-20260919입니다. 로컬 배포 ZIP·Source.zip·SHA256SUMS.txt는 artifacts/releases의 새 생성시각 폴더에 함께 둡니다. EXE와 구현 DLL 해시는 [후속 빌드 manifest](evidence/continuation-2026-09-19/build-manifest.json)로 구분합니다. 공개된 preview.1은 이전 빌드이며 이번 후속 파일을 공개 업로드하지 않았습니다.
+
+초기 기본 실행 도구 접근 거부, 불완전한 빌드 서버 환경, DLL 방식으로 잘못 시작한 자기 재실행 IPC harness의 실패를 보존했습니다. 직접 EXE 및 새 SDK 프로세스로 수정한 검증만 통과로 집계했습니다. scripts/build.ps1에는 새 세 가지 회귀 명령을 연결했습니다.
+
+**남은 Gate:** 탐색기/Excel 실제 50회, 실제 한국어 IME와 Enter 재개, Office 편집/모달, 첫 캡처 지연 원인, 성능·장시간 누수 및 지원 중인 Windows 환경입니다. 아래 기존 preview.1 수용표의 미실행·차단을 새 자동시험으로 통과 처리하지 않았습니다. 수동 세션의 단축키 등록/해제·연타/취소도 별도 실기로 확인해야 합니다.
+
+## 기존 preview.1 출시 판단 (이전 기록)
+
+구현과 self-contained win-x64 실행 파일을 제공합니다. 당시 최종 전체 빌드는 경고 0개·오류 0개이며, 자동시험은 Core/Storage 13개, IPC 12개, Desktop 구성요소 16개로 **41개 모두 통과**했습니다. 이 결과는 명세의 실기 Gate 전체 통과를 뜻하지 않습니다. 지원 중인 Windows 11에서의 재검증, 탐색기 다중 탭/Excel 다중 창 반복 시험, 실제 IME 등 필수 시험이 남아 있어 정식 v1로 승인하지 않습니다.
 
 원래 요구사항 문서 3개는 수정하지 않았습니다. 이 시험판 실행 파일을 빌드할 당시에는 Git HEAD가 없는 초기 작업 디렉터리였으므로 빌드 증거에 커밋 번호를 부여하지 않았습니다. 이후 소스와 게시 안내를 main에 반영하고 v0.1.0-preview.1 태그로 식별합니다. 첨부 소스는 Source.zip의 SHA-256으로도 확인할 수 있습니다. ZIP 해시는 배포 폴더의 SHA256SUMS.txt, 실행 파일과 DLL 해시는 [build-manifest.json](evidence/build-manifest.json)에 있습니다.
 

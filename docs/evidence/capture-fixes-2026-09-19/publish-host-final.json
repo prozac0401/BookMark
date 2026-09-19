@@ -1,0 +1,26 @@
+{
+  "name": "publish-host-final",
+  "exe": "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+  "args": [
+    "publish",
+    "src/WorkBookmark.BrowserHost",
+    "-c",
+    "Release",
+    "-r",
+    "win-x64",
+    "--self-contained",
+    "true",
+    "--no-restore",
+    "-o",
+    "D:/Github_REPOS/BookMark/artifacts/publish/capture-fixes-0.1.1/win-x64/browser-host",
+    "-m:1",
+    "-nodeReuse:false"
+  ],
+  "startedUtc": "2026-09-19T05:18:49.780Z",
+  "stdout": "  WorkBookmark.Core -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\bin\\Release\\net10.0\\win-x64\\WorkBookmark.Core.dll\r\n  WorkBookmark.BrowserHost -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.BrowserHost\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.BrowserHost.dll\r\n  WorkBookmark.BrowserHost -> D:\\Github_REPOS\\BookMark\\artifacts\\publish\\capture-fixes-0.1.1\\win-x64\\browser-host\\\r\n",
+  "stderr": "",
+  "code": 0,
+  "done": true,
+  "pid": 19704,
+  "finishedUtc": "2026-09-19T05:18:56.048Z"
+}

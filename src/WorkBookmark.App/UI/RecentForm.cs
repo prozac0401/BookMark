@@ -6,7 +6,7 @@ namespace WorkBookmark.App.UI;
 
 internal sealed class RecentForm : Form
 {
-    private readonly ImeTextBox _search = new() { PlaceholderText = "이름 · 경로 · 시트 · 메모 검색" };
+    private readonly ImeTextBox _search = new() { PlaceholderText = "이름 · 경로/URL · 시트 · 메모 검색" };
     private readonly ListBox _items = new() { DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 92, IntegralHeight = false, BorderStyle = BorderStyle.None };
     private readonly Label _status = new() { ForeColor = UiStyle.Muted };
     private readonly LinkLabel _cancel = new() { Text = "요청 중단", AutoSize = true, Visible = false };
@@ -54,11 +54,11 @@ internal sealed class RecentForm : Form
         _searchTimer.Tick += async (_, _) => { _searchTimer.Stop(); await ReloadAsync(); };
         _cancel.LinkClicked += (_, _) => CancelRequested?.Invoke();
         var note = new ToolStripMenuItem("메모", null, (_, _) => { if (Selected is { } value) NoteRequested?.Invoke(value); });
-        var copy = new ToolStripMenuItem("전체 경로 복사", null, (_, _) => { if (Selected is { } value) try { Clipboard.SetText(value.Target.Path); } catch { _status.Text = "클립보드에 복사하지 못했습니다."; } });
+        var copy = new ToolStripMenuItem("전체 경로/URL 복사", null, (_, _) => { if (Selected is { } value) try { Clipboard.SetText(value.Target.Path); } catch { _status.Text = "클립보드에 복사하지 못했습니다."; } });
         var delete = new ToolStripMenuItem("목록에서 지우기", null, (_, _) => { if (Selected is { } value) DeleteRequested?.Invoke(value); });
         var relink = new ToolStripMenuItem("위치 다시 지정", null, (_, _) => { if (Selected is { } value) RelinkRequested?.Invoke(value); });
         _menu.Items.AddRange([note, copy, new ToolStripSeparator(), delete, relink]);
-        _menu.Opening += (_, e) => { if (Selected is null) e.Cancel = true; relink.Visible = Selected?.LastResumeResult == ResultCode.TargetUnavailable; _keepOpen = true; };
+        _menu.Opening += (_, e) => { if (Selected is null) e.Cancel = true; relink.Visible = Selected?.LastResumeResult == ResultCode.TargetUnavailable && Selected.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot); copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사"; _keepOpen = true; };
         _menu.Closed += (_, _) => _keepOpen = false;
         _items.ContextMenuStrip = _menu;
         Deactivate += (_, _) => { if (!_keepOpen && !_menu.Visible) Hide(); };
@@ -93,7 +93,7 @@ internal sealed class RecentForm : Form
             int index = selected.HasValue ? result.Items.ToList().FindIndex(b => b.Id == selected.Value) : -1;
             _items.SelectedIndex = index >= 0 ? index : (_items.Items.Count > 0 ? 0 : -1);
             _items.EndUpdate();
-            _status.Text = result.HasMore ? "검색 결과 100개 · 검색어를 좁혀 주세요." : result.Items.Count == 0 ? "책갈피가 없습니다. 작업 창에서 저장 단축키를 눌러 주세요." : query.Length == 0 ? "최근 저장 순서 · Enter/클릭 이어가기 · 우클릭 메뉴" : $"검색 결과 {result.Items.Count}개 · Enter로 이어가기";
+            _status.Text = result.HasMore ? (string.IsNullOrWhiteSpace(query) ? "최근 20개 · 이전 기록은 검색으로 찾을 수 있습니다." : "검색 결과 100개 · 검색어를 좁혀 주세요.") : result.Items.Count == 0 ? "책갈피가 없습니다. 작업 창에서 저장 단축키를 눌러 주세요." : query.Length == 0 ? "최근 저장 순서 · Enter/클릭 이어가기 · 우클릭 메뉴" : $"검색 결과 {result.Items.Count}개 · Enter로 이어가기";
         }
         catch { if (!IsDisposed && version == _loadVersion) _status.Text = "기록을 읽을 수 없습니다. 설정에서 데이터 폴더를 확인해 주세요."; }
     }

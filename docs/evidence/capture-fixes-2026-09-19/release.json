@@ -1,0 +1,23 @@
+{
+  "releaseDir": "D:/Github_REPOS/BookMark/artifacts/releases/20260919-052310-441",
+  "hashes": [
+    {
+      "name": "WorkBookmark-0.1.1-win-x64.zip",
+      "sha256": "2d04954b45fc5d1d1cb7f933b66a36083eeb50dc71b19c00571c6381f0d0122a",
+      "bytes": 87366857
+    },
+    {
+      "name": "Source.zip",
+      "sha256": "f7c5433f263dece942effe7ced519d515a747398444b611ff1790067e4326086",
+      "bytes": 559617
+    },
+    {
+      "name": "WorkBookmark.exe",
+      "sha256": "8bb214ee8f54e54c530507a589f28a8a1b7811cfea0b9f0c1e466455407e857c",
+      "bytes": 162816
+    }
+  ],
+  "archiveVerified": true,
+  "sourceUserOutputsExcluded": true,
+  "binaryEntrySeparator": "Windows backslash; normalized during verification"
+}

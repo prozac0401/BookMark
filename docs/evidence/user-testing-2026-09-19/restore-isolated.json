@@ -1,0 +1,17 @@
+{
+  "startedUtc": "2026-09-19T02:05:14.574Z",
+  "finishedUtc": "2026-09-19T02:05:21.546Z",
+  "file": "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+  "args": [
+    "restore",
+    "WorkBookmark.sln",
+    "--locked-mode",
+    "--configfile",
+    "NuGet.Config",
+    "--disable-build-servers",
+    "-m:1"
+  ],
+  "code": 0,
+  "stdout": "  복원할 프로젝트를 확인하는 중...\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\WorkBookmark.Windows.csproj을(를) 2.63초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Integration.Tests\\WorkBookmark.Integration.Tests.csproj을(를) 2.61초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\tools\\Probes\\Probes.csproj을(를) 2.64초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Browser.Tests\\WorkBookmark.Browser.Tests.csproj을(를) 2.61초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\WorkBookmark.Core.csproj을(를) 132밀리초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Desktop.Tests\\WorkBookmark.Desktop.Tests.csproj을(를) 262밀리초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\tools\\WindowsChecks\\WindowsChecks.csproj을(를) 295밀리초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Core.Tests\\WorkBookmark.Core.Tests.csproj을(를) 140밀리초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.BrowserHost\\WorkBookmark.BrowserHost.csproj을(를) 41밀리초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Storage\\WorkBookmark.Storage.csproj을(를) 304밀리초 동안 복원했습니다.\r\n  D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\WorkBookmark.App.csproj을(를) 118밀리초 동안 복원했습니다.\r\n",
+  "stderr": ""
+}

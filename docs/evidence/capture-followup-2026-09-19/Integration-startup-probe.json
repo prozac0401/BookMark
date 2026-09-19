@@ -1,0 +1,8 @@
+{
+  "fixturePid": 24352,
+  "markerPendingMilliseconds": 412,
+  "markerReadyMilliseconds": 458,
+  "childPid": 21240,
+  "stderr": "",
+  "childCleanup": "terminated only known fixture child"
+}

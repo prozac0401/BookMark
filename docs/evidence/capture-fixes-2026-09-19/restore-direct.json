@@ -1,0 +1,19 @@
+{
+  "name": "restore-direct",
+  "exe": "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+  "args": [
+    "restore",
+    "WorkBookmark.sln",
+    "--locked-mode",
+    "--configfile",
+    "NuGet.Config",
+    "--disable-parallel"
+  ],
+  "startedUtc": "2026-09-19T05:11:51.009Z",
+  "stdout": "  복원할 프로젝트를 확인하는 중...\r\n  복원할 모든 프로젝트가 최신 상태입니다.\r\n",
+  "stderr": "",
+  "code": 0,
+  "done": true,
+  "pid": 23400,
+  "finishedUtc": "2026-09-19T05:11:53.614Z"
+}

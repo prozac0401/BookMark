@@ -1,0 +1,51 @@
+{
+  "suite": "Installed Notepad snapshot capture and recovery",
+  "executedAtUtc": "2026-09-19T08:37:29.1201864+00:00",
+  "sourceHwnd": 1969464,
+  "sourceEditorClass": "",
+  "characters": 0,
+  "selection": "(0, 0)",
+  "capturedKind": "NotepadSnapshot",
+  "resumeCode": "ResumeOutcomeUnknown",
+  "recoveryHwnd": 0,
+  "checks": [
+    {
+      "name": "the explicitly prepared synthetic Notepad window is foreground with one editor",
+      "passed": true
+    },
+    {
+      "name": "only a blank or clearly marked synthetic test tab is accepted",
+      "passed": true
+    },
+    {
+      "name": "new document captures immediately as a text snapshot without source-file linking",
+      "passed": true
+    },
+    {
+      "name": "capture contains the full exact LF-normalized editor text, including blank content",
+      "passed": true
+    },
+    {
+      "name": "capture retains both ends of the actual source selection",
+      "passed": true
+    },
+    {
+      "name": "capturing creates no recovery file and requires no user-chosen save location",
+      "passed": true
+    },
+    {
+      "name": "snapshot text, title, state and selection survive JSON persistence transport",
+      "passed": true
+    },
+    {
+      "name": "installed Notepad confirms the new recovery document content and selection",
+      "passed": false
+    }
+  ],
+  "trace": [
+    "Notepad activation recovery=C:\\Users\\wonse\\AppData\\Local\\WorkBookmark\\NotepadRecovery\\Bookmark-f71f41a84f564f27be01caf75cc5acda.txt",
+    "activation failed COMException HRESULT=80270254"
+  ],
+  "failure": "installed Notepad confirms the new recovery document content and selection",
+  "limitation": "Actual native Notepad UI plus JSON transport. SQLite restart, hotkey/tray UX and active typing races are covered separately. No source document is saved or closed; recovery windows are left open for inspection."
+}

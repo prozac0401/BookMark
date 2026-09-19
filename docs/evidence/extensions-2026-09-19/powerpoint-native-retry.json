@@ -1,0 +1,23 @@
+{
+  "test": "PowerPoint synthetic capture and resume",
+  "startedUtc": "2026-09-19T00:55:15.4111075+00:00",
+  "finishedUtc": "2026-09-19T00:55:15.5045956+00:00",
+  "beforeSha256": "9B51465393C5CF0342C235D30A3278220A425DBC2A792BAF5BF2E76F759CD457",
+  "afterSha256": "9B51465393C5CF0342C235D30A3278220A425DBC2A792BAF5BF2E76F759CD457",
+  "passed": false,
+  "failure": "InvalidOperationException: Test foreground activation denied.",
+  "checks": [],
+  "diagnostics": [
+    {
+      "stage": "native-panes",
+      "rootHwnd": 7278502,
+      "candidateClass": "mdiClass",
+      "visiblePaneCount": 1
+    },
+    {
+      "stage": "native-windows",
+      "connectedWindowCount": 1
+    }
+  ],
+  "limitations": "One native editing window and saved .pptx. Does not establish multiple windows, reordered/deleted real slides, .ppt/.pptm, Office 32-bit, protected view, or 50-capture gate. No Office document saved, closed or process terminated."
+}

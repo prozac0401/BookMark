@@ -5,7 +5,10 @@ using WorkBookmark.Core;
 using WorkBookmark.Storage;
 
 var suite = new PolicyStorageSuite();
-return suite.Run();
+int baselineResult = suite.Run();
+int extendedResult = ExtendedTargetChecks.Run();
+int snapshotResult = NotepadSnapshotChecks.Run();
+return baselineResult == 0 && extendedResult == 0 && snapshotResult == 0 ? 0 : 1;
 
 internal sealed class PolicyStorageSuite
 {

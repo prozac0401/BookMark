@@ -1,0 +1,21 @@
+{
+  "name": "build-direct",
+  "exe": "D:/Github_REPOS/BookMark/.tools/dotnet/dotnet.exe",
+  "args": [
+    "build",
+    "WorkBookmark.sln",
+    "-c",
+    "Release",
+    "--no-restore",
+    "-m:1",
+    "-nodeReuse:false",
+    "-p:UseSharedCompilation=false"
+  ],
+  "startedUtc": "2026-09-19T05:12:08.242Z",
+  "stdout": "  WorkBookmark.Core -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\bin\\Release\\net10.0\\WorkBookmark.Core.dll\r\n  WorkBookmark.Windows -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\bin\\Release\\net10.0-windows\\WorkBookmark.Windows.dll\r\n  WorkBookmark.Storage -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Storage\\bin\\Release\\net10.0\\WorkBookmark.Storage.dll\r\n  WorkBookmark.App -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.dll\r\n  Probes -> D:\\Github_REPOS\\BookMark\\tools\\Probes\\bin\\Release\\net10.0-windows\\Probes.dll\r\n  WorkBookmark.Integration.Tests -> D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Integration.Tests\\bin\\Release\\net10.0\\WorkBookmark.Integration.Tests.dll\r\n  WorkBookmark.Core.Tests -> D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Core.Tests\\bin\\Release\\net10.0\\WorkBookmark.Core.Tests.dll\r\n  WindowsChecks -> D:\\Github_REPOS\\BookMark\\tools\\WindowsChecks\\bin\\Release\\net10.0-windows\\WindowsChecks.dll\r\n  WorkBookmark.Desktop.Tests -> D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Desktop.Tests\\bin\\Release\\net10.0-windows\\WorkBookmark.Desktop.Tests.dll\r\n  WorkBookmark.BrowserHost -> D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.BrowserHost\\bin\\Release\\net10.0-windows\\WorkBookmark.BrowserHost.dll\r\n  WorkBookmark.Browser.Tests -> D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Browser.Tests\\bin\\Release\\net10.0-windows\\WorkBookmark.Browser.Tests.dll\r\n\r\n빌드했습니다.\r\n    경고 0개\r\n    오류 0개\r\n\r\n경과 시간: 00:00:56.53\r\n",
+  "stderr": "",
+  "code": 0,
+  "done": true,
+  "pid": 23528,
+  "finishedUtc": "2026-09-19T05:13:05.610Z"
+}

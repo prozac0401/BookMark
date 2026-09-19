@@ -1,0 +1,21 @@
+{
+  "startedUtc": "2026-09-19T02:17:59.941Z",
+  "finishedUtc": "2026-09-19T02:18:01.667Z",
+  "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-File",
+    "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/scripts/register-browser-host.ps1",
+    "-Browser",
+    "Both",
+    "-HostExecutable",
+    "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/browser-host/WorkBookmark.BrowserHost.exe",
+    "-ChromeExtensionId",
+    "dgpnfldabohoijkpmnenglfaopbmhneo",
+    "-EdgeExtensionId",
+    "dgpnfldabohoijkpmnenglfaopbmhneo"
+  ],
+  "code": 0,
+  "stdout": "Chrome: registered C:\\Users\\wonse\\AppData\\Local\\WorkBookmark\\BrowserHosts\\chrome.com.workbookmark.capture.json\r\nEdge: registered C:\\Users\\wonse\\AppData\\Local\\WorkBookmark\\BrowserHosts\\edge.com.workbookmark.capture.json\r\nRun WorkBookmark, then use the extension on an ordinary http/https page. This script does not install the extension.\r\n",
+  "stderr": ""
+}

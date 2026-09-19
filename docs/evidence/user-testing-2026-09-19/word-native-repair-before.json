@@ -1,0 +1,24 @@
+{
+  "test": "Word synthetic capture and resume",
+  "startedUtc": "2026-09-19T04:55:59.2221147+00:00",
+  "finishedUtc": "2026-09-19T04:56:04.0222338+00:00",
+  "beforeSha256": "61B660745465EFA6E0153E563888BEAF0FA3A680F56550033F651C447519DBDF",
+  "afterSha256": "61B660745465EFA6E0153E563888BEAF0FA3A680F56550033F651C447519DBDF",
+  "passed": false,
+  "failure": "InvalidOperationException: capture records the independently requested synthetic body offset 37",
+  "checks": [
+    {
+      "name": "capture records the independently requested synthetic body offset 37",
+      "passed": false,
+      "response": {
+        "ProtocolVersion": 1,
+        "RequestId": "dea5be20-ec34-467f-8a5f-9c3a4dcd287f",
+        "Code": 2,
+        "Target": null,
+        "ExternalActionStarted": false,
+        "TargetHwnd": 0
+      }
+    }
+  ],
+  "limitations": "One native Word window and saved .docx. Does not establish multiple windows, edit drift, headers/footnotes, .doc/.docm/.rtf, Office 32-bit, protected view, or 50-capture gate. No document text read, document saved/closed, or process terminated."
+}

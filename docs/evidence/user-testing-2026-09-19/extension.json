@@ -1,0 +1,12 @@
+{
+  "startedUtc": "2026-09-19T02:07:16.810Z",
+  "finishedUtc": "2026-09-19T02:07:18.107Z",
+  "file": "C:/Users/wonse/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node.exe",
+  "args": [
+    "--test",
+    "browser-extension/tests/capture.test.mjs"
+  ],
+  "code": 0,
+  "stdout": "✔ manifest grants temporary current-tab access only (68.9506ms)\n✔ URL spelling, query ordering, percent escapes and fragment are preserved (0.5563ms)\n✔ unsupported and ambiguous URLs are rejected before native messaging (1.9732ms)\n✔ title cap preserves surrogate pairs and removes control characters (0.5553ms)\n✔ loading, inaccessible, inactive and private tabs are refused (1.407ms)\n✔ preview reads metadata without contacting the native host (2.2876ms)\n✔ native capture carries only bounded tab metadata and waits for commit (4.5414ms)\n✔ popup cannot capture a different tab or a navigated page (0.4936ms)\n✔ tab switch, window switch and navigation during metadata collection are refused (0.6472ms)\n✔ concurrent requests do not start a second host (1.8316ms)\n✔ host timeout is unknown and never automatically retries (18.5164ms)\n✔ native connection loss cannot be reported as confirmed failure or success (0.6341ms)\n✔ wrong request ID, malformed replies and noncommit successes are never success (0.3258ms)\n✔ host database refusal is displayed as failure without retry (0.3486ms)\n✔ service worker accepts only its popup and confirms a saved unchanged page (40.3897ms)\n✔ a late commit for the previous URL never decorates the new page (16.3711ms)\nℹ tests 16\nℹ suites 0\nℹ pass 16\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 714.0484\n",
+  "stderr": ""
+}

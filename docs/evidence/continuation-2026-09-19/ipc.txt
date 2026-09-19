@@ -1,0 +1,13 @@
+PASS D11 protocol-roundtrip
+PASS D11 oversized-and-truncated-frames
+PASS D04 valid-result-id
+PASS D04 wrong-request-id-rejected
+PASS D04 capture-deadline-no-late-success
+PASS D05 resume-deadline-outcome-unknown
+PASS U12 single-flight-no-queue
+PASS D04 cancellation-discards-response
+PASS D06 worker-crash-cleanup
+PASS D06 worker-child-survives-timeout
+PASS D06 dispose-terminates-worker-synchronously
+PASS D04 deadline-boundary-does-not-stick-busy
+12/12 passed

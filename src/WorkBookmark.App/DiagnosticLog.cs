@@ -24,7 +24,7 @@ public static class DiagnosticLog
                     if (File.Exists(first)) File.Move(first, second, true);
                     File.Move(current, first, true);
                 }
-                File.AppendAllText(current, $"{DateTimeOffset.UtcNow:O} stage={stage} code={code} elapsed_ms={elapsedMilliseconds} app=0.1.0 os={Environment.OSVersion.Version}\n");
+                File.AppendAllText(current, $"{DateTimeOffset.UtcNow:O} stage={stage} code={code} elapsed_ms={elapsedMilliseconds} app={typeof(DiagnosticLog).Assembly.GetName().Version} os={Environment.OSVersion.Version}\n");
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }

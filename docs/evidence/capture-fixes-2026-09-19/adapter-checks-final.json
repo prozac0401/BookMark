@@ -1,0 +1,7 @@
+{
+  "name": "adapter-checks",
+  "startedUtc": "2026-09-19T05:17:50.335Z",
+  "finishedUtc": "2026-09-19T05:17:50.735Z",
+  "stdout": "PASS: native Shell reproduces ZIP-as-folder namespace\r\nPASS: selected ZIP persists as file and uses reveal policy\r\nPASS: real selected directory remains a folder\r\nPASS: shortcut remains a file without following its target\r\nPASS: removed selection cannot produce a normal captured target\r\nPASS: interaction change during PIDL parsing prevents reveal and frees both PIDLs\r\nPASS: stable reveal checks interaction after parsing and opens exactly once\r\nPASS: expired whole-request deadline prevents reveal after parsing\r\nPASS: second parse failure frees the first PIDL without opening\r\nPASS: Shell refusal clears external-action flag and releases both PIDLs\r\nRESULT: 10 adapter checks passed. Synthetic filesystem/Shell metadata and injected call boundary; no full Explorer UI gate claimed.\r\n",
+  "stderr": ""
+}

@@ -1,0 +1,28 @@
+{
+  "purpose": "Generated synthetic files only; no Office automation or user documents used",
+  "mode": "reading-restriction",
+  "powerpoint": {
+    "file": "workbookmark-powerpoint-fixture.pptx",
+    "slide_ids": [
+      256,
+      257,
+      258
+    ],
+    "capture_slide_number": 2,
+    "capture_slide_id": 257,
+    "sha256": "331039eaa9318b228d8dd663501a1afdadbdcc9efc06caa530933201d8d84ac0"
+  },
+  "word": {
+    "file": "workbookmark-word-fixture.docx",
+    "paragraph_starts": [
+      0,
+      37,
+      98,
+      165
+    ],
+    "capture_word_start": 37,
+    "document_end": 235,
+    "sha256": "e93bcb20de5dcec9c25e668eb6589c36d95a55b7887cd17a4ed7908eea54d6a8"
+  },
+  "limitations": "Generated package oracle; actual installed Office behavior still needs the native worker checks"
+}

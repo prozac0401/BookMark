@@ -1,0 +1,22 @@
+{
+  "startedUtc": "2026-09-19T02:17:36.153Z",
+  "finishedUtc": "2026-09-19T02:17:37.575Z",
+  "file": "C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe",
+  "args": [
+    "-NoProfile",
+    "-File",
+    "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/scripts/register-browser-host.ps1",
+    "-Browser",
+    "Both",
+    "-HostExecutable",
+    "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919/browser-host/WorkBookmark.BrowserHost.exe",
+    "-ChromeExtensionId",
+    "dgpnfldabohoijkpmnenglfaopbmhneo",
+    "-EdgeExtensionId",
+    "dgpnfldabohoijkpmnenglfaopbmhneo",
+    "-WhatIf"
+  ],
+  "code": 0,
+  "stdout": "WhatIf: ��� \"Both for the current Windows user\"���� \"Register WorkBookmark browser messaging host\" �۾��� �����մϴ�.\r\n",
+  "stderr": ""
+}

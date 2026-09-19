@@ -1,0 +1,118 @@
+{
+  "suite": "Notepad snapshot recovery and caret safety",
+  "checks": [
+    {
+      "name": "unsaved new text is a complete restorable snapshot",
+      "passed": true
+    },
+    {
+      "name": "snapshot preserves Unicode and selected UTF-16 range",
+      "passed": true
+    },
+    {
+      "name": "a new empty tab is a valid snapshot",
+      "passed": true
+    },
+    {
+      "name": "dirty marker and localized app suffix do not split identical snapshots after source saving",
+      "passed": true
+    },
+    {
+      "name": "working copy is automatically stored under app LocalAppData with exact text and resolved through host file virtualization",
+      "passed": true
+    },
+    {
+      "name": "physical working copy explicitly stores a UTF-8 BOM",
+      "passed": true
+    },
+    {
+      "name": "repeat resume never overwrites an earlier edited recovery copy",
+      "passed": true
+    },
+    {
+      "name": "empty recovery copies decode to empty text",
+      "passed": true
+    },
+    {
+      "name": "corrupt content fails before a recovery copy is written",
+      "passed": true
+    },
+    {
+      "name": "Korean title matches the complete fresh recovery basename",
+      "passed": true
+    },
+    {
+      "name": "English title matches the complete fresh recovery basename",
+      "passed": true
+    },
+    {
+      "name": "filename-prefix collisions cannot authorize another editor",
+      "passed": true
+    },
+    {
+      "name": "classic CRLF caret converts to a stable LF offset",
+      "passed": true
+    },
+    {
+      "name": "stable LF offset converts back to a classic caret",
+      "passed": true
+    },
+    {
+      "name": "RichEdit already counts a line break as one character",
+      "passed": true
+    },
+    {
+      "name": "an impossible caret inside a CRLF pair fails closed",
+      "passed": true
+    },
+    {
+      "name": "empty documents preserve the initial caret",
+      "passed": true
+    },
+    {
+      "name": "reopen never clamps a caret after text becomes shorter",
+      "passed": true
+    },
+    {
+      "name": "negative offsets cannot be restored",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 0 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 1 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 2 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 3 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 4 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 5 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "UTF-16 offset 6 round trips across CRLF without losing surrogate units",
+      "passed": true
+    },
+    {
+      "name": "native selection transport preserves start and end beyond 65,535",
+      "passed": true
+    },
+    {
+      "name": "read-only selection transport does not change text or selection",
+      "passed": true
+    }
+  ],
+  "limitation": "Synthetic control and pure policy checks; installed Notepad capture and reopen are separate validation."
+}

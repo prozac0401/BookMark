@@ -1,0 +1,14 @@
+{
+  "startedUtc": "2026-09-19T02:18:38.280Z",
+  "finishedUtc": "2026-09-19T02:18:39.249Z",
+  "file": "C:/Users/wonse/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+  "args": [
+    "-c",
+    "import sqlite3,json,sys\nc=sqlite3.connect('file:'+sys.argv[1]+'?mode=ro',uri=True)\nc.row_factory=sqlite3.Row\nprint(json.dumps([dict(r) for r in c.execute('SELECT id,path,page_title,capture_sequence,deleted_at_utc FROM bookmarks WHERE path = ?', (sys.argv[2],))],ensure_ascii=False))\n",
+    "C:/Users/wonse/AppData/Local/WorkBookmark/bookmarks.db",
+    "https://example.com/?wb=edge-test-20260919#capture"
+  ],
+  "code": 0,
+  "stdout": "[]\r\n",
+  "stderr": ""
+}

@@ -1,0 +1,16 @@
+{
+  "version": "0.1.2",
+  "extensionVersion": "0.2.2",
+  "installed": [
+    {
+      "path": "C:/Users/wonse/AppData/Local/Programs/WorkBookmark-Preview-20260919",
+      "dllSha256": "095e77d3d780567c1a6a3e4105449f3c650bc1523203a78b2e37602c829335ed"
+    },
+    {
+      "path": "D:/WorkBookmark-0.1.0-win-x64",
+      "dllSha256": "095e77d3d780567c1a6a3e4105449f3c650bc1523203a78b2e37602c829335ed"
+    }
+  ],
+  "dbUnchanged": true,
+  "processId": 2588
+}

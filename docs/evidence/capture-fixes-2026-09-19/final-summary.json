@@ -1,0 +1,32 @@
+{
+  "version": "0.1.1",
+  "sdk": "10.0.401",
+  "build": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "automatedCounts": {
+    "core": 26,
+    "ipc": 12,
+    "desktop": 28,
+    "explorer": 10,
+    "evidence": 13,
+    "session": 14,
+    "word": 16,
+    "notepad": 31,
+    "pdf": 28,
+    "browserHost": 27,
+    "browserSqlite": 15,
+    "extension": 17,
+    "registration": 7
+  },
+  "automatedTotal": 244,
+  "native": {
+    "word": 4,
+    "powerpoint": 4,
+    "notepad": 13
+  },
+  "publishedBrowserSqlite": 15,
+  "notepadAutomaticCaretRestore": false,
+  "browserGui": "blocked; no actual installed extension capture claimed"
+}

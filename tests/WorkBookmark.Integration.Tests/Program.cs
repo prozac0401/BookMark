@@ -94,7 +94,7 @@ internal static class Program
             finally
             {
                 if (child is not null) { if (!child.HasExited) child.Kill(false); child.Dispose(); }
-                File.Delete(marker);
+                File.Delete(marker); File.Delete(marker + ".pending");
             }
         });
         await Check("D06 dispose-terminates-worker-synchronously", async () =>
@@ -113,7 +113,7 @@ internal static class Program
                 Assert((await pending).Code != ResultCode.Captured, "Disposed request succeeded.");
                 Assert((await client.RunAsync(Request())).Code == ResultCode.InvalidRequest, "Disposed client restarted.");
             }
-            finally { worker?.Dispose(); File.Delete(marker); }
+            finally { worker?.Dispose(); File.Delete(marker); File.Delete(marker + ".pending"); }
         });
         await Check("D04 deadline-boundary-does-not-stick-busy", async () =>
         {
@@ -140,13 +140,21 @@ internal static class Program
         {
             var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true };
             info.ArgumentList.Add("--fixture"); info.ArgumentList.Add("child");
-            using var child = Process.Start(info)!; await File.WriteAllTextAsync(args[2], child.Id.ToString());
+            using var child = Process.Start(info)!; await PublishPidAsync(args[2], child.Id);
             await Task.Delay(10000);
         }
-        if (mode == "own-pid") { await File.WriteAllTextAsync(args[2], Environment.ProcessId.ToString()); await Task.Delay(10000); }
+        if (mode == "own-pid") { await PublishPidAsync(args[2], Environment.ProcessId); await Task.Delay(10000); }
         if (mode == "late") await Task.Delay(5000);
         var response = new WorkerResponse(1, mode == "wrong-id" ? Guid.NewGuid() : request.RequestId, ResultCode.Captured, new(TargetKind.File, @"C:\fixture\report.txt"));
         await FrameProtocol.WriteAsync(Console.OpenStandardOutput(), response); return 0;
+    }
+    private static async Task PublishPidAsync(string marker, int processId)
+    {
+        // Publish readiness only after WriteAllTextAsync has closed its stream. File.Exists on
+        // the final marker must never race with the fixture writing the PID it announces.
+        string pending = marker + ".pending";
+        await File.WriteAllTextAsync(pending, processId.ToString());
+        File.Move(pending, marker);
     }
     private static void Assert(bool condition, string message) { if (!condition) throw new Exception(message); }
 }
