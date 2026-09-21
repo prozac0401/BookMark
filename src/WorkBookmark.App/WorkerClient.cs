@@ -23,7 +23,9 @@ public sealed class WorkerClient : IDisposable
 
     public async Task<WorkerResponse> RunAsync(WorkerRequest request, CancellationToken cancellationToken = default)
     {
-        WorkerResponse Result(ResultCode code, bool unknown = false) => new(FrameProtocol.Version, request.RequestId, code, ExternalActionStarted: unknown);
+        WorkerResponse Result(ResultCode code, bool unknown = false) => new(FrameProtocol.Version, request.RequestId,
+            code == ResultCode.ResumeOutcomeUnknown && request.Operation == Operation.Resume && request.Target is { } target && OfficeLocation.IsWebTarget(target)
+                ? ResultCode.OfficeResumePending : code, ExternalActionStarted: unknown);
         if (!FrameProtocol.IsValid(request, DateTimeOffset.UtcNow)) return Result(ResultCode.InvalidRequest);
         lock (gate) { if (disposed) return Result(ResultCode.InvalidRequest); }
         if (Interlocked.CompareExchange(ref busy, 1, 0) != 0) return Result(ResultCode.AppBusy);

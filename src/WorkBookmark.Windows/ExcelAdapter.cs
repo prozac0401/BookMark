@@ -26,7 +26,7 @@ internal static class ExcelAdapter
         ForegroundSnapshot.Verify(snapshot);
         if (first.Target != second.Target || !ComScope.Same(first.Workbook, second.Workbook) || !ComScope.Same(first.Worksheet, second.Worksheet))
             throw new BookmarkException(ResultCode.ContextChanged);
-        WindowsAdapter.CheckExists(first.Target);
+        OfficeDocumentAccess.CheckExists(first.Target);
         context.Check(); ForegroundSnapshot.Verify(snapshot);
         return first.Target;
     }
@@ -97,10 +97,11 @@ internal static class ExcelAdapter
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
         using var guard = new ResumeGuard(context.Request.Snapshot);
-        var normalized = PathPolicy.Normalize(target.Path);
+        var normalized = OfficeDocumentAccess.Normalize(TargetKind.ExcelCell, target.Path);
         var opened = false;
         while (true)
         {
+            if (OfficeDocumentAccess.WaitingForWebDocument(target, opened, context)) return context.Response(ResultCode.OfficeResumePending);
             context.Check();
             using var scope = new ComScope();
             var enumeration = Enumerate(normalized, scope, context);
@@ -109,7 +110,7 @@ internal static class ExcelAdapter
             {
                 if (!opened)
                 {
-                    if (enumeration.Matches.Count == 0) WindowsAdapter.CheckExists(target);
+                    if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
                     throw new BookmarkException(ResultCode.EnumerationIncomplete);
                 }
                 // Startup may expose an XLMAIN before its native object model/workbook is ready.
@@ -140,7 +141,7 @@ internal static class ExcelAdapter
                     scope.Call(match.Application, "Goto", range, true);
                     context.Check();
                     var actual = ReadPosition(selected, scope, requireActive: true);
-                    if (!string.Equals(PathPolicy.Normalize(actual.Target.Path), normalized, StringComparison.Ordinal) ||
+                    if (!string.Equals(OfficeLocation.Normalize(TargetKind.ExcelCell, actual.Target.Path), normalized, StringComparison.Ordinal) ||
                         actual.Target.SheetName != target.SheetName || actual.Target.CellAddress != target.CellAddress)
                         return context.Response(ResultCode.OpenedPositionFailed);
                     // Foreground acquisition is separate from verified cell movement.
@@ -158,10 +159,10 @@ internal static class ExcelAdapter
             }
             if (!opened)
             {
-                WindowsAdapter.CheckExists(target);
+                OfficeDocumentAccess.CheckExists(target);
                 if (Type.GetTypeFromProgID("Excel.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
                 guard.Check(); context.Check();
-                WindowsAdapter.ShellOpen(target.Path, context);
+                OfficeDocumentAccess.Open(target, context);
                 opened = true; // Never issue a second Shell open, even when observation fails.
             }
             System.Windows.Forms.Application.DoEvents();
@@ -172,7 +173,7 @@ internal static class ExcelAdapter
     private static object ValidatePosition(CapturedTarget target, object workbook, ComScope scope, RequestContext context)
     {
         context.Check();
-        if (!string.Equals(PathPolicy.Normalize(scope.Text(workbook, "FullName")), PathPolicy.Normalize(target.Path), StringComparison.Ordinal))
+        if (!string.Equals(OfficeLocation.Normalize(TargetKind.ExcelCell, scope.Text(workbook, "FullName")), OfficeLocation.Normalize(TargetKind.ExcelCell, target.Path), StringComparison.Ordinal))
             throw new BookmarkException(ResultCode.ContextChanged);
         var worksheets = scope.Get(workbook, "Worksheets");
         var count = scope.Number(worksheets, "Count");
@@ -237,7 +238,7 @@ internal static class ExcelAdapter
         }
         if (processesBefore.Any(pid => !connectedPids.Contains(pid)) || hiddenControlPids.Any(pid => !connectedPids.Contains(pid))) Incomplete("unconnected-process");
         var matches = new Dictionary<nint, Match>();
-        var targetIdentity = FileIdentity.TryRead(targetPath);
+        var matcher = new OfficeDocumentMatcher(TargetKind.ExcelCell, targetPath);
         foreach (var application in connections.Values)
         {
             context.Check();
@@ -255,19 +256,9 @@ internal static class ExcelAdapter
                     identities.Add(ComScope.Identity(workbook));
                     if (string.IsNullOrEmpty(scope.Text(workbook, "Path"))) continue;
                     var fullName = scope.Text(workbook, "FullName");
-                    if (Uri.TryCreate(fullName, UriKind.Absolute, out var uri) && !uri.IsFile) continue;
-                    var path = PathPolicy.Normalize(fullName);
-                    var exact = string.Equals(path, targetPath, StringComparison.Ordinal);
-                    var possibleAlias = string.Equals(path, targetPath, StringComparison.OrdinalIgnoreCase);
-                    if (!exact)
-                    {
-                        var identity = FileIdentity.TryRead(path);
-                        if (targetIdentity is null || identity is null) { Incomplete("file-identity-unavailable"); continue; }
-                        possibleAlias |= identity == targetIdentity;
-                    }
-                    // Permanent keys are ordinal. Aliases are detected, never guessed as absence or merged silently.
-                    if (possibleAlias && !exact) { Incomplete("path-alias"); continue; }
-                    if (!exact) continue;
+                    var match = matcher.Match(fullName);
+                    if (match == OfficeDocumentMatch.Uncertain) { Incomplete("document-identity-unavailable-or-alias"); continue; }
+                    if (match != OfficeDocumentMatch.Exact) continue;
                     var windows = scope.Get(workbook, "Windows");
                     var windowCount = scope.Number(windows, "Count");
                     var verified = new List<ConnectedWindow>();

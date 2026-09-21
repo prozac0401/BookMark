@@ -2,6 +2,8 @@
 
 Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·Chrome 웹페이지를 로컬에 남기는 트레이 도구입니다. Office 추가 기능과 브라우저 연결은 검증 중인 확장 구현입니다.
 
+**[0.1.4-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.4-preview.1):** 데스크톱 Office에서 웹 URL로 연 Excel·Word·PowerPoint의 작업 위치를 저장·재개하도록 확장했습니다. [사용 방법과 사내 AD 자체 검증 항목](docs/office-url-support.ko.md)을 확인하세요. 실제 AD·Office 실기검증은 별도입니다.
+
 **[0.1.3-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.3-preview.1):** 메모장 자동 보관. 새 문서·미저장 내용도 파일 선택 없이 본문과 선택 위치를 기록합니다. [변경 및 테스트 분담](docs/notepad-snapshot-and-test-plan.ko.md)을 확인하세요.
 
 **0.1.1 수정판:** Word·PowerPoint의 실제 저장 실패를 수정하고, 메모장 원본 파일 선택·커서 위치 저장을 추가했습니다. [수정 내용과 검증 범위](docs/capture-fixes.ko.md)를 확인하세요.
@@ -47,4 +49,4 @@ $dotnet = ".\.tools\dotnet\dotnet.exe"
 
 `Core`: DTO·경로 정책·IPC / `Storage`: SQLite / `Windows`: Shell·Office·실험 PDF / `App`: WinForms UI·수명 관리. `tools/Probes`와 `tools/WindowsChecks`는 합성 자료로 P0를 재현하는 개발용 도구이며 실행 ZIP에 포함하지 않습니다.
 
-[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위·근거·제한을 기록했습니다. 원래 요구사항의 초기 기준은 이력으로 보존했습니다. [시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.3-preview.1)에서 실행 ZIP·소스 ZIP·SHA-256을 제공합니다.
+[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위·근거·제한을 기록했습니다. 원래 요구사항의 초기 기준은 이력으로 보존했습니다. [시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.4-preview.1)에서 실행 ZIP·소스 ZIP·SHA-256을 제공합니다.

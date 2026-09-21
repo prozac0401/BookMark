@@ -1,0 +1,375 @@
+  복원할 프로젝트를 확인하는 중...
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Integration.Tests\WorkBookmark.Integration.Tests.csproj을(를) 1.11초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tools\Probes\Probes.csproj을(를) 1.11초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tools\WindowsChecks\WindowsChecks.csproj을(를) 1.15초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Windows\WorkBookmark.Windows.csproj을(를) 1.11초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Core\WorkBookmark.Core.csproj을(를) 79밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Browser.Tests\WorkBookmark.Browser.Tests.csproj을(를) 86밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\WorkBookmark.Desktop.Tests.csproj을(를) 74밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Storage\WorkBookmark.Storage.csproj을(를) 89밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Core.Tests\WorkBookmark.Core.Tests.csproj을(를) 65밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.BrowserHost\WorkBookmark.BrowserHost.csproj을(를) 87밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.App\WorkBookmark.App.csproj을(를) 63밀리초 동안 복원했습니다.
+  WorkBookmark.Core -> D:\Github_REPOS\BookMark\src\WorkBookmark.Core\bin\Release\net10.0\WorkBookmark.Core.dll
+  WorkBookmark.BrowserHost -> D:\Github_REPOS\BookMark\src\WorkBookmark.BrowserHost\bin\Release\net10.0-windows\WorkBookmark.BrowserHost.dll
+  WorkBookmark.Browser.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Browser.Tests\bin\Release\net10.0-windows\WorkBookmark.Browser.Tests.dll
+  WorkBookmark.Storage -> D:\Github_REPOS\BookMark\src\WorkBookmark.Storage\bin\Release\net10.0\WorkBookmark.Storage.dll
+  WorkBookmark.Integration.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Integration.Tests\bin\Release\net10.0\WorkBookmark.Integration.Tests.dll
+  WorkBookmark.Core.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Core.Tests\bin\Release\net10.0\WorkBookmark.Core.Tests.dll
+  WorkBookmark.Windows -> D:\Github_REPOS\BookMark\src\WorkBookmark.Windows\bin\Release\net10.0-windows\WorkBookmark.Windows.dll
+  Probes -> D:\Github_REPOS\BookMark\tools\Probes\bin\Release\net10.0-windows\Probes.dll
+  WorkBookmark.App -> D:\Github_REPOS\BookMark\src\WorkBookmark.App\bin\Release\net10.0-windows\win-x64\WorkBookmark.dll
+  WindowsChecks -> D:\Github_REPOS\BookMark\tools\WindowsChecks\bin\Release\net10.0-windows\WindowsChecks.dll
+  WorkBookmark.Desktop.Tests -> D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\bin\Release\net10.0-windows\WorkBookmark.Desktop.Tests.dll
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:07.63
+PASS E06/X12 Windows path policy and conservative identity
+PASS E07 Document allowlist and executable reveal policy
+PASS X01/X12 Absolute single Excel cell bounds
+PASS U05/U06/U07 Duplicate capture preserves note and separates cells
+PASS U08 Sequence survives clock rollback, notes, resume, and restart
+PASS U10 Delete, undo, and recapture preserve identity and notes
+  Synthetic 1,026-record repository recent query: 2.85 ms (not UI p95).
+PASS U13 Full-history search, literal query, and result bounds
+PASS D01/D02 All mutation failures roll back without false commits
+PASS E09 Relink preserves metadata and rejects collisions/location edits
+PASS D03 Corruption and unknown schemas are preserved
+PASS D03 Migration creates consistent backup and rolls back on failure
+PASS D01 Concurrent writer serialization keeps unique monotonic sequence
+  Real SQLite writer lock rejected after 3.28 s.
+PASS D01/D02 Real SQLite writer lock fails atomically within a bounded wait
+RESULT: 13 passed; 0 failed. Policy/SQLite execution only; Windows/Office acceptance remains separate.
+PASS Browser URL state is preserved and unsupported handlers are rejected
+PASS Word/PowerPoint/PDF coordinates reject mixed or incomplete target metadata
+PASS Notepad requires an unambiguous nonnegative text offset and unsaved state
+PASS Notepad offsets preserve notes, separate positions and survive restart
+PASS Notepad failed capture preserves committed state and sequence
+PASS Version 2 migration preserves all target kinds and history with backup
+PASS Version 2 migration failure restores schema, rows and sequence before retry
+PASS Browser exact-URL recapture updates title and preserves notes
+PASS Word offsets, stable slide IDs and PDF pages survive persistence
+PASS Position relink preserves coordinates and rejects collisions
+PASS Extended-target mutation failures preserve metadata and sequence
+PASS Version 1 migration preserves history, sequence and a consistent backup
+PASS Version 1 migration failure rolls back schema and rows before retry
+EXTENDED RESULT: 13 passed; 0 failed. No browser or Office automation.
+PASS N-S01 Empty, Korean, emoji and newline snapshots use canonical UTF-16 selections
+PASS N-S02 Snapshot bodies, selections, metadata and content hashes reject tampering
+PASS N-S03 Snapshot boundaries allow two Mi UTF-16 characters and reject larger input
+PASS N-S04 Snapshot metadata cannot leak onto file, browser or legacy position targets
+PASS N-S05 Snapshot identity preserves notes and distinguishes content, title and selection
+PASS N-S06 Snapshot content, selection, history and deletion survive restart
+PASS N-S07 Failed snapshot transactions preserve committed content and capture sequence
+PASS N-S08 Schema 3 migration preserves every historical field and consistent backup
+PASS N-S09 Schema 3 migration failure rolls back all fields and can be retried
+PASS N-S10 SQLite snapshot constraints and read validation reject corrupted content
+PASS N-S11 Full-size request/response frames round-trip and over-limit frames fail
+SNAPSHOT RESULT: 11 passed; 0 failed. Isolated Core/SQLite/protocol checks; editor acceptance remains separate.
+PASS HTTP/HTTPS Office targets retain their coordinates and original URL
+PASS Office URL validation rejects credentials, handler injection and malformed input
+PASS Office IRI identity preserves document paths and URL state
+PASS Office URI launch always selects the recorded application
+PASS Office URLs, distinct positions, notes and resume results survive SQLite restart
+PASS Office URL failed writes and file relinking preserve committed records
+PASS Office URL metadata survives the worker frame protocol
+OFFICE URL RESULT: 7 passed; 0 failed. No Office or authentication session used.
+PASS D11 protocol-roundtrip
+PASS D11 oversized-and-truncated-frames
+PASS D04 valid-result-id
+PASS D04 wrong-request-id-rejected
+PASS D04 capture-deadline-no-late-success
+PASS D05 resume-deadline-outcome-unknown
+PASS O01 web-Office-capture-worker-result
+PASS O02 web-Office-timeout-never-claims-position-restored
+PASS O03 web-Office-cancellation-never-claims-position-restored
+PASS U12 single-flight-no-queue
+PASS D04 cancellation-discards-response
+PASS D06 worker-crash-cleanup
+PASS D06 worker-child-survives-timeout
+PASS D06 dispose-terminates-worker-synchronously
+PASS D04 deadline-boundary-does-not-stick-busy
+15/15 passed
+PASS: settings atomic overwrite round-trip
+PASS: settings no temporary leftovers
+PASS: corrupt settings preserved
+PASS: native hotkeys registered
+PASS: conflict fixture registered
+PASS: replacement collision refused
+PASS: old registration retained and pending reservation rolled back
+PASS: duplicate shortcut pair refused
+PASS: Windows Shell parses Unicode startup target
+PASS: startup ownership description parsed
+PASS: startup working directory parsed
+PASS: IME composition suppresses submission
+PASS: IME commit Enter has a suppression window
+PASS: note write failure retains editable content
+PASS: note retry saves retained text
+PASS: recent form opens with loaded first selection
+PASS: capture shortcut key-up preserves the observed target
+PASS: new key before worker response prevents capture commit
+PASS: new mouse button before worker response prevents capture commit
+PASS: wheel input before worker response prevents capture commit
+PASS: new input wins against an already returned capture response
+PASS: accepted capture survives new work during the database write
+PASS: unsaved Korean and emoji snapshot: success waits for durable SQLite commit
+PASS: unsaved Korean and emoji snapshot: single capture without file selection
+PASS: unsaved Korean and emoji snapshot: original body and selection committed before success
+PASS: unsaved Korean and emoji snapshot: snapshot survives database reopen
+PASS: empty new Notepad snapshot: success waits for durable SQLite commit
+PASS: empty new Notepad snapshot: single capture without file selection
+PASS: empty new Notepad snapshot: original body and selection committed before success
+PASS: empty new Notepad snapshot: snapshot survives database reopen
+PASS: snapshot SQLite write failure: success waits for durable SQLite commit
+PASS: snapshot SQLite write failure: single capture without file selection
+PASS: snapshot SQLite write failure: rejected or rolled-back snapshot cannot report success
+PASS: snapshot content identity mismatch: single capture without file selection
+PASS: snapshot content identity mismatch: rejected or rolled-back snapshot cannot report success
+PASS: recent list over twenty records uses recent-count guidance
+PASS: search limit remains one hundred results
+PASS: UI04 NoteForm Escape closes without persisting edited text
+PASS: UI04 native note editor accepts 500 characters and refuses character 501
+PASS: UI04 NoteForm Enter persists the accepted 500-character note exactly once
+PASS: RL01 Cancel relink preview shows candidate path, retained note and existing cell read-only
+PASS: RL01 actual modal relink Cancel button returns the correct commit/cancel decision
+PASS: RL01 OK relink preview shows candidate path, retained note and existing cell read-only
+PASS: RL01 actual modal relink OK button returns the correct commit/cancel decision
+PASS: UI03 deleting a bookmark arms the real 10-second undo timer and menu
+PASS: UI03 expired undo is refused even when its timer callback has not fired
+PASS: UI03 real expiry callback clears the undo identity and hides its menu
+PASS: UI03 a stale undo action after the expiry callback cannot restore a deleted bookmark
+PASS: UI03 a fresh unexpired undo restores once and disarms both timer and menu
+PASS: UI03 repeated undo after successful restoration does not issue a second repository restore
+PASS: browser success waits for repository commit
+PASS: browser simultaneous request returns busy without another write
+PASS: browser exact acknowledgment follows committed capture
+PASS: browser repository failure cannot report successful capture
+PASS: browser cancelled queued request cannot write
+PASS: browser invalid URI cannot reach repository
+RESULT: 56 checks passed. Native launch, actual IME and rendered UI remain separate manual gates.
+PASS: native Shell reproduces ZIP-as-folder namespace
+PASS: selected ZIP persists as file and uses reveal policy
+PASS: real selected directory remains a folder
+PASS: shortcut remains a file without following its target
+PASS: removed selection cannot produce a normal captured target
+PASS: interaction change during PIDL parsing prevents reveal and frees both PIDLs
+PASS: stable reveal checks interaction after parsing and opens exactly once
+PASS: expired whole-request deadline prevents reveal after parsing
+PASS: second parse failure frees the first PIDL without opening
+PASS: Shell refusal clears external-action flag and releases both PIDLs
+RESULT: 10 adapter checks passed. Synthetic filesystem/Shell metadata and injected call boundary; no full Explorer UI gate claimed.
+PASS ExcelSeries evidence verdict: 13 checks; no Office or UI interaction.
+PASS Exact predeclared target passes
+PASS Same filename in another path stops
+PASS Stable timeout cannot pass
+PASS Explicit rejection oracle passes its own case
+PASS Unexpected successful capture in a rejection case stops
+PASS Same view group cannot silently switch tabs
+PASS Distinct tab labels cannot reuse one active view
+PASS Same Excel process group cannot change PID
+PASS Fixture prefix sibling is outside root
+PASS One successful capture is not a 50-case gate
+PASS Fifty copies of one view do not satisfy scenario coverage
+PASS Focused checks never establish a P0 gate
+PASS Exact transition captures do not inflate the stable sample count
+PASS Complete synthetic two-window two-tab oracle can satisfy capture coverage
+Capture session verdict checks: 14 passed. Synthetic assertions only; no live P0 result.
+PASS: unprotected body navigation remains supported
+PASS: read-only editing restriction permits metadata capture and body navigation without removing protection
+PASS: unsupported or unknown editing restriction 0 is refused
+PASS: unsupported or unknown editing restriction 1 is refused
+PASS: unsupported or unknown editing restriction 2 is refused
+PASS: unsupported or unknown editing restriction 4 is refused
+PASS: unsupported or unknown editing restriction -2147483648 is refused
+PASS: unsupported or unknown editing restriction 2147483647 is refused
+PASS: saved empty Word body accepts its first insertion point
+PASS: normal body selection records its start without requiring selected text
+PASS: header coordinate cannot masquerade as a body offset
+PASS: footnote coordinate cannot masquerade as a body offset
+PASS: text-frame coordinate cannot masquerade as a body offset
+PASS: discontinuous block selection is refused
+PASS: shape selection is refused
+PASS: no-selection state is refused
+PASS: negative capture offset is refused
+PASS: reversed capture coordinates are refused
+PASS: selection that outlived a shortened body is refused
+PASS: restore accepts zero offset in an empty body
+PASS: restore rejects negative offsets
+PASS: restore never clamps an offset after the document shrinks
+PASS: restore refuses unavailable main-story bounds
+PASS: offset comparison does not overflow at COM Long maximum
+RESULT: 24 Word coordinate/protection checks passed. This does not certify installed Word COM capture or full UI behavior.
+PASS ExcelCell matches the opened URL/IRI without filesystem or authentication probes
+PASS ExcelCell never confuses same-name documents, URL states or local caches
+PASS ExcelCell invalid observed URL is not treated as proven absence
+PASS ExcelCell requests the correct Office handler exactly once
+PASS ExcelCell missing handler is reported as failure without a claimed open
+PASS ExcelCell invalid URL never reaches Shell
+PASS ExcelCell expired request cannot start an Office open
+PASS ExcelCell incomplete authentication/loading has a bounded pending result
+PASS WordPosition matches the opened URL/IRI without filesystem or authentication probes
+PASS WordPosition never confuses same-name documents, URL states or local caches
+PASS WordPosition invalid observed URL is not treated as proven absence
+PASS WordPosition requests the correct Office handler exactly once
+PASS WordPosition missing handler is reported as failure without a claimed open
+PASS WordPosition invalid URL never reaches Shell
+PASS WordPosition expired request cannot start an Office open
+PASS WordPosition incomplete authentication/loading has a bounded pending result
+PASS PowerPointSlide matches the opened URL/IRI without filesystem or authentication probes
+PASS PowerPointSlide never confuses same-name documents, URL states or local caches
+PASS PowerPointSlide invalid observed URL is not treated as proven absence
+PASS PowerPointSlide requests the correct Office handler exactly once
+PASS PowerPointSlide missing handler is reported as failure without a claimed open
+PASS PowerPointSlide invalid URL never reaches Shell
+PASS PowerPointSlide expired request cannot start an Office open
+PASS PowerPointSlide incomplete authentication/loading has a bounded pending result
+PASS local Office documents still require the filesystem existence check
+PASS local exact paths and conservative file-alias decisions are preserved
+PASS an unrelated open web document does not block local resume
+PASS missing local file is not silently accepted
+PASS existing Excel UNC and Word/PowerPoint local-only filesystem scope is unchanged
+RESULT: 29 Office URL adapter checks passed. AD/Office desktop acceptance remains manual.
+PASS: unsaved new text is a complete restorable snapshot
+PASS: snapshot preserves Unicode and selected UTF-16 range
+PASS: a new empty tab is a valid snapshot
+PASS: dirty marker and localized app suffix do not split identical snapshots after source saving
+PASS: working copy is automatically stored under app LocalAppData with exact text and resolved through host file virtualization
+PASS: physical working copy explicitly stores a UTF-8 BOM
+PASS: repeat resume never overwrites an earlier edited recovery copy
+PASS: empty recovery copies decode to empty text
+PASS: corrupt content fails before a recovery copy is written
+PASS: Korean title matches the complete fresh recovery basename
+PASS: English title matches the complete fresh recovery basename
+PASS: filename-prefix collisions cannot authorize another editor
+PASS: classic CRLF caret converts to a stable LF offset
+PASS: stable LF offset converts back to a classic caret
+PASS: RichEdit already counts a line break as one character
+PASS: an impossible caret inside a CRLF pair fails closed
+PASS: empty documents preserve the initial caret
+PASS: reopen never clamps a caret after text becomes shorter
+PASS: negative offsets cannot be restored
+PASS: UTF-16 offset 0 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 1 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 2 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 3 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 4 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 5 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 6 round trips across CRLF without losing surrogate units
+PASS: native selection transport preserves start and end beyond 65,535
+PASS: read-only selection transport does not change text or selection
+RESULT: 28 Notepad snapshot recovery and coordinate checks passed.
+PASS: Unicode path and physical page decoded without title heuristics
+PASS: matching exact path and page confirms position
+PASS: same filename in another folder cannot confirm position
+PASS: successful response at wrong page cannot confirm position
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 4
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 5
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 6
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 7
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 8
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 9
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 10
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 11
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 12
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 13
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 14
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 15
+PASS: oversized PDF response refused
+PASS: duplicate open documents retained for ambiguity detection
+PASS: unsupported open-files capability is not treated as no documents
+PASS: embedded NUL cannot truncate an open path
+PASS: open does not force refresh or deliberately create another window
+PASS: native DDE preserves Unicode path without command-line escaping
+PASS: command-injection quote in a pathname refused
+PASS: native DDE binds response to requested HWND among two servers
+PASS: native DDE executes only on selected HWND
+PASS: execute acknowledgement with wrong actual page remains unconfirmed
+PASS: unmatched requested HWND does not fall back to another DDE server
+PASS: expired whole-request deadline prevents DDE connection
+RESULT: 28 PDF checks passed. Real Windows DDE transport with synthetic servers; SumatraPDF application remains untested.
+PASS: real native host forwards exact title, case, URL escaping, query and fragment to same-user/session pipe
+PASS: core preserves exact browser URL state
+PASS: blank title uses host without discarding URL
+PASS: host rejects non-HTTP URI before contacting app
+PASS: host rejects URI credentials before contacting app
+PASS: host rejects invalid protocol before contacting app
+PASS: host rejects invalid action before contacting app
+PASS: host rejects missing request ID before contacting app
+PASS: host rejects control character in title before contacting app
+PASS: host rejects oversized URL before contacting app
+PASS: core rejects document coordinate cross-fields 10
+PASS: core rejects document coordinate cross-fields 11
+PASS: core rejects document coordinate cross-fields 12
+PASS: core rejects document coordinate cross-fields 13
+PASS: core rejects document coordinate cross-fields 14
+PASS: native request rejects unexpected coordinate fields
+PASS: host rejects mismatched response ID
+PASS: host rejects success flag with failure code
+PASS: host rejects failure flag with commit code
+PASS: valid application failure is relayed without success
+PASS: host rejects oversized native frame
+PASS: host rejects truncated native frame
+PASS: host rejects truncated native header
+PASS: host rejects invalid UTF-8 JSON
+PASS: host rejects null JSON request
+PASS: oversized app response cannot report a commit
+PASS: absent application pipe reports AppNotRunning within host connect deadline
+RESULT: 27 browser checks passed in 8017 ms. Real BrowserHost process + private mock pipe; no GUI, extension loading or actual database commit claimed.
+PASS: native host cannot acknowledge before the real SQLite transaction commits
+PASS: independent SQLite connection cannot see the uncommitted bookmark
+PASS: real native host receives the correlated commit acknowledgment
+PASS: separate SQLite reads confirm durable exact URL and Unicode title
+PASS: native recapture updates title and sequence while preserving identity and note
+PASS: different URL fragment produces a separate committed bookmark
+PASS: different query ordering produces a separate committed bookmark
+PASS: native host reports the real SQLite pre-commit failure without success
+PASS: failed real transaction rolls back title, note, row count and capture sequence
+PASS: unsupported URI receives a negative native host response
+PASS: rejected URI leaves the real database unchanged
+PASS: server accepts the next explicit request after rollback and invalid input
+PASS: connected native host fails within its deadline when the application exits
+PASS: queued request cannot commit after application exit
+PASS: application shutdown leaves no listening production pipe
+RESULT: 15 browser/SQLite integration checks passed in 3468 ms. Real native host, server, UI dispatch and temporary SQLite; installed browser UI remains separate.
+✔ manifest grants temporary current-tab access only (15.2265ms)
+✔ URL spelling, query ordering, percent escapes and fragment are preserved (0.4968ms)
+✔ unsupported and ambiguous URLs are rejected before native messaging (3.5446ms)
+✔ title cap preserves surrogate pairs and removes control characters (0.3817ms)
+✔ loading, inaccessible, inactive and private tabs are refused (1.0558ms)
+✔ preview reads metadata without contacting the native host (0.4064ms)
+✔ native capture carries only bounded tab metadata and waits for commit (3.1165ms)
+✔ popup cannot capture a different tab or a navigated page (0.5114ms)
+✔ tab switch, window switch and navigation during metadata collection are refused (0.5146ms)
+✔ concurrent requests do not start a second host (1.6107ms)
+✔ host timeout is unknown and never automatically retries (7.4539ms)
+✔ native connection loss cannot be reported as confirmed failure or success (0.6561ms)
+✔ known host startup errors identify setup failure; disconnects remain unknown without retries (1.7731ms)
+✔ wrong request ID, malformed replies and noncommit successes are never success (0.4265ms)
+✔ host database refusal is displayed as failure without retry (0.3664ms)
+✔ service worker accepts only its popup and confirms a saved unchanged page (13.159ms)
+✔ a late commit for the previous URL never decorates the new page (3.4942ms)
+✔ new installation avoids the Edge Collections shortcut without extra permissions (14.2599ms)
+✔ keyboard capture sends the invoked tab once and waits for the committed reply (40.1294ms)
+✔ keyboard capture refuses a tab that changed after the command invocation (3.8317ms)
+✔ popup recovers unassigned Edge shortcut without claiming a default is active (3.3168ms)
+✔ popup recovers custom Chrome shortcut without claiming a default is active (2.0771ms)
+✔ popup recovers shortcut query failure without claiming a default is active (2.1049ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 247.0499
+PASS no registration remains unowned
+PASS 32-bit owned registration recognized
+PASS 64-bit owned registration recognized
+PASS both owned views recognized
+PASS foreign 32-bit shadow is refused
+PASS foreign 64-bit shadow is refused
+PASS machine-wide shadow is refused
+RESULT: seven mock ownership checks; no registry accessed or modified.

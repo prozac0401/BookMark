@@ -60,6 +60,27 @@ internal static class Program
             var result = await client.RunAsync(Request(Operation.Resume, .5));
             Assert(result.Code == ResultCode.ResumeOutcomeUnknown && result.ExternalActionStarted, "Unsafe cancellation claim.");
         });
+        await Check("O01 web-Office-capture-worker-result", async () =>
+        {
+            using var client = Client("echo-target");
+            var target = new CapturedTarget(TargetKind.WordPosition, "https://office.invalid/Shared Documents/한글.docx", HadUnsavedChanges: false, WordStart: 37);
+            var result = await client.RunAsync(Request() with { Target = target });
+            Assert(result.Code == ResultCode.Captured && result.Target == target, "Worker rejected URL Office metadata.");
+        });
+        await Check("O02 web-Office-timeout-never-claims-position-restored", async () =>
+        {
+            using var client = Client("late");
+            var target = new CapturedTarget(TargetKind.ExcelCell, "https://office.invalid/document.xlsx", "Sheet1", "$D$127", false);
+            var result = await client.RunAsync(Request(Operation.Resume, .5) with { Target = target });
+            Assert(result.Code == ResultCode.OfficeResumePending && result.ExternalActionStarted && !client.IsBusy, "Remote timeout must invite sign-in/retry without claiming success.");
+        });
+        await Check("O03 web-Office-cancellation-never-claims-position-restored", async () =>
+        {
+            using var client = Client("late"); using var cancel = new CancellationTokenSource(150);
+            var target = new CapturedTarget(TargetKind.PowerPointSlide, "https://office.invalid/document.pptx", HadUnsavedChanges: false, SlideId: 257, SlideNumber: 2);
+            var result = await client.RunAsync(Request(Operation.Resume) with { Target = target }, cancel.Token);
+            Assert(result.Code == ResultCode.OfficeResumePending && !client.IsBusy, "Sign-in input/cancellation must not produce a successful resume.");
+        });
         await Check("U12 single-flight-no-queue", async () =>
         {
             using var client = Client("late"); var first = client.RunAsync(Request(seconds: .6));
@@ -145,7 +166,8 @@ internal static class Program
         }
         if (mode == "own-pid") { await PublishPidAsync(args[2], Environment.ProcessId); await Task.Delay(10000); }
         if (mode == "late") await Task.Delay(5000);
-        var response = new WorkerResponse(1, mode == "wrong-id" ? Guid.NewGuid() : request.RequestId, ResultCode.Captured, new(TargetKind.File, @"C:\fixture\report.txt"));
+        var response = new WorkerResponse(1, mode == "wrong-id" ? Guid.NewGuid() : request.RequestId, ResultCode.Captured,
+            mode == "echo-target" ? request.Target : new(TargetKind.File, @"C:\fixture\report.txt"));
         await FrameProtocol.WriteAsync(Console.OpenStandardOutput(), response); return 0;
     }
     private static async Task PublishPidAsync(string marker, int processId)

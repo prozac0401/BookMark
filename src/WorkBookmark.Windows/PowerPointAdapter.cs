@@ -30,7 +30,7 @@ internal static class PowerPointAdapter
         if (first.Target != second.Target || !ComScope.Same(first.Presentation, second.Presentation) || !ComScope.Same(first.Slide, second.Slide))
             throw new BookmarkException(ResultCode.ContextChanged);
         VerifyConnection(connection, scope);
-        WindowsAdapter.CheckExists(first.Target);
+        OfficeDocumentAccess.CheckExists(first.Target);
         context.Check(); ForegroundSnapshot.Verify(snapshot);
         return first.Target;
     }
@@ -105,7 +105,7 @@ internal static class PowerPointAdapter
         var target = new CapturedTarget(TargetKind.PowerPointSlide, scope.Text(presentation, "FullName"),
             HadUnsavedChanges: !scope.Flag(presentation, "Saved"), SlideId: slideId, SlideNumber: slideNumber);
         PathPolicy.Validate(target);
-        RequireLocalPath(target.Path);
+        RequireSupportedLocation(target.Path);
         return new(target, presentation, slide);
     }
 
@@ -118,10 +118,11 @@ internal static class PowerPointAdapter
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
         using var guard = new ResumeGuard(context.Request.Snapshot);
-        var normalized = RequireLocalPath(target.Path);
+        var normalized = RequireSupportedLocation(target.Path);
         var opened = false;
         while (true)
         {
+            if (OfficeDocumentAccess.WaitingForWebDocument(target, opened, context)) return context.Response(ResultCode.OfficeResumePending);
             context.Check();
             using var scope = new ComScope();
             var enumeration = Enumerate(normalized, scope, context);
@@ -130,7 +131,7 @@ internal static class PowerPointAdapter
             {
                 if (!opened)
                 {
-                    if (enumeration.Matches.Count == 0) WindowsAdapter.CheckExists(target);
+                    if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
                     throw new BookmarkException(ResultCode.EnumerationIncomplete);
                 }
                 // Observe only the one Shell request while PowerPoint initializes its native panes.
@@ -166,7 +167,7 @@ internal static class PowerPointAdapter
                     scope.Call(view, "GotoSlide", currentIndex);
                     context.Check();
                     var actual = ReadPosition(selected, scope, requireActive: true);
-                    if (!string.Equals(PathPolicy.Normalize(actual.Target.Path), normalized, StringComparison.Ordinal) || actual.Target.SlideId != target.SlideId)
+                    if (!string.Equals(OfficeLocation.Normalize(TargetKind.PowerPointSlide, actual.Target.Path), normalized, StringComparison.Ordinal) || actual.Target.SlideId != target.SlideId)
                         return context.Response(ResultCode.OpenedPositionFailed);
                     guard.Check(); context.Check();
                     if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
@@ -182,10 +183,10 @@ internal static class PowerPointAdapter
             }
             if (!opened)
             {
-                WindowsAdapter.CheckExists(target);
+                OfficeDocumentAccess.CheckExists(target);
                 if (Type.GetTypeFromProgID("PowerPoint.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
                 guard.Check(); context.Check();
-                WindowsAdapter.ShellOpen(target.Path, context);
+                OfficeDocumentAccess.Open(target, context);
                 opened = true;
             }
             System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125);
@@ -195,7 +196,7 @@ internal static class PowerPointAdapter
     private static object ValidateSlide(CapturedTarget target, object presentation, ComScope scope, RequestContext context)
     {
         context.Check();
-        if (!string.Equals(PathPolicy.Normalize(scope.Text(presentation, "FullName")), PathPolicy.Normalize(target.Path), StringComparison.Ordinal))
+        if (!string.Equals(OfficeLocation.Normalize(TargetKind.PowerPointSlide, scope.Text(presentation, "FullName")), OfficeLocation.Normalize(TargetKind.PowerPointSlide, target.Path), StringComparison.Ordinal))
             throw new BookmarkException(ResultCode.ContextChanged);
         var slides = scope.Get(presentation, "Slides");
         var count = scope.Number(slides, "Count");
@@ -256,7 +257,7 @@ internal static class PowerPointAdapter
         }
         if (processesBefore.Any(pid => !connectedPids.Contains(pid)) || hiddenControlPids.Any(pid => !connectedPids.Contains(pid))) Incomplete("unconnected-process");
         var matches = new Dictionary<nint, Match>();
-        var targetIdentity = FileIdentity.TryRead(targetPath);
+        var matcher = new OfficeDocumentMatcher(TargetKind.PowerPointSlide, targetPath);
         foreach (var application in applications.Values)
         {
             context.Check();
@@ -273,18 +274,9 @@ internal static class PowerPointAdapter
                     identities.Add(ComScope.Identity(presentation));
                     if (string.IsNullOrEmpty(scope.Text(presentation, "Path"))) continue;
                     var fullName = scope.Text(presentation, "FullName");
-                    if (Uri.TryCreate(fullName, UriKind.Absolute, out var uri) && !uri.IsFile) continue;
-                    var path = PathPolicy.Normalize(fullName);
-                    var exact = string.Equals(path, targetPath, StringComparison.Ordinal);
-                    var possibleAlias = string.Equals(path, targetPath, StringComparison.OrdinalIgnoreCase);
-                    if (!exact)
-                    {
-                        var identity = FileIdentity.TryRead(path);
-                        if (targetIdentity is null || identity is null) { Incomplete("file-identity-unavailable"); continue; }
-                        possibleAlias |= identity == targetIdentity;
-                    }
-                    if (possibleAlias && !exact) { Incomplete("path-alias"); continue; }
-                    if (!exact) continue;
+                    var match = matcher.Match(fullName);
+                    if (match == OfficeDocumentMatch.Uncertain) { Incomplete("document-identity-unavailable-or-alias"); continue; }
+                    if (match != OfficeDocumentMatch.Exact) continue;
                     var documentWindows = scope.Get(presentation, "Windows");
                     var windowCount = scope.Number(documentWindows, "Count");
                     var windowIdentities = new List<nint>();
@@ -323,12 +315,7 @@ internal static class PowerPointAdapter
         return Native.Children(root, "mdiClass", visibleOnly);
     }
 
-    private static string RequireLocalPath(string path)
-    {
-        var normalized = PathPolicy.Normalize(path);
-        if (normalized.Length < 3 || normalized[1] != ':') throw new BookmarkException(ResultCode.UnsupportedTarget);
-        return normalized;
-    }
+    private static string RequireSupportedLocation(string path) => OfficeDocumentAccess.Normalize(TargetKind.PowerPointSlide, path);
 
     private static List<nint> PowerPointRoots()
     {

@@ -77,7 +77,7 @@ public static class WindowsAdapter
             if (request.Target?.Kind == TargetKind.NotepadSnapshot)
                 NotepadAdapter.SnapshotTrace?.Invoke("snapshot worker failure=" + code + " exception=" + exception.GetType().Name + " HRESULT=" + exception.HResult.ToString("X8"));
             if (context.ExternalActionStarted && code is not (ResultCode.OpenedPositionFailed or ResultCode.PositionRestoredFocusPending or ResultCode.PositionRestored))
-                code = ResultCode.ResumeOutcomeUnknown;
+                code = request.Target is { } target && OfficeLocation.IsWebTarget(target) ? ResultCode.OfficeResumePending : ResultCode.ResumeOutcomeUnknown;
             return context.Response(code);
         }
     }

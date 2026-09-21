@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "check": "Self-contained worker rejects a synthetic unsupported Office location before external action",
+  "exitCode": 0,
+  "resultCode": "UnsupportedTarget",
+  "externalActionStarted": false,
+  "fileVersion": "0.1.4.0",
+  "executableSha256": "a5ab61404cbdb2fa881a4ed7399e7d2543f22912d9c281f8b28e646e1a07a4a6"
+}

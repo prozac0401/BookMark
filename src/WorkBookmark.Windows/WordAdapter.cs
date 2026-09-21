@@ -28,7 +28,7 @@ internal static class WordAdapter
         if (first.Target != second.Target || first.SelectionEnd != second.SelectionEnd || first.SelectionType != second.SelectionType ||
             first.DocumentEnd != second.DocumentEnd || !ComScope.Same(first.Document, second.Document))
             throw new BookmarkException(ResultCode.ContextChanged);
-        WindowsAdapter.CheckExists(first.Target);
+        OfficeDocumentAccess.CheckExists(first.Target);
         context.Check(); ForegroundSnapshot.Verify(snapshot);
         return first.Target;
     }
@@ -97,7 +97,7 @@ internal static class WordAdapter
         var target = new CapturedTarget(TargetKind.WordPosition, scope.Text(document, "FullName"),
             HadUnsavedChanges: !scope.Flag(document, "Saved"), WordStart: start);
         PathPolicy.Validate(target);
-        RequireLocalPath(target.Path);
+        RequireSupportedLocation(target.Path);
         context.Check(); VerifyWindow(connection, scope);
         return new(target, document, end, type, documentEnd);
     }
@@ -120,10 +120,11 @@ internal static class WordAdapter
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
         using var guard = new ResumeGuard(context.Request.Snapshot);
-        var normalized = RequireLocalPath(target.Path);
+        var normalized = RequireSupportedLocation(target.Path);
         var opened = false;
         while (true)
         {
+            if (OfficeDocumentAccess.WaitingForWebDocument(target, opened, context)) return context.Response(ResultCode.OfficeResumePending);
             context.Check();
             using var scope = new ComScope();
             var enumeration = Enumerate(normalized, scope, context);
@@ -132,7 +133,7 @@ internal static class WordAdapter
             {
                 if (!opened)
                 {
-                    if (enumeration.Matches.Count == 0) WindowsAdapter.CheckExists(target);
+                    if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
                     throw new BookmarkException(ResultCode.EnumerationIncomplete);
                 }
                 // Observe the single Shell request while Word creates its native document pane.
@@ -164,7 +165,7 @@ internal static class WordAdapter
                     scope.Call(range, "Select");
                     context.Check();
                     var actual = ReadPosition(selected, scope, context, requireActive: true);
-                    if (!string.Equals(PathPolicy.Normalize(actual.Target.Path), normalized, StringComparison.Ordinal) ||
+                    if (!string.Equals(OfficeLocation.Normalize(TargetKind.WordPosition, actual.Target.Path), normalized, StringComparison.Ordinal) ||
                         actual.Target.WordStart != target.WordStart || actual.SelectionEnd != target.WordStart)
                         return context.Response(ResultCode.OpenedPositionFailed);
                     guard.Check(); context.Check();
@@ -181,10 +182,10 @@ internal static class WordAdapter
             }
             if (!opened)
             {
-                WindowsAdapter.CheckExists(target);
+                OfficeDocumentAccess.CheckExists(target);
                 if (Type.GetTypeFromProgID("Word.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
                 guard.Check(); context.Check();
-                WindowsAdapter.ShellOpen(target.Path, context);
+                OfficeDocumentAccess.Open(target, context);
                 opened = true; // Never repeat Shell open after an uncertain outcome.
             }
             System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125);
@@ -194,7 +195,7 @@ internal static class WordAdapter
     private static object ValidatePosition(CapturedTarget target, object document, ComScope scope, RequestContext context)
     {
         context.Check();
-        if (!string.Equals(PathPolicy.Normalize(scope.Text(document, "FullName")), PathPolicy.Normalize(target.Path), StringComparison.Ordinal))
+        if (!string.Equals(OfficeLocation.Normalize(TargetKind.WordPosition, scope.Text(document, "FullName")), OfficeLocation.Normalize(TargetKind.WordPosition, target.Path), StringComparison.Ordinal))
             throw new BookmarkException(ResultCode.ContextChanged);
         ValidateDocumentProtection(scope.Number(document, "ProtectionType"));
         var body = scope.Get(document, "Content");
@@ -270,7 +271,7 @@ internal static class WordAdapter
         }
         if (processesBefore.Any(pid => !connectedPids.Contains(pid)) || hiddenControlPids.Any(pid => !connectedPids.Contains(pid))) Incomplete("unconnected-process");
         var matches = new Dictionary<nint, Match>();
-        var targetIdentity = FileIdentity.TryRead(targetPath);
+        var matcher = new OfficeDocumentMatcher(TargetKind.WordPosition, targetPath);
         foreach (var application in connections.Values)
         {
             context.Check();
@@ -288,18 +289,9 @@ internal static class WordAdapter
                     identities.Add(ComScope.Identity(document));
                     if (string.IsNullOrEmpty(scope.Text(document, "Path"))) continue;
                     var fullName = scope.Text(document, "FullName");
-                    if (Uri.TryCreate(fullName, UriKind.Absolute, out var uri) && !uri.IsFile) continue;
-                    var path = PathPolicy.Normalize(fullName);
-                    var exact = string.Equals(path, targetPath, StringComparison.Ordinal);
-                    var possibleAlias = string.Equals(path, targetPath, StringComparison.OrdinalIgnoreCase);
-                    if (!exact)
-                    {
-                        var identity = FileIdentity.TryRead(path);
-                        if (targetIdentity is null || identity is null) { Incomplete("file-identity-unavailable"); continue; }
-                        possibleAlias |= identity == targetIdentity;
-                    }
-                    if (possibleAlias && !exact) { Incomplete("path-alias"); continue; }
-                    if (!exact) continue;
+                    var match = matcher.Match(fullName);
+                    if (match == OfficeDocumentMatch.Uncertain) { Incomplete("document-identity-unavailable-or-alias"); continue; }
+                    if (match != OfficeDocumentMatch.Exact) continue;
                     var windows = scope.Get(document, "Windows");
                     var windowCount = scope.Number(windows, "Count");
                     var verified = new List<ConnectedWindow>();
@@ -338,12 +330,7 @@ internal static class WordAdapter
         if (scope.Number(scope.Get(window, "Panes"), "Count") != 1) throw new BookmarkException(ResultCode.UnsupportedTarget);
     }
 
-    private static string RequireLocalPath(string path)
-    {
-        var normalized = PathPolicy.Normalize(path);
-        if (normalized.Length < 3 || normalized[1] != ':') throw new BookmarkException(ResultCode.UnsupportedTarget);
-        return normalized;
-    }
+    private static string RequireSupportedLocation(string path) => OfficeDocumentAccess.Normalize(TargetKind.WordPosition, path);
 
     private static HashSet<uint> WordProcesses()
     {

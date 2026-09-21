@@ -58,7 +58,7 @@ internal sealed class RecentForm : Form
         var delete = new ToolStripMenuItem("목록에서 지우기", null, (_, _) => { if (Selected is { } value) DeleteRequested?.Invoke(value); });
         var relink = new ToolStripMenuItem("위치 다시 지정", null, (_, _) => { if (Selected is { } value) RelinkRequested?.Invoke(value); });
         _menu.Items.AddRange([note, copy, new ToolStripSeparator(), delete, relink]);
-        _menu.Opening += (_, e) => { if (Selected is null) e.Cancel = true; relink.Visible = Selected?.LastResumeResult == ResultCode.TargetUnavailable && Selected.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot); copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사"; _keepOpen = true; };
+        _menu.Opening += (_, e) => { if (Selected is null) e.Cancel = true; relink.Visible = Selected?.LastResumeResult == ResultCode.TargetUnavailable && Selected.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(Selected.Target); copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사"; _keepOpen = true; };
         _menu.Closed += (_, _) => _keepOpen = false;
         _items.ContextMenuStrip = _menu;
         Deactivate += (_, _) => { if (!_keepOpen && !_menu.Visible) Hide(); };

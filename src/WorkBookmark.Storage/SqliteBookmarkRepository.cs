@@ -216,11 +216,12 @@ VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,
     public void Relink(Guid id, CapturedTarget validatedTarget)
     {
         PathPolicy.Validate(validatedTarget);
-        if (validatedTarget.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot) throw new BookmarkException(ResultCode.InvalidRequest);
+        if (validatedTarget.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot || OfficeLocation.IsWebTarget(validatedTarget)) throw new BookmarkException(ResultCode.InvalidRequest);
         string normalized = PathPolicy.Normalize(validatedTarget.Path);
         Write("relink", (db, tx) =>
         {
             Bookmark old = FindId(db, tx, id) ?? throw new BookmarkException(ResultCode.TargetUnavailable);
+            if (OfficeLocation.IsWebTarget(old.Target)) throw new BookmarkException(ResultCode.InvalidRequest);
             if (old.Target.Kind != validatedTarget.Kind || !string.Equals(old.Target.SheetName, validatedTarget.SheetName, StringComparison.Ordinal)
                 || !string.Equals(old.Target.CellAddress, validatedTarget.CellAddress, StringComparison.Ordinal)
                 || old.Target.WordStart != validatedTarget.WordStart || old.Target.SlideId != validatedTarget.SlideId || old.Target.PdfPage != validatedTarget.PdfPage || old.Target.TextOffset != validatedTarget.TextOffset) throw new BookmarkException(ResultCode.InvalidRequest);

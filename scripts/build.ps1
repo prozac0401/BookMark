@@ -30,6 +30,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'Manual capture session checks failed.' }
         & $DotNetPath run --project tools/WindowsChecks -c Release --no-build -- word-checks
         if ($LASTEXITCODE -ne 0) { throw 'Word coordinate checks failed.' }
+        & $DotNetPath run --project tools/WindowsChecks -c Release --no-build -- office-url-checks
+        if ($LASTEXITCODE -ne 0) { throw 'Office URL adapter checks failed.' }
         & $DotNetPath run --project tools/WindowsChecks -c Release --no-build -- notepad-checks
         if ($LASTEXITCODE -ne 0) { throw 'Notepad adapter checks failed.' }
         & $DotNetPath run --project tools/WindowsChecks -c Release --no-build -- pdf-checks

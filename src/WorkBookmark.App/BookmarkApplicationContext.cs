@@ -311,7 +311,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private async Task RelinkAsync(Bookmark bookmark)
     {
-        if (bookmark.LastResumeResult != ResultCode.TargetUnavailable || bookmark.Target.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot || _operationInFlight) return;
+        if (bookmark.LastResumeResult != ResultCode.TargetUnavailable || bookmark.Target.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot || OfficeLocation.IsWebTarget(bookmark.Target) || _operationInFlight) return;
         _recent.Hide();
         string? path = null;
         if (bookmark.Target.Kind == TargetKind.Folder)

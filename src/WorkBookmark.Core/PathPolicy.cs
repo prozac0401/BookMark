@@ -65,7 +65,8 @@ public static partial class PathPolicy
         if (target.TextContent is not null || target.TextSelectionEnd is not null || target.SnapshotTitle is not null) throw Invalid();
         if (target.Kind == TargetKind.WebPage) return BrowserProtocol.ValidateTarget(target);
         if (target.PageTitle is not null || target.Kind != TargetKind.NotepadPosition && target.TextOffset is not null) throw Invalid();
-        string normalized = Normalize(target.Path);
+        bool officeWeb = OfficeLocation.IsWebTarget(target);
+        string normalized = officeWeb ? OfficeLocation.Normalize(target.Kind, target.Path) : Normalize(target.Path);
         if (!Enum.IsDefined(target.Kind)) throw Invalid();
         if (target.Kind != TargetKind.Folder && normalized.EndsWith('\\')) throw Invalid();
         if (target.Kind != TargetKind.PdfPage && target.PdfPage is not null) throw Invalid();
@@ -73,7 +74,7 @@ public static partial class PathPolicy
             target.Kind != TargetKind.PowerPointSlide && (target.SlideId is not null || target.SlideNumber is not null)) throw Invalid();
         if (target.Kind == TargetKind.ExcelCell)
         {
-            if (!Workbooks.Contains(Extension(normalized)) || string.IsNullOrEmpty(target.SheetName)
+            if ((!officeWeb && !Workbooks.Contains(Extension(normalized))) || string.IsNullOrEmpty(target.SheetName)
                 || target.SheetName.Length > 31 || target.SheetName.Any(c => c < 32)
                 || target.SheetName.IndexOfAny([':', '\\', '/', '?', '*', '[', ']']) >= 0
                 || target.SheetName.StartsWith('\'') || target.SheetName.EndsWith('\'')
@@ -86,12 +87,12 @@ public static partial class PathPolicy
         }
         else if (target.Kind == TargetKind.WordPosition)
         {
-            if (!WordDocuments.Contains(Extension(normalized)) || target.WordStart is not >= 0 ||
+            if ((!officeWeb && !WordDocuments.Contains(Extension(normalized))) || target.WordStart is not >= 0 ||
                 target.HadUnsavedChanges is null || target.SheetName is not null || target.CellAddress is not null) throw Invalid();
         }
         else if (target.Kind == TargetKind.PowerPointSlide)
         {
-            if (!Presentations.Contains(Extension(normalized)) || target.SlideId is not > 0 || target.SlideNumber is not > 0 ||
+            if ((!officeWeb && !Presentations.Contains(Extension(normalized))) || target.SlideId is not > 0 || target.SlideNumber is not > 0 ||
                 target.HadUnsavedChanges is null || target.SheetName is not null || target.CellAddress is not null) throw Invalid();
         }
         else if (target.Kind == TargetKind.NotepadPosition)
@@ -113,12 +114,14 @@ public static partial class PathPolicy
     {
         TargetKind.NotepadSnapshot => NotepadSnapshotPolicy.Validate(target).Path,
         TargetKind.WebPage => BrowserProtocol.ValidateTarget(target).Path,
+        _ when OfficeLocation.IsWebTarget(target) => OfficeLocation.Normalize(target.Kind, target.Path),
         _ => Normalize(target.Path)
     };
     public static string DisplayName(CapturedTarget target) => target.Kind switch
     {
         TargetKind.NotepadSnapshot => NotepadSnapshotPolicy.Validate(target).SnapshotTitle!,
         TargetKind.WebPage => BrowserProtocol.ValidateTarget(target).PageTitle!,
+        _ when OfficeLocation.IsWebTarget(target) => OfficeLocation.DisplayName(target.Path),
         _ => DisplayName(target.Path)
     };
 

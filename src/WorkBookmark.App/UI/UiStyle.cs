@@ -60,6 +60,7 @@ internal static class UiStyle
         ResultCode.PositionRestoredFocusPending => "기록한 위치로 이동했습니다. 대상 앱 창을 선택해 주세요.",
         ResultCode.OpenedPositionFailed => "파일은 열렸지만 기록한 위치로 이동하지 못했습니다.",
         ResultCode.ResumeOutcomeUnknown => "처리 결과를 확인하지 못했습니다. 대상 앱을 확인해 주세요.",
+        ResultCode.OfficeResumePending => "웹 문서의 위치 이동을 확인하지 못했습니다. Office에서 문서 열기·로그인을 마친 뒤 책갈피를 다시 실행해 주세요.",
         ResultCode.TargetUnavailable => "저장한 대상에 접근할 수 없습니다.",
         ResultCode.EnumerationIncomplete => "열린 문서를 모두 확인하지 못했습니다. 대상 앱을 확인해 주세요.",
         ResultCode.DuplicateTarget => "같은 위치의 책갈피가 이미 있습니다. 기존 기록은 유지됩니다.",
