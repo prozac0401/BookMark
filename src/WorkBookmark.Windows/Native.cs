@@ -120,10 +120,12 @@ internal sealed class ResumeGuard : IDisposable
     private readonly Dictionary<nint, (uint Pid, long Stamp)> expected = [];
     private readonly (uint Pid, long Stamp) originalIdentity;
     private readonly Native.HookProc keyboardCallback, mouseCallback;
+    private readonly ResumeInputSignal? inputSignal;
     private nint keyboard, mouse;
     private bool newInput;
-    internal ResumeGuard(TargetSnapshot? snapshot)
+    internal ResumeGuard(TargetSnapshot? snapshot, Guid? inputSignalRequest = null)
     {
+        inputSignal = inputSignalRequest is { } requestId ? ResumeInputSignal.OpenExisting(requestId) : null;
         original = snapshot is null ? Native.GetForegroundWindow() : (nint)snapshot.Hwnd;
         originalIdentity = snapshot is null ? Identity(original) : (snapshot.ProcessId, snapshot.ProcessStartTimeUtcTicks);
         keyboardCallback = (code, message, data) => { if (code >= 0 && (message == 0x100 || message == 0x104)) newInput = true; return Native.CallNextHookEx(0, code, message, data); };
@@ -140,12 +142,19 @@ internal sealed class ResumeGuard : IDisposable
     private static bool IsSameWindow(nint hwnd, (uint Pid, long Stamp) identity) =>
         identity.Pid != 0 && identity.Stamp != 0 && Native.IsWindow(hwnd) && Identity(hwnd) == identity;
     internal void Permit(nint hwnd) => expected[hwnd] = Identity(hwnd);
+    // A pending Office launch may move foreground to its splash/login window before the
+    // document HWND exists. A bounded reopen may proceed only while the user has not acted.
+    internal void CheckForNewInput()
+    {
+        System.Windows.Forms.Application.DoEvents();
+        if (newInput || inputSignal?.HasInput == true) throw new BookmarkException(ResultCode.Cancelled);
+    }
     internal void Check()
     {
         System.Windows.Forms.Application.DoEvents();
         var foreground = Native.GetForegroundWindow();
         ProbeTrace?.Invoke("input=" + newInput + ":original=" + original + ":foreground=" + foreground + ":permitted=" + expected.ContainsKey(foreground));
-        if (newInput || foreground == 0 ||
+        if (newInput || inputSignal?.HasInput == true || foreground == 0 ||
             (foreground == original ? !IsSameWindow(original, originalIdentity) : !expected.ContainsKey(foreground)) ||
             expected.Any(window => !IsSameWindow(window.Key, window.Value)))
             throw new BookmarkException(ResultCode.Cancelled);
@@ -155,6 +164,7 @@ internal sealed class ResumeGuard : IDisposable
         if (keyboard != 0) Native.UnhookWindowsHookEx(keyboard);
         if (mouse != 0) Native.UnhookWindowsHookEx(mouse);
         keyboard = mouse = 0;
+        inputSignal?.Dispose();
         GC.KeepAlive(keyboardCallback); GC.KeepAlive(mouseCallback);
     }
 }

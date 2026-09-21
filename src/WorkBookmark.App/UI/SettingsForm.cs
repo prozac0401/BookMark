@@ -16,7 +16,7 @@ internal sealed class SettingsForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
         ClientSize = new Size(610, 418);
         var title = new Label { Text = "업무 책갈피", Font = new Font(Font, FontStyle.Bold), Location = new Point(20, 18), Size = new Size(560, 28) };
-        var description = new Label { Text = "탐색기 · Excel · Word · PowerPoint · 메모장(미저장 내용 자동 보관)\nEdge·Chrome: 확장 버튼에서 저장·실제 단축키 확인", Location = new Point(20, 51), Size = new Size(570, 48) };
+        var description = new Label { Text = "탐색기 · Excel · Word · PowerPoint · 메모장(미저장 내용 자동 보관)\nEdge·Chrome: 확장 없이 저장 단축키 사용 · 트레이에서 URL 입력 가능", Location = new Point(20, 51), Size = new Size(570, 48) };
         Controls.AddRange([title, description]);
         Controls.Add(new Label { Text = "현재 위치 남기기", Location = new Point(20, 115), Size = new Size(170, 27) });
         Controls.Add(new Label { Text = "최근 책갈피 열기", Location = new Point(20, 158), Size = new Size(170, 27) });

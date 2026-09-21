@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="WorkBookmark" Manufacturer="WorkBookmark" Version="$(var.Version)"
+           ProductCode="$(var.ProductCode)" UpgradeCode="BB5C5CA8-5BA0-4B01-875E-9E295690C711"
+           Language="1033" Scope="perUser" InstallerVersion="500" Compressed="yes">
+    <SummaryInformation Description="WorkBookmark per-user Windows desktop installer" />
+    <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A newer WorkBookmark version is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/prozac0401/BookMark" />
+    <Property Id="ARPPRODUCTICON" Value="WorkBookmarkIcon" />
+    <Property Id="LIMITUI" Value="1" />
+    <Property Id="REBOOT" Value="ReallySuppress" />
+    <Property Id="STARTUP_PREFERENCE" Secure="yes">
+      <RegistrySearch Id="ReadStartupPreference" Root="HKCU" Key="Software\WorkBookmark\Preferences"
+                      Name="StartWithWindows" Type="raw" Bitness="always64" />
+    </Property>
+    <Launch Condition="Installed OR VersionNT64" Message="WorkBookmark requires 64-bit Windows." />
+    <Icon Id="WorkBookmarkIcon" SourceFile="$(var.PublishDirectory)\WorkBookmark.exe" />
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="WorkBookmark" />
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="WorkBookmarkMenu" Name="WorkBookmark">
+        <Component Id="StartMenuShortcut" Guid="D6242BF4-80C4-4CAB-A0C7-2D6DD102D0B1" Bitness="always64">
+          <Shortcut Id="LaunchWorkBookmark" Name="WorkBookmark" Target="[INSTALLFOLDER]WorkBookmark.exe"
+                    WorkingDirectory="INSTALLFOLDER" Icon="WorkBookmarkIcon" />
+          <RemoveFolder Id="RemoveWorkBookmarkMenu" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\WorkBookmark\Installer" Name="StartMenu" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="StartupFolder">
+      <Component Id="StartupShortcut" Guid="08612B66-9AA7-47E0-9789-A3B9B3FF080D" Bitness="always64"
+                 Condition="STARTUP_PREFERENCE &lt;&gt; &quot;#0&quot;">
+        <Shortcut Id="StartWorkBookmarkAtLogon" Name="WorkBookmark" Target="[INSTALLFOLDER]WorkBookmark.exe"
+                  Description="WorkBookmark per-user startup shortcut v1" WorkingDirectory="INSTALLFOLDER" Icon="WorkBookmarkIcon" />
+        <RegistryValue Root="HKCU" Key="Software\WorkBookmark\Installer" Name="Startup" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+      <Component Id="StartupCleanup" Guid="655DD4CB-202B-46AE-A69F-038530E7600D" Bitness="always64">
+        <!-- The application can recreate this same owned shortcut after an install with startup disabled. -->
+        <RemoveFile Id="RemoveOwnedStartupShortcut" Name="WorkBookmark.lnk" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\WorkBookmark\Installer" Name="StartupCleanup" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+    <CustomAction Id="StopWorkBookmark" FileRef="WorkBookmarkExecutable" ExeCommand="--installer-shutdown" Return="ignore" />
+    <CustomAction Id="LaunchWorkBookmarkAfterInstall" FileRef="WorkBookmarkExecutable" ExeCommand="" Return="asyncNoWait" />
+    <InstallExecuteSequence>
+      <Custom Action="StopWorkBookmark" Before="InstallValidate" Condition="Installed OR WIX_UPGRADE_DETECTED" />
+      <Custom Action="LaunchWorkBookmarkAfterInstall" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE AND UILevel &gt;= 3" />
+    </InstallExecuteSequence>
+    <Feature Id="WorkBookmarkFeature" Title="WorkBookmark" Level="1">
+      <ComponentGroupRef Id="PublishedFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="StartupShortcut" />
+      <ComponentRef Id="StartupCleanup" />
+    </Feature>
+  </Package>
+</Wix>

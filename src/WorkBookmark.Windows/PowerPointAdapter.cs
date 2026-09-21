@@ -117,78 +117,93 @@ internal static class PowerPointAdapter
 
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
-        using var guard = new ResumeGuard(context.Request.Snapshot);
+        using var guard = new ResumeGuard(context.Request.Snapshot,
+            context.Request.MonitorInput && OfficeLocation.IsWebTarget(target) ? context.Request.RequestId : null);
         var normalized = RequireSupportedLocation(target.Path);
         var opened = false;
+        var recovery = new OfficeWebRecovery(target, context);
         while (true)
         {
-            if (OfficeDocumentAccess.WaitingForWebDocument(target, opened, context)) return context.Response(ResultCode.OfficeResumePending);
-            context.Check();
-            using var scope = new ComScope();
-            var enumeration = Enumerate(normalized, scope, context);
-            if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
-            if (!enumeration.Complete)
+            if (recovery.NearDeadline) return context.Response(validateOnly ? ResultCode.EnumerationIncomplete : recovery.IncompleteResult);
+            try
             {
+                context.Check();
+                using var scope = new ComScope();
+                var enumeration = Enumerate(normalized, scope, context);
+                if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
+                if (enumeration.Matches.Count == 1)
+                    recovery.Observed(enumeration.Matches[0].Windows.FirstOrDefault(w => Native.IsWindow(w.Hwnd))?.Hwnd.ToInt64() ?? 0);
+                if (!enumeration.Complete)
+                {
+                    if (!opened && !recovery.IsWeb)
+                    {
+                        if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
+                        throw new BookmarkException(ResultCode.EnumerationIncomplete);
+                    }
+                    // Wait through PowerPoint startup; an incomplete inventory never permits a retry.
+                    recovery.Recover(false, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
+                    System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
+                }
+                if (enumeration.Matches.Count == 1)
+                {
+                    var match = enumeration.Matches[0];
+                    foreach (var window in match.Windows) guard.Permit(window.Hwnd);
+                    var selected = ChooseWindow(match, scope);
+                    context.TargetHwnd = selected.Hwnd.ToInt64();
+                    var reconnected = Connect(selected.Hwnd, scope, visibleOnly: false);
+                    if (!ComScope.Same(reconnected.Window, selected.Window) || !ComScope.Same(reconnected.Application, match.Application))
+                        throw new BookmarkException(ResultCode.ContextChanged);
+                    try
+                    {
+                        RequireEditingView(selected.Window, scope);
+                        ValidateSlide(target, match.Presentation, scope, context);
+                        if (validateOnly) return context.Response(ResultCode.Validated, target);
+                        guard.Check(); context.Check();
+                        context.ExternalActionStarted = true;
+                        scope.Call(selected.Window, "Activate");
+                        guard.Check(); context.Check();
+                        VerifyConnection(selected, scope);
+                        RequireEditingView(selected.Window, scope);
+                        if (!ComScope.Same(scope.Get(selected.Window, "Presentation"), match.Presentation))
+                            throw new BookmarkException(ResultCode.ContextChanged);
+                        // Resolve stable SlideID immediately before moving: slide order may have changed.
+                        var slide = ValidateSlide(target, match.Presentation, scope, context);
+                        var currentIndex = scope.Number(slide, "SlideIndex");
+                        var view = scope.Get(selected.Window, "View");
+                        guard.Check(); context.Check();
+                        scope.Call(view, "GotoSlide", currentIndex);
+                        context.Check();
+                        bool PositionMatches()
+                        {
+                            var actual = ReadPosition(selected, scope, requireActive: true);
+                            return string.Equals(OfficeLocation.Normalize(TargetKind.PowerPointSlide, actual.Target.Path), normalized, StringComparison.Ordinal) && actual.Target.SlideId == target.SlideId;
+                        }
+                        if (!OfficeDocumentAccess.VerifyPosition(target, context, PositionMatches))
+                            return context.Response(ResultCode.OpenedPositionFailed);
+                        guard.Check(); context.Check();
+                        if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
+                        if (Native.IsIconic(selected.Hwnd)) Native.ShowWindowAsync(selected.Hwnd, 9);
+                        guard.Check(); context.Check();
+                        var focused = Native.SetForegroundWindow(selected.Hwnd) && Native.GetForegroundWindow() == selected.Hwnd;
+                        return context.Response(focused ? ResultCode.PositionRestored : ResultCode.PositionRestoredFocusPending);
+                    }
+                    catch (BookmarkException exception) when (exception.Code is ResultCode.UnsupportedTarget or ResultCode.TargetUnavailable)
+                    {
+                        return context.Response(ResultCode.OpenedPositionFailed);
+                    }
+                }
                 if (!opened)
                 {
-                    if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
-                    throw new BookmarkException(ResultCode.EnumerationIncomplete);
+                    OfficeDocumentAccess.CheckExists(target);
+                    if (Type.GetTypeFromProgID("PowerPoint.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
+                    guard.Check(); context.Check();
+                    OfficeDocumentAccess.Open(target, context);
+                    opened = true;
+                    recovery.Opened();
                 }
-                // Observe only the one Shell request while PowerPoint initializes its native panes.
-                System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
+                else recovery.Recover(true, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
             }
-            if (enumeration.Matches.Count == 1)
-            {
-                var match = enumeration.Matches[0];
-                foreach (var window in match.Windows) guard.Permit(window.Hwnd);
-                var selected = ChooseWindow(match, scope);
-                context.TargetHwnd = selected.Hwnd.ToInt64();
-                var reconnected = Connect(selected.Hwnd, scope, visibleOnly: false);
-                if (!ComScope.Same(reconnected.Window, selected.Window) || !ComScope.Same(reconnected.Application, match.Application))
-                    throw new BookmarkException(ResultCode.ContextChanged);
-                try
-                {
-                    RequireEditingView(selected.Window, scope);
-                    ValidateSlide(target, match.Presentation, scope, context);
-                    if (validateOnly) return context.Response(ResultCode.Validated, target);
-                    guard.Check(); context.Check();
-                    context.ExternalActionStarted = true;
-                    scope.Call(selected.Window, "Activate");
-                    guard.Check(); context.Check();
-                    VerifyConnection(selected, scope);
-                    RequireEditingView(selected.Window, scope);
-                    if (!ComScope.Same(scope.Get(selected.Window, "Presentation"), match.Presentation))
-                        throw new BookmarkException(ResultCode.ContextChanged);
-                    // Resolve stable SlideID immediately before moving: slide order may have changed.
-                    var slide = ValidateSlide(target, match.Presentation, scope, context);
-                    var currentIndex = scope.Number(slide, "SlideIndex");
-                    var view = scope.Get(selected.Window, "View");
-                    guard.Check(); context.Check();
-                    scope.Call(view, "GotoSlide", currentIndex);
-                    context.Check();
-                    var actual = ReadPosition(selected, scope, requireActive: true);
-                    if (!string.Equals(OfficeLocation.Normalize(TargetKind.PowerPointSlide, actual.Target.Path), normalized, StringComparison.Ordinal) || actual.Target.SlideId != target.SlideId)
-                        return context.Response(ResultCode.OpenedPositionFailed);
-                    guard.Check(); context.Check();
-                    if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
-                    if (Native.IsIconic(selected.Hwnd)) Native.ShowWindowAsync(selected.Hwnd, 9);
-                    guard.Check(); context.Check();
-                    var focused = Native.SetForegroundWindow(selected.Hwnd) && Native.GetForegroundWindow() == selected.Hwnd;
-                    return context.Response(focused ? ResultCode.PositionRestored : ResultCode.PositionRestoredFocusPending);
-                }
-                catch (BookmarkException exception) when (exception.Code is ResultCode.UnsupportedTarget or ResultCode.TargetUnavailable)
-                {
-                    return context.Response(ResultCode.OpenedPositionFailed);
-                }
-            }
-            if (!opened)
-            {
-                OfficeDocumentAccess.CheckExists(target);
-                if (Type.GetTypeFromProgID("PowerPoint.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
-                guard.Check(); context.Check();
-                OfficeDocumentAccess.Open(target, context);
-                opened = true;
-            }
+            catch (Exception exception) when (recovery.ShouldObserveAfter(exception)) { }
             System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125);
         }
     }

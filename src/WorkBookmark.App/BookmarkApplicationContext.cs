@@ -28,6 +28,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private UserSettings _settings;
     private ToastForm? _toast;
     private NoteForm? _note;
+    private WebBookmarkForm? _webPage;
     private SettingsForm? _settingsForm;
     private TargetSnapshot? _beforeList;
     private Guid? _activeRequest, _undoId, _lastResumeId;
@@ -43,7 +44,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     {
         _repository = repository; _worker = worker; _dataDirectory = dataDirectory; _captureWorker = captureWorker;
         _ = _dispatcher.Handle;
-        try { _settings = UserSettings.Load(dataDirectory); }
+        try { _settings = UserSettings.Load(dataDirectory) with { StartWithWindows = StartupRegistration.IsEnabled }; }
         catch { _settings = UserSettings.Default; _settingsInvalid = true; }
         _hotkeys = new HotkeyWindow(_settings.CaptureHotkey, _settings.RecentHotkey);
         _hotkeys.Pressed += capture =>
@@ -62,6 +63,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _recent.CancelRequested += CancelOperation;
         var menu = new ContextMenuStrip();
         menu.Items.Add("최근 책갈피", null, (_, _) => ShowRecent());
+        menu.Items.Add("웹페이지 URL로 추가…", null, (_, _) => ShowWebBookmark());
         _undoMenu = new ToolStripMenuItem("삭제 되돌리기", null, (_, _) => _ = UndoAsync()) { Visible = false };
         menu.Items.Add(_undoMenu);
         menu.Items.Add("진행 중 요청 중단", null, (_, _) => CancelOperation());
@@ -124,7 +126,10 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             if (DateTimeOffset.UtcNow >= request.DeadlineUtc) { NotifyCaptureFailure(ResultCode.CaptureTimedOut); return; }
             if (response.RequestId != id || response.ProtocolVersion != 1 || response.Code != ResultCode.Captured || response.Target is null)
             {
-                Notify(UiStyle.Result(response.Code)); return;
+                if (response.Code is ResultCode.BrowserAddressUnavailable or ResultCode.BrowserExtensionRequired)
+                    Notify(UiStyle.Result(response.Code), "URL 입력", ShowWebBookmark, 8000);
+                else Notify(UiStyle.Result(response.Code));
+                return;
             }
             // Accept the immutable observation on the UI thread, then stop watching. Input
             // during the subsequent DB write does not invalidate the already captured location.
@@ -191,6 +196,24 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         if (!_recent.Visible) _beforeList = ForegroundSnapshot.Capture();
         _ = OpenRecentAsync();
     }
+    private void ShowWebBookmark()
+    {
+        if (_exiting) return;
+        if (_webPage is { IsDisposed: false }) { _webPage.Activate(); return; }
+        _webPage = new WebBookmarkForm(async target =>
+        {
+            var id = Guid.NewGuid();
+            if (!BeginOperation(id)) throw new BookmarkException(ResultCode.AppBusy);
+            try
+            {
+                CaptureCommit commit = await ReadAsync(() => _repository.UpsertCapture(target));
+                try { if (!_exiting) Notify($"책갈피를 남겼습니다 · {commit.Bookmark.DisplayName}", "메모", () => _ = EditNoteAsync(commit.Bookmark.Id)); }
+                catch { DiagnosticLog.Write("manual_web_notification", ResultCode.CaptureCommitted); }
+            }
+            finally { EndOperation(id); }
+        });
+        _webPage.Show(); _webPage.Activate();
+    }
     private async Task OpenRecentAsync()
     {
         try
@@ -225,13 +248,20 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         bool recordingResult = false;
         try
         {
-            var request = new WorkerRequest(1, id, Operation.Resume, DateTimeOffset.UtcNow.AddSeconds(15), baseline, bookmark.Target);
+            bool webOffice = OfficeLocation.IsWebTarget(bookmark.Target);
+            using var inputSignal = webOffice ? ResumeInputSignal.Create(id) : null;
+            var request = new WorkerRequest(1, id, Operation.Resume,
+                DateTimeOffset.UtcNow.AddSeconds(FrameProtocol.ResumeTimeoutSeconds(Operation.Resume, bookmark.Target)), baseline, bookmark.Target,
+                MonitorInput: webOffice);
             using var input = new ResumeInputMonitor(() =>
             {
+                // Login clicks must not kill read-only Office observation. The worker's guard
+                // still prevents position changes, focus steals and retries after new input.
+                if (webOffice) { inputSignal!.MarkInput(); return; }
                 if (!_exiting && !_dispatcher.IsDisposed) _dispatcher.BeginInvoke((Action)(() => { if (_activeRequest == id) _worker.Cancel(); }));
             });
             Task<WorkerResponse> pending = _worker.RunAsync(request);
-            _ = ShowResumeProgressAsync(id);
+            _ = ShowResumeProgressAsync(id, webOffice);
             WorkerResponse response = await pending;
             if (_exiting || _activeRequest != id) return;
             result = response.RequestId == id && response.ProtocolVersion == 1 ? response.Code : ResultCode.ResumeOutcomeUnknown;
@@ -239,7 +269,12 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             await WriteAsync(() => _repository.RecordResume(bookmark.Id, result));
             var updated = await ReadAsync(() => _repository.Get(bookmark.Id));
             if (updated is not null && !_exiting) _recent.Replace(updated);
-            if (!_exiting) Notify(UiStyle.Result(result));
+            if (!_exiting)
+            {
+                if (webOffice && result == ResultCode.OfficeResumePending)
+                    Notify(UiStyle.Result(result), "사이트 로그인", () => _ = OpenOfficeSiteAsync(bookmark.Target), 10000);
+                else Notify(UiStyle.Result(result));
+            }
         }
         catch (Exception exception)
         {
@@ -248,10 +283,29 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         }
         finally { EndOperation(id); }
     }
-    private async Task ShowResumeProgressAsync(Guid id)
+    private async Task ShowResumeProgressAsync(Guid id, bool webOffice)
     {
         await Task.Delay(1000);
-        if (!_exiting && _activeRequest == id) { Notify("여는 중…", "요청 중단", CancelOperation); _recent.SetBusy(true, "여는 중… 요청 중단 후에도 이미 전달된 동작은 완료될 수 있습니다."); }
+        if (!_exiting && _activeRequest == id)
+        {
+            string message = webOffice ? "웹 문서를 여는 중… 로그인과 문서 준비를 최대 45초 기다립니다." : "여는 중…";
+            Notify(message, "요청 중단", CancelOperation, webOffice ? 10000 : 3000);
+            _recent.SetBusy(true, "여는 중… 요청 중단 후에도 이미 전달된 동작은 완료될 수 있습니다.");
+        }
+    }
+    private async Task OpenOfficeSiteAsync(CapturedTarget target)
+    {
+        var id = Guid.NewGuid();
+        if (!BeginOperation(id)) return;
+        try
+        {
+            var uri = new Uri(OfficeLocation.Normalize(target.Kind, target.Path));
+            var site = new CapturedTarget(TargetKind.WebPage, uri.GetLeftPart(UriPartial.Authority) + "/", PageTitle: uri.Host);
+            var response = await _worker.RunAsync(new(1, id, Operation.Resume, DateTimeOffset.UtcNow.AddSeconds(15), Target: site));
+            Notify(response.Code == ResultCode.OpenRequested ? "사이트 열기를 요청했습니다. 로그인한 뒤 책갈피를 다시 실행해 주세요." : UiStyle.Result(response.Code));
+        }
+        catch { Notify("사이트 열기를 완료하지 못했습니다."); }
+        finally { EndOperation(id); }
     }
     private void CancelOperation()
     {
@@ -406,7 +460,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             Notify("다른 앱과 단축키가 충돌했거나 등록할 수 없습니다.\n" + unavailable, "단축키 설정", ShowSettings, 10000);
         }
         else if (!_settings.IntroShown)
-            Notify($"업무 책갈피 · 제한된 시험판\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 최근 목록\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome은 확장 버튼에서 저장·단축키 확인", "설정", ShowSettings, 10000);
+            Notify($"업무 책갈피 · 제한된 시험판\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 최근 목록\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome: 확장 없이 저장 · 트레이에서 URL 입력 가능", "설정", ShowSettings, 10000);
         if (!_settings.IntroShown)
         {
             await _settingsGate.WaitAsync();
@@ -433,7 +487,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         if (_exiting) return;
         _exiting = true; _browserServer.Dispose(); _captureInput?.Dispose(); _worker.Cancel(); StartupRegistration.StopWorker();
         _tray.Visible = false; _hotkeys.Dispose(); _undoTimer.Dispose();
-        _toast?.Close(); _note?.Dispose(); _settingsForm?.Dispose(); _recent.Dispose();
+        _toast?.Close(); _note?.Dispose(); _webPage?.Dispose(); _settingsForm?.Dispose(); _recent.Dispose();
         _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); _dispatcher.Dispose();
         base.ExitThreadCore();
     }

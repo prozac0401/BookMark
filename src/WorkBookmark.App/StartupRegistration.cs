@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
+using Microsoft.Win32;
 
 namespace WorkBookmark.App;
 
@@ -12,6 +13,8 @@ public static class StartupRegistration
     private static Process? _activeHelper;
     private static bool _stopping;
     private const string Marker = "WorkBookmark per-user startup shortcut v1";
+    // Deliberately outside the MSI-owned Installer key: a user's choice survives upgrades and uninstall.
+    internal const string PreferenceKey = @"Software\WorkBookmark\Preferences";
     public static string ShortcutPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Startup), "WorkBookmark.lnk");
     public static bool IsEnabled => File.Exists(ShortcutPath) && IsOwned(File.ReadAllBytes(ShortcutPath));
     public static void SetEnabled(bool enabled)
@@ -70,14 +73,24 @@ public static class StartupRegistration
     {
         string path = ShortcutPath;
         if (File.Exists(path) && !IsOwned(File.ReadAllBytes(path))) throw new IOException("같은 이름의 다른 시작프로그램 바로가기가 있습니다.");
-        if (!enabled) { if (File.Exists(path)) File.Delete(path); return; }
+        if (!enabled)
+        {
+            if (File.Exists(path)) File.Delete(path);
+            SavePreference(false);
+            return;
+        }
         string executable = Environment.ProcessPath ?? throw new IOException("실행파일 위치를 확인하지 못했습니다.");
         if (executable.StartsWith(@"\\", StringComparison.Ordinal) || !Path.IsPathFullyQualified(executable)) throw new IOException("로컬 폴더에 배포한 앱만 등록할 수 있습니다.");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         byte[] shortcut = CreateShortcut(executable);
         string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try { File.WriteAllBytes(temporary, shortcut); File.Move(temporary, path, true); }
+        try { File.WriteAllBytes(temporary, shortcut); File.Move(temporary, path, true); SavePreference(true); }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
+    private static void SavePreference(bool enabled)
+    {
+        using var key = Registry.CurrentUser.CreateSubKey(PreferenceKey, writable: true);
+        key.SetValue("StartWithWindows", enabled ? 1 : 0, RegistryValueKind.DWord);
     }
     private static bool IsOwned(byte[] bytes) => bytes.AsSpan().IndexOf(Encoding.Unicode.GetBytes(Marker)) >= 0;
     internal static byte[] CreateShortcut(string executable)

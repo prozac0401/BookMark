@@ -96,75 +96,90 @@ internal static class ExcelAdapter
 
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
-        using var guard = new ResumeGuard(context.Request.Snapshot);
+        using var guard = new ResumeGuard(context.Request.Snapshot,
+            context.Request.MonitorInput && OfficeLocation.IsWebTarget(target) ? context.Request.RequestId : null);
         var normalized = OfficeDocumentAccess.Normalize(TargetKind.ExcelCell, target.Path);
         var opened = false;
+        var recovery = new OfficeWebRecovery(target, context);
         while (true)
         {
-            if (OfficeDocumentAccess.WaitingForWebDocument(target, opened, context)) return context.Response(ResultCode.OfficeResumePending);
-            context.Check();
-            using var scope = new ComScope();
-            var enumeration = Enumerate(normalized, scope, context);
-            if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
-            if (!enumeration.Complete)
+            if (recovery.NearDeadline) return context.Response(validateOnly ? ResultCode.EnumerationIncomplete : recovery.IncompleteResult);
+            try
             {
+                context.Check();
+                using var scope = new ComScope();
+                var enumeration = Enumerate(normalized, scope, context);
+                if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
+                if (enumeration.Matches.Count == 1)
+                    recovery.Observed(enumeration.Matches[0].Windows.FirstOrDefault(w => Native.IsWindow(w.Hwnd))?.Hwnd.ToInt64() ?? 0);
+                if (!enumeration.Complete)
+                {
+                    if (!opened && !recovery.IsWeb)
+                    {
+                        if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
+                        throw new BookmarkException(ResultCode.EnumerationIncomplete);
+                    }
+                    // Startup may expose an XLMAIN before its native workbook is ready.
+                    // A root visit may proceed, but incomplete inventory never permits a second open.
+                    recovery.Recover(false, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
+                    System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
+                }
+                if (enumeration.Matches.Count == 1)
+                {
+                    var match = enumeration.Matches[0];
+                    foreach (var candidate in match.Windows) guard.Permit(candidate.Hwnd);
+                    var selected = ChooseWindow(match, scope);
+                    context.TargetHwnd = selected.Hwnd.ToInt64();
+                    var nativeWindow = Connect(selected.Hwnd, scope, visibleOnly: false);
+                    if (!SameWindow(nativeWindow.Window, selected.Window, scope) || !ComScope.Same(nativeWindow.Application, match.Application))
+                        throw new BookmarkException(ResultCode.ContextChanged);
+                    try
+                    {
+                        var range = ValidatePosition(target, match.Workbook, scope, context);
+                        if (validateOnly) return context.Response(ResultCode.Validated, target);
+                        guard.Check(); context.Check();
+                        // Only activation and navigation are allowed external Excel actions.
+                        context.ExternalActionStarted = true;
+                        scope.Call(selected.Window, "Activate");
+                        guard.Check(); context.Check();
+                        var sheet = scope.Get(range, "Parent");
+                        scope.Call(sheet, "Activate");
+                        guard.Check(); context.Check();
+                        scope.Call(match.Application, "Goto", range, true);
+                        context.Check();
+                        bool PositionMatches()
+                        {
+                            var actual = ReadPosition(selected, scope, requireActive: true);
+                            return string.Equals(OfficeLocation.Normalize(TargetKind.ExcelCell, actual.Target.Path), normalized, StringComparison.Ordinal) &&
+                                actual.Target.SheetName == target.SheetName && actual.Target.CellAddress == target.CellAddress;
+                        }
+                        if (!OfficeDocumentAccess.VerifyPosition(target, context, PositionMatches))
+                            return context.Response(ResultCode.OpenedPositionFailed);
+                        // Foreground acquisition is separate from verified cell movement.
+                        guard.Check(); context.Check();
+                        if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
+                        if (Native.IsIconic(selected.Hwnd)) Native.ShowWindowAsync(selected.Hwnd, 9);
+                        guard.Check(); context.Check();
+                        var focused = Native.SetForegroundWindow(selected.Hwnd) && Native.GetForegroundWindow() == selected.Hwnd;
+                        return context.Response(focused ? ResultCode.PositionRestored : ResultCode.PositionRestoredFocusPending);
+                    }
+                    catch (BookmarkException exception) when (exception.Code is ResultCode.UnsupportedTarget or ResultCode.TargetUnavailable)
+                    {
+                        return context.Response(ResultCode.OpenedPositionFailed);
+                    }
+                }
                 if (!opened)
                 {
-                    if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
-                    throw new BookmarkException(ResultCode.EnumerationIncomplete);
+                    OfficeDocumentAccess.CheckExists(target);
+                    if (Type.GetTypeFromProgID("Excel.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
+                    guard.Check(); context.Check();
+                    OfficeDocumentAccess.Open(target, context);
+                    opened = true;
+                    recovery.Opened();
                 }
-                // Startup may expose an XLMAIN before its native object model/workbook is ready.
-                // Keep observing this one Shell request; incomplete enumeration never triggers another open.
-                System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
+                else recovery.Recover(true, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
             }
-            if (enumeration.Matches.Count == 1)
-            {
-                var match = enumeration.Matches[0];
-                foreach (var candidate in match.Windows) guard.Permit(candidate.Hwnd);
-                var selected = ChooseWindow(match, scope);
-                context.TargetHwnd = selected.Hwnd.ToInt64();
-                var nativeWindow = Connect(selected.Hwnd, scope, visibleOnly: false);
-                if (!SameWindow(nativeWindow.Window, selected.Window, scope) || !ComScope.Same(nativeWindow.Application, match.Application))
-                    throw new BookmarkException(ResultCode.ContextChanged);
-                try
-                {
-                    var range = ValidatePosition(target, match.Workbook, scope, context);
-                    if (validateOnly) return context.Response(ResultCode.Validated, target);
-                    guard.Check(); context.Check();
-                    // Only activation and navigation are allowed external Excel actions.
-                    context.ExternalActionStarted = true;
-                    scope.Call(selected.Window, "Activate");
-                    guard.Check(); context.Check();
-                    var sheet = scope.Get(range, "Parent");
-                    scope.Call(sheet, "Activate");
-                    guard.Check(); context.Check();
-                    scope.Call(match.Application, "Goto", range, true);
-                    context.Check();
-                    var actual = ReadPosition(selected, scope, requireActive: true);
-                    if (!string.Equals(OfficeLocation.Normalize(TargetKind.ExcelCell, actual.Target.Path), normalized, StringComparison.Ordinal) ||
-                        actual.Target.SheetName != target.SheetName || actual.Target.CellAddress != target.CellAddress)
-                        return context.Response(ResultCode.OpenedPositionFailed);
-                    // Foreground acquisition is separate from verified cell movement.
-                    guard.Check(); context.Check();
-                    if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
-                    if (Native.IsIconic(selected.Hwnd)) Native.ShowWindowAsync(selected.Hwnd, 9);
-                    guard.Check(); context.Check();
-                    var focused = Native.SetForegroundWindow(selected.Hwnd) && Native.GetForegroundWindow() == selected.Hwnd;
-                    return context.Response(focused ? ResultCode.PositionRestored : ResultCode.PositionRestoredFocusPending);
-                }
-                catch (BookmarkException exception) when (exception.Code is ResultCode.UnsupportedTarget or ResultCode.TargetUnavailable)
-                {
-                    return context.Response(ResultCode.OpenedPositionFailed);
-                }
-            }
-            if (!opened)
-            {
-                OfficeDocumentAccess.CheckExists(target);
-                if (Type.GetTypeFromProgID("Excel.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
-                guard.Check(); context.Check();
-                OfficeDocumentAccess.Open(target, context);
-                opened = true; // Never issue a second Shell open, even when observation fails.
-            }
+            catch (Exception exception) when (recovery.ShouldObserveAfter(exception)) { }
             System.Windows.Forms.Application.DoEvents();
             Thread.Sleep(125);
         }

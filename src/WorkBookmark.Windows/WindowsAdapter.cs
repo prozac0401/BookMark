@@ -27,7 +27,7 @@ public static class WindowsAdapter
                     "XLMAIN" => ExcelAdapter.Capture(snapshot, context),
                     "OpusApp" => WordAdapter.Capture(snapshot, context),
                     "PPTFrameClass" => PowerPointAdapter.Capture(snapshot, context),
-                    "Chrome_WidgetWin_1" when IsSupportedBrowser(snapshot.ProcessId) => throw new BookmarkException(ResultCode.BrowserExtensionRequired),
+                    "Chrome_WidgetWin_1" when IsSupportedBrowser(snapshot.ProcessId) => BrowserAdapter.Capture(snapshot, context),
                     PdfAdapter.FrameClass => PdfAdapter.Capture(snapshot, context),
                     _ => throw new BookmarkException(ResultCode.UnsupportedTarget)
                 };
@@ -76,8 +76,12 @@ public static class WindowsAdapter
             };
             if (request.Target?.Kind == TargetKind.NotepadSnapshot)
                 NotepadAdapter.SnapshotTrace?.Invoke("snapshot worker failure=" + code + " exception=" + exception.GetType().Name + " HRESULT=" + exception.HResult.ToString("X8"));
-            if (context.ExternalActionStarted && code is not (ResultCode.OpenedPositionFailed or ResultCode.PositionRestoredFocusPending or ResultCode.PositionRestored))
-                code = request.Target is { } target && OfficeLocation.IsWebTarget(target) ? ResultCode.OfficeResumePending : ResultCode.ResumeOutcomeUnknown;
+            bool webOfficeResume = request.Operation == Operation.Resume && request.Target is { } target && OfficeLocation.IsWebTarget(target);
+            if (webOfficeResume && context.TargetHwnd != 0 &&
+                code is not (ResultCode.OpenedPositionFailed or ResultCode.PositionRestoredFocusPending or ResultCode.PositionRestored))
+                code = ResultCode.OfficeDocumentOpened;
+            else if (context.ExternalActionStarted && code is not (ResultCode.OpenedPositionFailed or ResultCode.PositionRestoredFocusPending or ResultCode.PositionRestored))
+                code = webOfficeResume ? ResultCode.OfficeResumePending : ResultCode.ResumeOutcomeUnknown;
             return context.Response(code);
         }
     }

@@ -19,6 +19,61 @@ internal static class AdditionalFormChecks
         NoteCancelAndLength(assert);
         RelinkPreviewDecisions(assert);
         UndoDeadlineAndTimer(assert);
+        WebBookmarkInput(assert);
+        InstallerShutdown(assert);
+    }
+
+    private static void InstallerShutdown(Action<bool, string> assert)
+    {
+        Type lifetime = AppAssembly.GetType("WorkBookmark.App.InstallerLifetime")!;
+        var shutdown = lifetime.GetMethod("RequestShutdown", BindingFlags.NonPublic | BindingFlags.Static)!;
+        string name = @"Local\WorkBookmark-InstallerTest-" + Guid.NewGuid().ToString("N");
+        assert((int)shutdown.Invoke(null, [name])! == 0, "MSI01 shutdown succeeds when no application instance exists");
+        using var ready = new ManualResetEvent(false);
+        bool signalled = false;
+        var owner = new Thread(() =>
+        {
+            using var signal = new EventWaitHandle(false, EventResetMode.AutoReset, name + "_Shutdown");
+            using var mutex = new Mutex(true, name);
+            try { ready.Set(); signalled = signal.WaitOne(TimeSpan.FromSeconds(4)); }
+            finally { mutex.ReleaseMutex(); }
+        }) { IsBackground = true };
+        owner.Start();
+        assert(ready.WaitOne(TimeSpan.FromSeconds(2)), "MSI02 synthetic application publishes shutdown event and acquires instance mutex");
+        int result = (int)shutdown.Invoke(null, [name])!;
+        assert(owner.Join(2000) && signalled && result == 0, "MSI03 installer shutdown signals the instance and waits for graceful mutex release");
+    }
+
+    private static void WebBookmarkInput(Action<bool, string> assert)
+    {
+        Type formType = AppAssembly.GetType("WorkBookmark.App.UI.WebBookmarkForm")!;
+        CapturedTarget? saved = null;
+        int writes = 0;
+        bool fail = true;
+        Func<CapturedTarget, Task> persist = target =>
+        {
+            writes++;
+            if (fail) return Task.FromException(new IOException("Injected write failure"));
+            saved = target;
+            return Task.CompletedTask;
+        };
+        using var form = (Form)Activator.CreateInstance(formType, persist)!;
+        var url = Field<TextBox>(form, "_url");
+        var title = Field<TextBox>(form, "_title");
+        var save = formType.GetMethod("SaveAsync", Instance)!;
+        foreach (var invalid in new[] { "javascript:alert(1)", "file:///C:/secret.txt", "https://user:password@example.invalid/a" })
+        {
+            url.Text = invalid;
+            ((Task)save.Invoke(form, null)!).GetAwaiter().GetResult();
+        }
+        assert(writes == 0 && !form.IsDisposed, "WEB01 manual entry refuses executable, file and credential URLs without saving");
+        url.Text = "https://intranet.invalid/Doc?ID=AbC#section";
+        title.Text = "";
+        ((Task)save.Invoke(form, null)!).GetAwaiter().GetResult();
+        assert(writes == 1 && saved is null && !url.ReadOnly && url.Text.EndsWith("ID=AbC#section"), "WEB02 failed URL save preserves editable URL for retry");
+        fail = false;
+        ((Task)save.Invoke(form, null)!).GetAwaiter().GetResult();
+        assert(writes == 2 && saved?.Kind == TargetKind.WebPage && saved.Path == "https://intranet.invalid/Doc?ID=AbC#section" && saved.PageTitle == "intranet.invalid", "WEB03 extension-free manual entry preserves URL state and supplies missing title");
     }
 
     private static Bookmark Sample()

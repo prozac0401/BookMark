@@ -28,17 +28,34 @@ internal static class OfficeDocumentAccess
         string location = Normalize(target.Kind, target.Path);
         if (OfficeLocation.IsWebTarget(target)) location = OfficeLocation.LaunchUri(target);
         context.Check();
+        bool alreadyStarted = context.ExternalActionStarted;
         context.ExternalActionStarted = true;
         long result = (shellOpen ?? OpenWithShell)(location);
         if (result <= 32)
         {
-            context.ExternalActionStarted = false;
+            context.ExternalActionStarted = alreadyStarted;
             throw new BookmarkException(ResultCode.TargetUnavailable);
         }
     }
 
-    internal static bool WaitingForWebDocument(CapturedTarget target, bool opened, RequestContext context) =>
-        opened && OfficeLocation.IsWebTarget(target) && context.Request.DeadlineUtc <= DateTimeOffset.UtcNow.AddSeconds(2);
+    internal static bool VerifyPosition(CapturedTarget target, RequestContext context, Func<bool> matches,
+        Func<DateTimeOffset>? clock = null, Action? wait = null)
+    {
+        clock ??= () => DateTimeOffset.UtcNow;
+        wait ??= () => { System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); };
+        var until = clock().AddSeconds(2);
+        bool web = OfficeLocation.IsWebTarget(target);
+        while (true)
+        {
+            context.Check();
+            try { if (matches()) return true; }
+            catch (BookmarkException error) when (web && error.Code == ResultCode.ContextChanged) { }
+            if (!web || clock() >= until || context.Request.DeadlineUtc <= clock().AddMilliseconds(750)) return false;
+            // Office can return from Select/Goto before ActiveWindow/Selection reflects the new view.
+            // Poll metadata only; never issue a second navigation to compensate for a delayed refresh.
+            wait();
+        }
+    }
 
     private static long OpenWithShell(string location) => Native.ShellExecute(0, "open", location, null, null, 1).ToInt64();
 }

@@ -19,6 +19,7 @@ internal static class Program
         if (args[0] == "word-native-checks") return WordNativeChecks.Run(args);
         if (args[0] == "word-checks") return WordAdapterChecks.Run(args);
         if (args[0] == "office-url-checks") return OfficeUrlAdapterChecks.Run();
+        if (args[0] == "browser-checks") return BrowserAdapterChecks.Run();
         if (args[0] == "powerpoint-checks") return PowerPointAdapterChecks.Run(args);
         if (args[0] == "pdf-checks") return PdfAdapterChecks.Run(args);
         if (args[0] == "notepad-checks") return NotepadAdapterChecks.Run(args);

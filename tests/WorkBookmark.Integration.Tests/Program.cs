@@ -81,6 +81,18 @@ internal static class Program
             var result = await client.RunAsync(Request(Operation.Resume) with { Target = target }, cancel.Token);
             Assert(result.Code == ResultCode.OfficeResumePending && !client.IsBusy, "Sign-in input/cancellation must not produce a successful resume.");
         });
+        await Check("O04 extended-deadline-only-for-web-Office-resume", async () =>
+        {
+            var target = new CapturedTarget(TargetKind.WordPosition, "https://office.invalid/document.docx", HadUnsavedChanges: false, WordStart: 37);
+            using var client = Client("document-opened");
+            var request = Request(Operation.Resume, 45) with { Target = target };
+            Assert(FrameProtocol.IsValid(request, DateTimeOffset.UtcNow), "Cold web Office startup deadline rejected.");
+            var result = await client.RunAsync(request);
+            Assert(result.Code == ResultCode.OfficeDocumentOpened && result.TargetHwnd == 123, "Confirmed document must remain distinct from position restoration.");
+            Assert((await client.RunAsync(request with { Operation = Operation.Capture })).Code == ResultCode.InvalidRequest, "Long capture deadline accepted.");
+            Assert((await client.RunAsync(request with { Target = new(TargetKind.File, @"C:\fixture\report.txt") })).Code == ResultCode.InvalidRequest, "Long local deadline accepted.");
+            Assert((await client.RunAsync(request with { DeadlineUtc = DateTimeOffset.UtcNow.AddSeconds(60) })).Code == ResultCode.InvalidRequest, "Unbounded remote deadline accepted.");
+        });
         await Check("U12 single-flight-no-queue", async () =>
         {
             using var client = Client("late"); var first = client.RunAsync(Request(seconds: .6));
@@ -166,8 +178,9 @@ internal static class Program
         }
         if (mode == "own-pid") { await PublishPidAsync(args[2], Environment.ProcessId); await Task.Delay(10000); }
         if (mode == "late") await Task.Delay(5000);
-        var response = new WorkerResponse(1, mode == "wrong-id" ? Guid.NewGuid() : request.RequestId, ResultCode.Captured,
-            mode == "echo-target" ? request.Target : new(TargetKind.File, @"C:\fixture\report.txt"));
+        var response = new WorkerResponse(1, mode == "wrong-id" ? Guid.NewGuid() : request.RequestId,
+            mode == "document-opened" ? ResultCode.OfficeDocumentOpened : ResultCode.Captured,
+            mode == "echo-target" ? request.Target : new(TargetKind.File, @"C:\fixture\report.txt"), TargetHwnd: mode == "document-opened" ? 123 : 0);
         await FrameProtocol.WriteAsync(Console.OpenStandardOutput(), response); return 0;
     }
     private static async Task PublishPidAsync(string marker, int processId)

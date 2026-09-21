@@ -14,6 +14,9 @@ internal static class Program
         if (args.Length == 1 && args[0] == "--startup-worker") return StartupRegistration.RunWorker();
         string user = WindowsIdentity.GetCurrent().User?.Value ?? Environment.UserName;
         string instanceName = @"Local\WorkBookmark_" + user;
+        if (args.Length == 1 && args[0] == "--installer-shutdown") return InstallerLifetime.RequestShutdown(instanceName);
+        // Publish the shutdown signal before acquiring the instance mutex so MSI cannot miss it at startup.
+        using var installerShutdown = new EventWaitHandle(false, EventResetMode.AutoReset, instanceName + "_Shutdown");
         using var mutex = new Mutex(true, instanceName, out bool firstInstance);
         using var signal = new EventWaitHandle(false, EventResetMode.AutoReset, instanceName + "_ShowRecent");
         if (!firstInstance) { signal.Set(); return 0; }
@@ -30,10 +33,15 @@ internal static class Program
             using var shutdown = new ManualResetEvent(false);
             _ = Task.Run(() =>
             {
-                WaitHandle[] handles = [shutdown, signal];
-                while (WaitHandle.WaitAny(handles) == 1)
+                WaitHandle[] handles = [shutdown, signal, installerShutdown];
+                int requested;
+                while ((requested = WaitHandle.WaitAny(handles)) != 0)
                 {
-                    try { dispatch.BeginInvoke(() => context.ShowRecent()); }
+                    try
+                    {
+                        if (requested == 2) { dispatch.BeginInvoke(() => context.ExitThread()); break; }
+                        dispatch.BeginInvoke(() => context.ShowRecent());
+                    }
                     catch (InvalidOperationException) { break; }
                 }
             });

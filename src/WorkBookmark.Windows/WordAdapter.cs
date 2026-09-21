@@ -119,75 +119,90 @@ internal static class WordAdapter
 
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
-        using var guard = new ResumeGuard(context.Request.Snapshot);
+        using var guard = new ResumeGuard(context.Request.Snapshot,
+            context.Request.MonitorInput && OfficeLocation.IsWebTarget(target) ? context.Request.RequestId : null);
         var normalized = RequireSupportedLocation(target.Path);
         var opened = false;
+        var recovery = new OfficeWebRecovery(target, context);
         while (true)
         {
-            if (OfficeDocumentAccess.WaitingForWebDocument(target, opened, context)) return context.Response(ResultCode.OfficeResumePending);
-            context.Check();
-            using var scope = new ComScope();
-            var enumeration = Enumerate(normalized, scope, context);
-            if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
-            if (!enumeration.Complete)
+            if (recovery.NearDeadline) return context.Response(validateOnly ? ResultCode.EnumerationIncomplete : recovery.IncompleteResult);
+            try
             {
+                context.Check();
+                using var scope = new ComScope();
+                var enumeration = Enumerate(normalized, scope, context);
+                if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
+                if (enumeration.Matches.Count == 1)
+                    recovery.Observed(enumeration.Matches[0].Windows.FirstOrDefault(w => Native.IsWindow(w.Hwnd))?.Hwnd.ToInt64() ?? 0);
+                if (!enumeration.Complete)
+                {
+                    if (!opened && !recovery.IsWeb)
+                    {
+                        if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
+                        throw new BookmarkException(ResultCode.EnumerationIncomplete);
+                    }
+                    // Wait through Word startup/authentication, with no retry while inventory is incomplete.
+                    recovery.Recover(false, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
+                    System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
+                }
+                if (enumeration.Matches.Count == 1)
+                {
+                    var match = enumeration.Matches[0];
+                    foreach (var candidate in match.Windows) guard.Permit(candidate.Hwnd);
+                    var selected = ChooseWindow(match, scope);
+                    context.TargetHwnd = selected.Hwnd.ToInt64();
+                    var nativeWindow = Connect(selected.Hwnd, scope, context, visibleOnly: false);
+                    if (!SameWindow(nativeWindow.Window, selected.Window, scope) || !ComScope.Same(nativeWindow.Application, match.Application) ||
+                        !ComScope.Same(scope.Get(nativeWindow.Window, "Document"), match.Document))
+                        throw new BookmarkException(ResultCode.ContextChanged);
+                    try
+                    {
+                        RequireSinglePane(selected.Window, scope);
+                        ValidatePosition(target, match.Document, scope, context);
+                        if (validateOnly) return context.Response(ResultCode.Validated, target);
+                        VerifyWindow(selected, scope); guard.Check(); context.Check();
+                        context.ExternalActionStarted = true;
+                        scope.Call(selected.Window, "Activate");
+                        guard.Check(); context.Check(); VerifyWindow(selected, scope);
+                        // Recreate the collapsed range after activation; never reuse an offset silently adjusted by Word.
+                        RequireSinglePane(selected.Window, scope);
+                        var range = ValidatePosition(target, match.Document, scope, context);
+                        guard.Check(); context.Check();
+                        scope.Call(range, "Select");
+                        context.Check();
+                        bool PositionMatches()
+                        {
+                            var actual = ReadPosition(selected, scope, context, requireActive: true);
+                            return string.Equals(OfficeLocation.Normalize(TargetKind.WordPosition, actual.Target.Path), normalized, StringComparison.Ordinal) &&
+                                actual.Target.WordStart == target.WordStart && actual.SelectionEnd == target.WordStart;
+                        }
+                        if (!OfficeDocumentAccess.VerifyPosition(target, context, PositionMatches))
+                            return context.Response(ResultCode.OpenedPositionFailed);
+                        guard.Check(); context.Check();
+                        if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
+                        if (Native.IsIconic(selected.Hwnd)) Native.ShowWindowAsync(selected.Hwnd, 9);
+                        guard.Check(); context.Check();
+                        var focused = Native.SetForegroundWindow(selected.Hwnd) && Native.GetForegroundWindow() == selected.Hwnd;
+                        return context.Response(focused ? ResultCode.PositionRestored : ResultCode.PositionRestoredFocusPending);
+                    }
+                    catch (BookmarkException exception) when (exception.Code is ResultCode.UnsupportedTarget or ResultCode.TargetUnavailable)
+                    {
+                        return context.Response(ResultCode.OpenedPositionFailed);
+                    }
+                }
                 if (!opened)
                 {
-                    if (enumeration.Matches.Count == 0) OfficeDocumentAccess.CheckExists(target);
-                    throw new BookmarkException(ResultCode.EnumerationIncomplete);
-                }
-                // Observe the single Shell request while Word creates its native document pane.
-                System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
-            }
-            if (enumeration.Matches.Count == 1)
-            {
-                var match = enumeration.Matches[0];
-                foreach (var candidate in match.Windows) guard.Permit(candidate.Hwnd);
-                var selected = ChooseWindow(match, scope);
-                context.TargetHwnd = selected.Hwnd.ToInt64();
-                var nativeWindow = Connect(selected.Hwnd, scope, context, visibleOnly: false);
-                if (!SameWindow(nativeWindow.Window, selected.Window, scope) || !ComScope.Same(nativeWindow.Application, match.Application) ||
-                    !ComScope.Same(scope.Get(nativeWindow.Window, "Document"), match.Document))
-                    throw new BookmarkException(ResultCode.ContextChanged);
-                try
-                {
-                    RequireSinglePane(selected.Window, scope);
-                    ValidatePosition(target, match.Document, scope, context);
-                    if (validateOnly) return context.Response(ResultCode.Validated, target);
-                    VerifyWindow(selected, scope); guard.Check(); context.Check();
-                    context.ExternalActionStarted = true;
-                    scope.Call(selected.Window, "Activate");
-                    guard.Check(); context.Check(); VerifyWindow(selected, scope);
-                    // Recreate the collapsed range after activation; never reuse an offset silently adjusted by Word.
-                    RequireSinglePane(selected.Window, scope);
-                    var range = ValidatePosition(target, match.Document, scope, context);
+                    OfficeDocumentAccess.CheckExists(target);
+                    if (Type.GetTypeFromProgID("Word.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
                     guard.Check(); context.Check();
-                    scope.Call(range, "Select");
-                    context.Check();
-                    var actual = ReadPosition(selected, scope, context, requireActive: true);
-                    if (!string.Equals(OfficeLocation.Normalize(TargetKind.WordPosition, actual.Target.Path), normalized, StringComparison.Ordinal) ||
-                        actual.Target.WordStart != target.WordStart || actual.SelectionEnd != target.WordStart)
-                        return context.Response(ResultCode.OpenedPositionFailed);
-                    guard.Check(); context.Check();
-                    if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
-                    if (Native.IsIconic(selected.Hwnd)) Native.ShowWindowAsync(selected.Hwnd, 9);
-                    guard.Check(); context.Check();
-                    var focused = Native.SetForegroundWindow(selected.Hwnd) && Native.GetForegroundWindow() == selected.Hwnd;
-                    return context.Response(focused ? ResultCode.PositionRestored : ResultCode.PositionRestoredFocusPending);
+                    OfficeDocumentAccess.Open(target, context);
+                    opened = true;
+                    recovery.Opened();
                 }
-                catch (BookmarkException exception) when (exception.Code is ResultCode.UnsupportedTarget or ResultCode.TargetUnavailable)
-                {
-                    return context.Response(ResultCode.OpenedPositionFailed);
-                }
+                else recovery.Recover(true, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
             }
-            if (!opened)
-            {
-                OfficeDocumentAccess.CheckExists(target);
-                if (Type.GetTypeFromProgID("Word.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
-                guard.Check(); context.Check();
-                OfficeDocumentAccess.Open(target, context);
-                opened = true; // Never repeat Shell open after an uncertain outcome.
-            }
+            catch (Exception exception) when (recovery.ShouldObserveAfter(exception)) { }
             System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125);
         }
     }
