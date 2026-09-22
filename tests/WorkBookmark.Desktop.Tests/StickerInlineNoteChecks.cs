@@ -41,17 +41,18 @@ internal static class StickerInlineNoteChecks
         assert(Editing(form) && form.Handle == window && form.Bounds == bounds && editor.Parent == form && editor.Visible && editor.Focused,
             "STN01 note editing uses the originating sticker window and position");
         assert(editor.Text == sample.Note && !editor.Multiline && editor.MaxLength == 500 &&
-            Field<Button>(form, "_saveNote").Visible && Field<Button>(form, "_cancelNote").Visible && !Field<Button>(form, "_resume").Visible,
-            "STN02 inline editor keeps the one-line limit and explicit save/cancel controls");
+            !form.Controls.OfType<Button>().Any(button => button.Text.StartsWith("저장", StringComparison.Ordinal)) &&
+            Field<Button>(form, "_cancelNote").Visible && !Field<Button>(form, "_resume").Visible,
+            "STN02 inline editing has a one-line limit and cancel control without a save button");
 
         editor.Text = "사용자가 입력 중인 초안";
         Invoke(form, "UpdateBookmark", sample with { Note = "새로 읽은 저장 메모", LastResumeResult = ResultCode.AppBusy });
         Begin(form, _ => throw new Exception("A second reveal must keep the original callback."));
-        form.Hide();
-        form.Show();
+        Field<Button>(form, "_cancelNote").Focus();
+        Application.DoEvents();
         Invoke(form, "FocusResume");
         assert(Editing(form) && editor.Text == "사용자가 입력 중인 초안" && editor.Focused && saves == 0,
-            "STN03 background refresh and repeated hide/reveal preserve unsaved text without writing");
+            "STN03 background refresh, repeated editing and focus within the sticker retain the draft without writing");
 
         Command(form, Keys.Control | Keys.Space);
         Invoke(form, "ApplyPresentation", true, false);
@@ -76,7 +77,8 @@ internal static class StickerInlineNoteChecks
         editor.Text = "저장 실패 뒤에도 보존하는 메모";
         Pump(Save(form));
         assert(saves == 1 && Editing(form) && !editor.ReadOnly && editor.Text == "저장 실패 뒤에도 보존하는 메모" &&
-            Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal) && Field<Button>(form, "_saveNote").Enabled,
+            Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal) &&
+            Field<Label>(form, "_noteStatus").Text.Contains("Enter", StringComparison.Ordinal),
             "STN08 injected persistence failure retains editable text and inline retry feedback");
         failSave = false;
         Command(form, Keys.Enter);
@@ -98,7 +100,7 @@ internal static class StickerInlineNoteChecks
         Task duplicate = Save(form);
         Command(form, Keys.Escape);
         assert(delayedSaves == 1 && !pending.IsCompleted && duplicate.IsCompleted && Editing(form) && editor.ReadOnly &&
-            !Field<Button>(form, "_saveNote").Enabled && !Field<Button>(form, "_cancelNote").Enabled,
+            !Field<Button>(form, "_cancelNote").Enabled,
             "STN11 a pending save blocks duplicate writes and cancel until commit completes");
         completion.SetResult();
         Pump(pending);
@@ -108,9 +110,9 @@ internal static class StickerInlineNoteChecks
         Begin(form, persist);
         form.Size = form.MinimumSize;
         form.PerformLayout();
-        assert(editor.Bottom < Field<Button>(form, "_saveNote").Top &&
+        assert(editor.Bottom < Field<Button>(form, "_cancelNote").Top &&
             Field<Label>(form, "_noteStatus").Bottom < Field<Label>(form, "_noteLabel").Top &&
-            editor.Right <= form.ClientSize.Width && Field<Button>(form, "_saveNote").Bottom < form.ClientSize.Height,
+            editor.Right <= form.ClientSize.Width && Field<Button>(form, "_cancelNote").Bottom < form.ClientSize.Height,
             "STN13 inline editor and feedback remain inside the minimum sticker bounds");
         var icon = Field<PictureBox>(form, "_typeIcon");
         assert(icon.Image is not null && icon.Width == (int)Math.Round(24 * form.DeviceDpi / 96F) &&
@@ -129,6 +131,107 @@ internal static class StickerInlineNoteChecks
         assert(!Editing(form) && ReferenceEquals(StickerType.GetProperty("Bookmark")!.GetValue(form), latest) &&
             Field<RichTextBox>(form, "_note").Text == latest.Note,
             "STN15 a delayed save completion cannot overwrite a newer published bookmark note");
+
+        RunAutoSave(form, assert);
+    }
+
+    private static void RunAutoSave(Form form, Action<bool, string> assert)
+    {
+        // This is a synthetic ordinary window: it exercises real activation/deactivation,
+        // without manipulating another application or a user's document.
+        using var other = new Form { Text = "Automatic note save test", ShowInTaskbar = false };
+        other.Controls.Add(new TextBox { Text = "Other window", Dock = DockStyle.Top });
+        other.Show();
+        var editor = Field<TextBox>(form, "_noteEditor");
+        int writes = 0;
+        string? stored = null;
+        bool rejectWrite = false;
+        Func<string, Task> persist = text =>
+        {
+            writes++;
+            if (rejectWrite) return Task.FromException(new IOException("Injected automatic save failure"));
+            stored = text;
+            return Task.CompletedTask;
+        };
+
+        Begin(form, persist);
+        editor.Text = "다른 창으로 이동하며 자동저장";
+        FocusOther(other);
+        PumpUntil(() => !Editing(form));
+        assert(writes == 1 && stored == "다른 창으로 이동하며 자동저장" && other.ContainsFocus &&
+            Field<RichTextBox>(form, "_note").Text == stored,
+            "STN16 moving to an ordinary window automatically saves the note without taking focus back");
+        Deactivate(form);
+        PumpEvents();
+        assert(writes == 1, "STN17 repeated deactivation of a completed editor does not write again");
+
+        rejectWrite = true;
+        Begin(form, persist);
+        editor.Text = "자동저장 실패 후 재시도할 초안";
+        FocusOther(other);
+        PumpUntil(() => writes == 2 && !Field<bool>(form, "_noteSaving"));
+        assert(Editing(form) && !editor.ReadOnly && editor.Text == "자동저장 실패 후 재시도할 초안" &&
+            Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal) && other.ContainsFocus,
+            "STN18 automatic save failure retains an editable draft and feedback without stealing focus");
+        rejectWrite = false;
+        form.Activate();
+        editor.Focus();
+        FocusOther(other);
+        PumpUntil(() => !Editing(form));
+        assert(writes == 3 && stored == "자동저장 실패 후 재시도할 초안" && other.ContainsFocus,
+            "STN19 returning to a failed draft and leaving again retries and commits it automatically");
+
+        Begin(form, persist);
+        editor.Text = "취소한 내용은 저장하지 않음";
+        // Queue a departure, then cancel before the queued save runs.
+        Deactivate(form);
+        Command(form, Keys.Escape);
+        FocusOther(other);
+        PumpEvents();
+        assert(writes == 3 && !Editing(form) && Field<RichTextBox>(form, "_note").Text == stored,
+            "STN20 Escape cancels the draft and any queued automatic save");
+
+        Begin(form, persist);
+        editor.Text = "조합 중";
+        SendMessage(editor.Handle, 0x010D, nint.Zero, nint.Zero);
+        FocusOther(other);
+        PumpEvents();
+        assert(writes == 3 && Editing(form),
+            "STN21 leaving during synthetic IME composition defers automatic persistence");
+        SendMessage(editor.Handle, 0x010E, nint.Zero, nint.Zero);
+        editor.Text = "조합이 확정된 최종 메모";
+        PumpUntil(() => !Editing(form));
+        assert(writes == 4 && stored == "조합이 확정된 최종 메모" && other.ContainsFocus,
+            "STN22 deferred automatic save waits for the committed IME text and keeps the destination focused");
+
+        Begin(form, persist);
+        editor.Text = "다시 돌아와 계속 편집";
+        SendMessage(editor.Handle, 0x010D, nint.Zero, nint.Zero);
+        FocusOther(other);
+        PumpEvents();
+        form.Activate();
+        editor.Focus();
+        SendMessage(editor.Handle, 0x010E, nint.Zero, nint.Zero);
+        PumpEvents();
+        assert(writes == 4 && Editing(form) && editor.Focused,
+            "STN23 returning before IME completion cancels the pending automatic save and keeps editing");
+        Command(form, Keys.Escape);
+
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int delayedWrites = 0;
+        Begin(form, _ => { delayedWrites++; return completion.Task; });
+        editor.Text = "자동저장 진행 중";
+        FocusOther(other);
+        PumpUntil(() => delayedWrites == 1);
+        Deactivate(form);
+        Deactivate(form);
+        PumpEvents();
+        assert(delayedWrites == 1 && Editing(form) && editor.ReadOnly && other.ContainsFocus,
+            "STN24 repeated departure events cannot duplicate a pending automatic write");
+        completion.SetResult();
+        PumpUntil(() => !Editing(form));
+        assert(delayedWrites == 1 && other.ContainsFocus && Field<RichTextBox>(form, "_note").Text == "자동저장 진행 중",
+            "STN25 a delayed automatic save completes in the background without reactivating its sticker");
     }
 
     internal static void Render(string directory)
@@ -170,6 +273,12 @@ internal static class StickerInlineNoteChecks
     private static void Invoke(Form form, string name, params object[] arguments) => StickerType.GetMethod(name)!.Invoke(form, arguments);
     private static void Begin(Form form, Func<string, Task> save) => Invoke(form, "BeginNoteEdit", save);
     private static Task Save(Form form) => (Task)StickerType.GetMethod("SaveNoteAsync", Instance)!.Invoke(form, null)!;
+    private static void Deactivate(Form form) => typeof(Form).GetMethod("OnDeactivate", Instance)!.Invoke(form, [EventArgs.Empty]);
+    private static void FocusOther(Form other)
+    {
+        other.Activate();
+        other.Controls[0].Focus();
+    }
     private static bool Command(Form form, Keys keys)
     {
         object[] arguments = [Message.Create(form.Handle, 0x0100, (nint)(int)keys, nint.Zero), keys];
@@ -181,6 +290,17 @@ internal static class StickerInlineNoteChecks
         while (!pending.IsCompleted && DateTime.UtcNow < limit) { Application.DoEvents(); Thread.Sleep(1); }
         if (!pending.IsCompleted) throw new TimeoutException("Inline memo check timed out.");
         pending.GetAwaiter().GetResult();
+    }
+    private static void PumpUntil(Func<bool> ready)
+    {
+        var limit = DateTime.UtcNow.AddSeconds(5);
+        while (!ready() && DateTime.UtcNow < limit) { Application.DoEvents(); Thread.Sleep(1); }
+        if (!ready()) throw new TimeoutException("Automatic inline memo check timed out.");
+    }
+    private static void PumpEvents()
+    {
+        var limit = DateTime.UtcNow.AddMilliseconds(160);
+        while (DateTime.UtcNow < limit) { Application.DoEvents(); Thread.Sleep(1); }
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]

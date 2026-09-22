@@ -22,7 +22,6 @@ internal sealed class StickerForm : Form
     private readonly RichTextBox _note = new();
     private readonly ImeTextBox _noteEditor = new();
     private readonly Label _noteStatus = new();
-    private readonly Button _saveNote = new();
     private readonly Button _cancelNote = new();
     private readonly Button _delete = new();
     private readonly Button _resume = new();
@@ -42,6 +41,8 @@ internal sealed class StickerForm : Form
     private bool _busy;
     private bool _layoutReady;
     private bool _noteSaving;
+    private bool _noteAutoSavePending;
+    private bool _noteAutoSaveQueued;
     private Func<string, Task>? _saveNoteCallback;
     private string? _iconIdentity;
     private int _iconSize;
@@ -149,16 +150,13 @@ internal sealed class StickerForm : Form
         _noteEditor.MaxLength = 500;
         _noteEditor.TabIndex = 0;
         _noteEditor.AccessibleName = "스티커 메모 입력";
-        _noteEditor.AccessibleDescription = "한 줄, 최대 500자. Enter로 저장, Esc로 취소합니다.";
+        _noteEditor.AccessibleDescription = "한 줄, 최대 500자. 다른 창으로 이동하면 자동저장합니다. Enter로 저장, Esc로 취소합니다.";
+        _noteEditor.CompositionEnded += QueueNoteAutoSave;
         _noteStatus.Font = _smallFont;
         _noteStatus.ForeColor = UiStyle.Muted;
         _noteStatus.AccessibleName = "메모 저장 상태";
         _noteStatus.UseMnemonic = false;
-        ConfigureButton(_saveNote, "저장", "스티커 메모 저장", 1);
-        _saveNote.BackColor = UiStyle.Accent;
-        _saveNote.ForeColor = Color.White;
-        ConfigureButton(_cancelNote, "취소", "스티커 메모 편집 취소", 2);
-        _saveNote.Click += async (_, _) => await SaveNoteAsync();
+        ConfigureButton(_cancelNote, "취소", "스티커 메모 편집 취소", 1);
         _cancelNote.Click += (_, _) => CancelNoteEdit();
 
         ConfigureButton(_delete, "지우기", "스티커와 목록에서 책갈피 지우기", 6);
@@ -190,6 +188,7 @@ internal sealed class StickerForm : Form
         ]);
         _menu.Font = Font;
         _menu.Opening += (_, _) => UpdateMenu();
+        _menu.Closed += (_, _) => QueueNoteAutoSave();
         _header.ContextMenuStrip = _menu;
         _typeIcon.ContextMenuStrip = _menu;
         _kind.ContextMenuStrip = _menu;
@@ -197,7 +196,7 @@ internal sealed class StickerForm : Form
         _collapse.Click += (_, _) => ToggleCollapsed();
         _delete.Click += (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); };
         _resume.Click += (_, _) => { if (!_busy && !IsEditingNote) ResumeRequested?.Invoke(Bookmark); };
-        Controls.AddRange([_header, _title, _location, _noteLabel, _note, _noteEditor, _noteStatus, _saveNote, _cancelNote, _delete, _resume]);
+        Controls.AddRange([_header, _title, _location, _noteLabel, _note, _noteEditor, _noteStatus, _cancelNote, _delete, _resume]);
         _layoutReady = true;
         UpdateBookmark(bookmark);
         ApplyPresentation(false, false);
@@ -259,9 +258,10 @@ internal sealed class StickerForm : Form
                 PlacementChanged?.Invoke(this);
             }
             _saveNoteCallback = saveNote;
+            _noteAutoSavePending = false;
             _noteEditor.Text = Bookmark.Note;
             _noteEditor.SelectionStart = _noteEditor.TextLength;
-            _noteStatus.Text = "한 줄, 최대 500자 · Enter 저장 · Esc 취소";
+            _noteStatus.Text = "다른 창으로 이동하면 자동저장\n한 줄, 최대 500자 · Enter 저장 · Esc 취소";
             _noteStatus.ForeColor = UiStyle.Muted;
             RefreshActionState();
             PerformLayout();
@@ -277,10 +277,45 @@ internal sealed class StickerForm : Form
         else if (!_busy) NoteRequested?.Invoke(Bookmark);
     }
 
+    protected override void OnDeactivate(EventArgs e)
+    {
+        base.OnDeactivate(e);
+        if (!IsEditingNote || _noteSaving || IsDisposed || Disposing) return;
+        _noteAutoSavePending = true;
+        QueueNoteAutoSave();
+    }
+
+    protected override void OnActivated(EventArgs e)
+    {
+        _noteAutoSavePending = false;
+        base.OnActivated(e);
+    }
+
+    private void QueueNoteAutoSave()
+    {
+        if (!_noteAutoSavePending || _noteAutoSaveQueued || IsDisposed || Disposing || !IsHandleCreated) return;
+        _noteAutoSaveQueued = true;
+        // Let native focus and IME messages finish before reading the draft.
+        // Moving between controls or opening this sticker's own menu is not a
+        // move to another window. CompositionEnded/menu Closed will retry.
+        BeginInvoke((Action)(() =>
+        {
+            _noteAutoSaveQueued = false;
+            if (!_noteAutoSavePending || IsDisposed || Disposing || !IsEditingNote || _noteSaving) return;
+            if (ContainsFocus) { _noteAutoSavePending = false; return; }
+            if (_noteEditor.IsComposing || _menu.Visible) return;
+            _noteAutoSavePending = false;
+            _ = SaveNoteAsync();
+        }));
+    }
+
     private async Task SaveNoteAsync()
     {
         if (!IsEditingNote || _noteSaving || IsDisposed) return;
+        _noteAutoSavePending = false;
         _noteSaving = true;
+        _noteStatus.Text = "저장 중…";
+        _noteStatus.ForeColor = UiStyle.Muted;
         RefreshActionState();
         string text = _noteEditor.Text.Replace('\r', ' ').Replace('\n', ' ');
         Bookmark revisionBeforeSave = Bookmark;
@@ -298,7 +333,7 @@ internal sealed class StickerForm : Form
         catch
         {
             if (IsDisposed) return;
-            _noteStatus.Text = "저장하지 못했습니다.\n입력은 유지됩니다. 다시 저장해 주세요.";
+            _noteStatus.Text = "저장하지 못했습니다.\n입력은 유지됩니다. Enter로 재시도";
             _noteStatus.ForeColor = Color.FromArgb(138, 80, 43);
         }
         finally
@@ -316,6 +351,7 @@ internal sealed class StickerForm : Form
     private void CancelNoteEdit()
     {
         if (!IsEditingNote || _noteSaving) return;
+        _noteAutoSavePending = false;
         _saveNoteCallback = null;
         _noteEditor.Clear();
         RefreshActionState();
@@ -329,17 +365,15 @@ internal sealed class StickerForm : Form
         _resume.Enabled = !_busy && !editing;
         _delete.Enabled = !_busy && !editing;
         _collapse.Enabled = !editing;
-        _saveNote.Enabled = !_noteSaving;
         _cancelNote.Enabled = !_noteSaving;
         _noteEditor.ReadOnly = _noteSaving;
-        _saveNote.Text = _noteSaving ? "저장 중…" : "저장";
         AcceptButton = editing ? null : _resume;
         _title.Visible = expanded;
         _noteLabel.Visible = expanded;
         _noteLabel.Text = editing ? "메모 편집" : "다음에 할 일";
         foreach (Control control in new Control[] { _location, _note, _delete, _resume })
             control.Visible = expanded && !editing;
-        foreach (Control control in new Control[] { _noteEditor, _noteStatus, _saveNote, _cancelNote })
+        foreach (Control control in new Control[] { _noteEditor, _noteStatus, _cancelNote })
             control.Visible = expanded && editing;
     }
 
@@ -421,7 +455,6 @@ internal sealed class StickerForm : Form
         int bottom = ClientSize.Height - Px(15);
         _resume.SetBounds(width - gap - Px(104), bottom - Px(36), Px(104), Px(36));
         _delete.SetBounds(gap - Px(7), bottom - Px(36), Px(62), Px(36));
-        _saveNote.Bounds = _resume.Bounds;
         _cancelNote.Bounds = _delete.Bounds;
         _note.SetBounds(gap, Px(179), width - gap * 2, Math.Max(Px(18), _resume.Top - Px(18) - Px(179)));
         _noteEditor.SetBounds(gap, Px(179), width - gap * 2, _noteEditor.PreferredHeight);

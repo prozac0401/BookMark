@@ -2,9 +2,9 @@
 
 일반 사용자의 설치·사용·백업·문제 해결은 **[설치 및 사용 매뉴얼](user-manual.ko.md)**에서 한 번에 확인할 수 있습니다. 이 문서는 MSI 운영·빌드·검증의 상세 안내입니다.
 
-`WorkBookmark-0.2.0-win-x64.msi`는 Windows x64용 사용자별 설치 패키지입니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
+`WorkBookmark-0.2.3-win-x64.msi`는 Windows x64용 사용자별 설치 패키지입니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
 
-0.2.0은 설정에서 목록과 포스트잇 스티커를 선택하고 스티커 위치·크기를 저장하는 기능을 추가했습니다. [릴리스 안내](release-notes-v0.2.0.md)와 [이번 버전 검증 기록](evidence/stickers-2026-09-22/README.md)을 참고하세요.
+0.2.3은 스티커 메모 편집 중 다른 창으로 이동하면 자동 저장하며 저장 버튼을 표시하지 않습니다. [릴리스 안내](release-notes-v0.2.3.md)와 [이번 버전 검증 기록](evidence/note-autosave-2026-09-22/README.md)을 참고하세요. 0.2.0~0.2.2와 같은 DB v5를 사용합니다.
 
 ## 설치, 실행, 재부팅
 
@@ -36,19 +36,19 @@ Windows에서 저장소 SDK 및 Node를 사용합니다.
 ./scripts/build.ps1 -Msi
 
 # 별도 obj/bin에서 검증/게시 (기존 실행 파일의 잠금과 병렬 작업 충돌 방지)
-./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-020
+./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-023
 
 # 커밋 후 ZIP + 커밋 소스 ZIP + MSI + 검증 JSON + SHA256SUMS 생성
 ./scripts/build.ps1 -Package -Msi
 
 # 커밋 전 수정과 새 파일까지 포함한 현재 작업 트리로 배포 패키지 생성
-./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-020
+./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-023
 
 # 이미 게시한 디렉터리에서 MSI만 생성
 ./scripts/build-msi.ps1 -PublishDirectory ./artifacts/publish/<게시폴더>
 
 # 설치 없이 관리 이미지 추출 및 모든 파일 해시 검증
-./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.2.0-win-x64.msi `
+./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.2.3-win-x64.msi `
     -PublishDirectory ./artifacts/publish/<게시폴더> -Extract
 ```
 

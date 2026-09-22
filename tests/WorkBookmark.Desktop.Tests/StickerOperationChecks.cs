@@ -79,21 +79,38 @@ internal static class StickerOperationChecks
         var bounds = origin.Bounds;
         noteEditor.Text = "이 스티커에서 저장할 다음 작업";
         rejectNoteWrite = true;
-        Pump((Task)Invoke(origin, "SaveNoteAsync")!);
+        FocusSticker(sibling);
+        PumpUntil(() => Field<Label>(origin, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal));
         assert(repository.Get(first.Id)!.Note == "" && noteEditor.Text == "이 스티커에서 저장할 다음 작업" &&
-            (bool)origin.GetType().GetProperty("IsEditingNote")!.GetValue(origin)! && origin.Bounds == bounds,
-            "SO07 an actual repository write failure keeps the inline draft at the same sticker without changing stored data");
+            (bool)origin.GetType().GetProperty("IsEditingNote")!.GetValue(origin)! && origin.Bounds == bounds && sibling.ContainsFocus,
+            "SO07 a failed automatic repository write keeps the draft and destination focus without changing stored data");
         rejectNoteWrite = false;
-        Pump((Task)Invoke(origin, "SaveNoteAsync")!);
+        origin.Activate();
+        noteEditor.Focus();
+        FocusSticker(sibling);
+        PumpUntil(() => !Editing(origin));
         assert(repository.Get(first.Id)!.Note == "이 스티커에서 저장할 다음 작업" && repository.Get(second.Id)!.Note == "" &&
             !(bool)origin.GetType().GetProperty("IsEditingNote")!.GetValue(origin)! &&
-            ((Bookmark)origin.GetType().GetProperty("Bookmark")!.GetValue(origin)!).Note == repository.Get(first.Id)!.Note,
-            "SO08 retry commits the inline note only to its shared bookmark and returns to the sticker view");
+            ((Bookmark)origin.GetType().GetProperty("Bookmark")!.GetValue(origin)!).Note == repository.Get(first.Id)!.Note && sibling.ContainsFocus,
+            "SO08 returning and leaving retries automatic persistence for only the edited bookmark");
         ClickNote(origin, MouseButtons.Left);
         PumpUntil(() => Editing(origin));
         assert(noteEditor.Text == repository.Get(first.Id)!.Note && noteEditor.Focused && origin.Bounds == bounds &&
             !Editing(sibling) && Field<Form?>(context, "_note") is null,
             "SO10 one click on existing memo text edits the saved text in place without another window");
+        noteEditor.Text = "첫 스티커에서 바뀐 최종 메모";
+        ClickNote(sibling, MouseButtons.Left);
+        PumpUntil(() => !Editing(origin) && Editing(sibling));
+        var siblingEditor = Field<TextBox>(sibling, "_noteEditor");
+        assert(repository.Get(first.Id)!.Note == "첫 스티커에서 바뀐 최종 메모" && repository.Get(second.Id)!.Note == "" &&
+            siblingEditor.Focused && siblingEditor.Text == "" && Field<Form?>(context, "_note") is null,
+            "SO11 switching to another sticker editor automatically persists the first draft without copying it into the second");
+        siblingEditor.Text = "두 번째 스티커의 독립적인 메모";
+        FocusSticker(origin);
+        PumpUntil(() => !Editing(sibling));
+        assert(repository.Get(first.Id)!.Note == "첫 스티커에서 바뀐 최종 메모" &&
+            repository.Get(second.Id)!.Note == "두 번째 스티커의 독립적인 메모" && origin.ContainsFocus,
+            "SO12 leaving the second sticker commits its own draft and preserves the first sticker's stored note");
     }
 
     internal static void RunWorker(string release)
@@ -110,6 +127,11 @@ internal static class StickerOperationChecks
     private static bool Editing(Form form) => (bool)form.GetType().GetProperty("IsEditingNote")!.GetValue(form)!;
     private static void ClickNote(Form form, MouseButtons button) => typeof(Control).GetMethod("OnMouseClick", Private)!
         .Invoke(Field<RichTextBox>(form, "_note"), [new MouseEventArgs(button, 1, 4, 4, 0)]);
+    private static void FocusSticker(Form form)
+    {
+        form.Activate();
+        Field<RichTextBox>(form, "_note").Focus();
+    }
     private static object? Invoke(object value, string name, params object?[] arguments) => value.GetType().GetMethod(name, Private)!.Invoke(value, arguments);
     private static void Pump(Task task) { PumpUntil(() => task.IsCompleted); task.GetAwaiter().GetResult(); }
     private static void PumpUntil(Func<bool> ready)
