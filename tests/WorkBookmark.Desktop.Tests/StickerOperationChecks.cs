@@ -43,8 +43,12 @@ internal static class StickerOperationChecks
         PumpUntil(() => worker.IsBusy && !originResume.Enabled);
         assert(originResume.Text.Contains("처리 중", StringComparison.Ordinal) &&
             (siblingResume.Text, siblingResume.Enabled, siblingResume.Bounds, sibling.Bounds) == before &&
-            Field<Button>(sibling, "_delete").Enabled && Field<LinkLabel>(sibling, "_editNote").Enabled,
+            Field<Button>(sibling, "_delete").Enabled && Field<RichTextBox>(sibling, "_note").Enabled,
             "SO01 resume click changes only the originating sticker; sibling actions and geometry remain unchanged");
+        ClickNote(origin, MouseButtons.Left);
+        ClickNote(sibling, MouseButtons.Right);
+        assert(!Editing(origin) && !Editing(sibling) && !Field<bool>(context, "_openingNote"),
+            "SO09 a busy sticker's note click and a right click cannot begin memo editing");
         var requestId = Field<Guid?>(context, "_activeRequest");
         siblingResume.PerformClick();
         Application.DoEvents();
@@ -67,10 +71,10 @@ internal static class StickerOperationChecks
             "SO05 capture/background operations do not animate existing sticker buttons");
         Invoke(context, "EndOperation", captureId);
 
-        Pump((Task)Invoke(context, "EditNoteAsync", first.Id)!);
-        assert((bool)origin.GetType().GetProperty("IsEditingNote")!.GetValue(origin)! &&
-            !(bool)sibling.GetType().GetProperty("IsEditingNote")!.GetValue(sibling)! && Field<Form?>(context, "_note") is null,
-            "SO06 sticker-mode note requests open an editor in the matching sticker rather than a separate corner window");
+        ClickNote(origin, MouseButtons.Left);
+        PumpUntil(() => Editing(origin));
+        assert(!Editing(sibling) && Field<Form?>(context, "_note") is null && Field<TextBox>(origin, "_noteEditor").Text == "",
+            "SO06 one click on an empty sticker memo starts a blank inline editor on that sticker only");
         var noteEditor = Field<TextBox>(origin, "_noteEditor");
         var bounds = origin.Bounds;
         noteEditor.Text = "이 스티커에서 저장할 다음 작업";
@@ -85,6 +89,11 @@ internal static class StickerOperationChecks
             !(bool)origin.GetType().GetProperty("IsEditingNote")!.GetValue(origin)! &&
             ((Bookmark)origin.GetType().GetProperty("Bookmark")!.GetValue(origin)!).Note == repository.Get(first.Id)!.Note,
             "SO08 retry commits the inline note only to its shared bookmark and returns to the sticker view");
+        ClickNote(origin, MouseButtons.Left);
+        PumpUntil(() => Editing(origin));
+        assert(noteEditor.Text == repository.Get(first.Id)!.Note && noteEditor.Focused && origin.Bounds == bounds &&
+            !Editing(sibling) && Field<Form?>(context, "_note") is null,
+            "SO10 one click on existing memo text edits the saved text in place without another window");
     }
 
     internal static void RunWorker(string release)
@@ -98,6 +107,9 @@ internal static class StickerOperationChecks
     }
 
     private static T Field<T>(object value, string name) => (T)value.GetType().GetField(name, Private)!.GetValue(value)!;
+    private static bool Editing(Form form) => (bool)form.GetType().GetProperty("IsEditingNote")!.GetValue(form)!;
+    private static void ClickNote(Form form, MouseButtons button) => typeof(Control).GetMethod("OnMouseClick", Private)!
+        .Invoke(Field<RichTextBox>(form, "_note"), [new MouseEventArgs(button, 1, 4, 4, 0)]);
     private static object? Invoke(object value, string name, params object?[] arguments) => value.GetType().GetMethod(name, Private)!.Invoke(value, arguments);
     private static void Pump(Task task) { PumpUntil(() => task.IsCompleted); task.GetAwaiter().GetResult(); }
     private static void PumpUntil(Func<bool> ready)

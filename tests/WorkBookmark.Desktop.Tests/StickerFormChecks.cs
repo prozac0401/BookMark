@@ -55,7 +55,7 @@ internal static class StickerFormChecks
         form.PerformLayout();
         assert(Field<RichTextBox>(form, "_note").Bottom < Field<Button>(form, "_resume").Top &&
             Field<RichTextBox>(form, "_note").ClientSize.Height >= Field<RichTextBox>(form, "_note").Font.Height + 4 &&
-            Field<Label>(form, "_location").Bottom < Field<LinkLabel>(form, "_editNote").Top,
+            Field<Label>(form, "_location").Bottom < Field<Label>(form, "_noteLabel").Top,
             "STK06 minimum size preserves non-overlapping note, location and action controls");
 
         form.Show();
@@ -98,6 +98,9 @@ internal static class StickerFormChecks
         form.Show();
         Application.DoEvents();
         Save("sticker-default.png");
+        Invoke(form, "UpdateBookmark", Sample() with { Note = "" });
+        Save("sticker-empty-note.png");
+        Invoke(form, "UpdateBookmark", Sample());
         form.Size = form.MinimumSize;
         Save("sticker-minimum.png");
         form.Size = new Size(460, 400);

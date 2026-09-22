@@ -18,7 +18,6 @@ internal sealed class StickerForm : Form
     private readonly Button _options = new();
     private readonly Label _title = new();
     private readonly Label _location = new();
-    private readonly LinkLabel _editNote = new();
     private readonly Label _noteLabel = new();
     private readonly RichTextBox _note = new();
     private readonly ImeTextBox _noteEditor = new();
@@ -128,17 +127,6 @@ internal sealed class StickerForm : Form
         _noteLabel.Text = "다음에 할 일";
         _noteLabel.Font = _smallFont;
         _noteLabel.ForeColor = UiStyle.Muted;
-        _editNote.Text = "메모 편집";
-        _editNote.Font = _smallFont;
-        _editNote.LinkColor = UiStyle.Accent;
-        _editNote.ActiveLinkColor = UiStyle.Accent;
-        _editNote.VisitedLinkColor = UiStyle.Accent;
-        _editNote.LinkBehavior = LinkBehavior.HoverUnderline;
-        _editNote.TextAlign = ContentAlignment.TopRight;
-        _editNote.TabIndex = 1;
-        _editNote.AccessibleName = "책갈피 메모 편집";
-        _tooltip.SetToolTip(_editNote, "메모 편집 (Ctrl+E)");
-
         _note.Font = _noteFont;
         _note.BorderStyle = BorderStyle.None;
         _note.BackColor = Paper;
@@ -147,10 +135,11 @@ internal sealed class StickerForm : Form
         _note.ScrollBars = RichTextBoxScrollBars.Vertical;
         _note.WordWrap = true;
         _note.TabStop = true;
-        _note.TabIndex = 2;
+        _note.TabIndex = 1;
+        _note.Cursor = Cursors.IBeam;
         _note.AccessibleName = "책갈피 메모";
-        _note.AccessibleDescription = "저장된 메모입니다. Ctrl+E로 메모를 편집할 수 있습니다.";
-        _note.DoubleClick += (_, _) => RequestNoteEdit();
+        _tooltip.SetToolTip(_note, "클릭하여 메모 편집 (Ctrl+E)");
+        _note.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) RequestNoteEdit(); };
 
         _noteEditor.Font = _noteFont;
         _noteEditor.BackColor = Paper;
@@ -206,10 +195,9 @@ internal sealed class StickerForm : Form
         _kind.ContextMenuStrip = _menu;
         _options.Click += (_, _) => _menu.Show(_options, new Point(_options.Width, _options.Height), ToolStripDropDownDirection.BelowLeft);
         _collapse.Click += (_, _) => ToggleCollapsed();
-        _editNote.LinkClicked += (_, _) => RequestNoteEdit();
         _delete.Click += (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); };
         _resume.Click += (_, _) => { if (!_busy && !IsEditingNote) ResumeRequested?.Invoke(Bookmark); };
-        Controls.AddRange([_header, _title, _location, _noteLabel, _editNote, _note, _noteEditor, _noteStatus, _saveNote, _cancelNote, _delete, _resume]);
+        Controls.AddRange([_header, _title, _location, _noteLabel, _note, _noteEditor, _noteStatus, _saveNote, _cancelNote, _delete, _resume]);
         _layoutReady = true;
         UpdateBookmark(bookmark);
         ApplyPresentation(false, false);
@@ -238,9 +226,8 @@ internal sealed class StickerForm : Form
         _location.Text = issue ?? ShortLocation(value.Target);
         _location.ForeColor = issue is null ? UiStyle.Muted : Color.FromArgb(138, 80, 43);
         bool empty = string.IsNullOrWhiteSpace(value.Note);
-        _note.Text = empty ? "이어갈 작업을 한 줄 남겨 보세요." : value.Note;
+        _note.Text = empty ? "여기를 눌러 메모를 입력하세요." : value.Note;
         _note.ForeColor = empty ? UiStyle.Muted : UiStyle.Ink;
-        _editNote.Text = empty ? "메모 추가" : "메모 편집";
         string details = UiStyle.Location(value) + $"\n저장: {value.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm}";
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
@@ -249,7 +236,7 @@ internal sealed class StickerForm : Form
         _tooltip.SetToolTip(_location, details);
         _title.AccessibleDescription = details;
         _location.AccessibleDescription = details;
-        _note.AccessibleDescription = empty ? "메모가 없습니다. Ctrl+E로 추가할 수 있습니다." : "저장된 메모입니다. Ctrl+E로 편집할 수 있습니다.";
+        _note.AccessibleDescription = empty ? "메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다." : "저장된 메모입니다. 클릭하거나 Ctrl+E로 편집할 수 있습니다.";
         // A refresh updates the saved bookmark, never the editor's in-progress draft.
     }
 
@@ -321,7 +308,7 @@ internal sealed class StickerForm : Form
             {
                 RefreshActionState();
                 if (IsEditingNote && ContainsFocus) _noteEditor.Focus();
-                else if (!IsEditingNote && ContainsFocus) _editNote.Focus();
+                else if (!IsEditingNote && ContainsFocus) _note.Focus();
             }
         }
     }
@@ -332,7 +319,7 @@ internal sealed class StickerForm : Form
         _saveNoteCallback = null;
         _noteEditor.Clear();
         RefreshActionState();
-        _editNote.Focus();
+        _note.Focus();
     }
 
     private void RefreshActionState()
@@ -341,7 +328,6 @@ internal sealed class StickerForm : Form
         bool expanded = !IsCollapsed;
         _resume.Enabled = !_busy && !editing;
         _delete.Enabled = !_busy && !editing;
-        _editNote.Enabled = !_busy;
         _collapse.Enabled = !editing;
         _saveNote.Enabled = !_noteSaving;
         _cancelNote.Enabled = !_noteSaving;
@@ -351,7 +337,7 @@ internal sealed class StickerForm : Form
         _title.Visible = expanded;
         _noteLabel.Visible = expanded;
         _noteLabel.Text = editing ? "메모 편집" : "다음에 할 일";
-        foreach (Control control in new Control[] { _location, _editNote, _note, _delete, _resume })
+        foreach (Control control in new Control[] { _location, _note, _delete, _resume })
             control.Visible = expanded && !editing;
         foreach (Control control in new Control[] { _noteEditor, _noteStatus, _saveNote, _cancelNote })
             control.Visible = expanded && editing;
@@ -431,8 +417,7 @@ internal sealed class StickerForm : Form
         _title.SetBounds(gap, Px(53), width - gap * 2, Px(48));
         _location.SetBounds(gap, Px(105), width - gap * 2, Px(37));
         _noteStatus.Bounds = _location.Bounds;
-        _noteLabel.SetBounds(gap, Px(154), width - gap * 2 - Px(82), Px(22));
-        _editNote.SetBounds(width - gap - Px(82), Px(154), Px(82), Px(22));
+        _noteLabel.SetBounds(gap, Px(154), width - gap * 2, Px(22));
         int bottom = ClientSize.Height - Px(15);
         _resume.SetBounds(width - gap - Px(104), bottom - Px(36), Px(104), Px(36));
         _delete.SetBounds(gap - Px(7), bottom - Px(36), Px(62), Px(36));
