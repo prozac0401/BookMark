@@ -41,7 +41,7 @@ Excel·Word·PowerPoint의 작업 위치를 기록하려면 해당 프로그램�
 
 ### 어떤 파일을 받아야 하나요?
 
-0.1.6 시험판은 로컬 배포 패키지로 제공합니다. 전달받은 배포 폴더에서 아래 파일 중 하나를 사용하세요. 저장소에서 직접 빌드한 경우에는 `artifacts/releases/<빌드시각>/`에 생성됩니다. 이 버전의 GitHub 릴리스는 아직 게시하지 않았습니다.
+[0.1.6 시험판 GitHub 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.6-preview.1)에서 아래 파일 중 하나를 받으세요. 저장소에서 직접 빌드한 경우에는 `artifacts/releases/<빌드시각>/`에 생성됩니다.
 
 | 파일 | 이런 경우에 사용하세요 |
 |---|---|

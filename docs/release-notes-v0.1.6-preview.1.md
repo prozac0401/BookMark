@@ -12,15 +12,15 @@
 
 ## 설치
 
-로컬 배포 폴더 `artifacts/releases/<빌드시각>/`의 `WorkBookmark-0.1.6-win-x64.msi`를 실행하세요. 기존 MSI는 미리 제거할 필요가 없습니다. 포터블 ZIP판이 실행 중이면 먼저 트레이에서 종료하세요. 포터블 실행 폴더는 MSI가 자동 제거하지 않습니다.
+[GitHub 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.6-preview.1)에서 `WorkBookmark-0.1.6-win-x64.msi`를 받아 실행하세요. 기존 MSI는 미리 제거할 필요가 없습니다. 포터블 ZIP판이 실행 중이면 먼저 트레이에서 종료하세요. 포터블 실행 폴더는 MSI가 자동 제거하지 않습니다.
 
 설치 직후 실행 체크박스는 Windows 로그인 자동 실행 설정과 별개입니다. 체크를 해제한 경우에도 시작 메뉴의 **WorkBookmark → WorkBookmark**에서 실행할 수 있습니다.
 
-포터블 패키지는 `WorkBookmark-0.1.6-win-x64.zip`입니다. `Source.zip`, `SourceSnapshot.json`, `SHA256SUMS.txt`, MSI 검증 JSON을 함께 제공합니다. 이번 패키지는 `-SourceMode WorkingTree`로 현재 수정 사항을 포함합니다. GitHub 릴리스는 아직 게시하지 않았습니다.
+포터블 패키지는 `WorkBookmark-0.1.6-win-x64.zip`입니다. `Source.zip`, `SourceSnapshot.json`, `SHA256SUMS.txt`, MSI 검증 JSON을 함께 제공합니다. 게시 파일은 검증한 빌드 그대로이며, `-SourceMode WorkingTree`로 만든 당시 소스 스냅샷과 실제 기반 커밋·해시를 포함합니다. 패키지 안의 문서는 게시 전 로컬 배포 안내를 담고 있으므로 다운로드 위치는 GitHub 릴리스 페이지를 기준으로 확인하세요.
 
 ## 검증과 제한
 
-MSI 검증 JSON에는 패키지 구조 검사와 관리 이미지 추출 후 게시 파일 해시 대조 결과를 기록합니다. 관리 이미지 추출은 실제 사용자에게 설치하거나 기존 앱을 제거하는 검증이 아닙니다.
+Release 빌드 경고·오류 0개, 전체 자동검사 462개 및 MSI 구조·조건·추출 검사 47개가 통과했습니다. MSI 검증 JSON에는 패키지 구조 검사와 관리 이미지 추출 후 게시 파일 해시 대조 결과를 기록합니다. 관리 이미지 추출은 실제 사용자에게 설치하거나 기존 앱을 제거하는 검증이 아닙니다.
 
 실제 MSI 업그레이드·제거·완료 화면의 체크박스 조작·Windows 재로그인, 사내 AD 인증과 Office 대기 중 마우스 반응은 별도 사용자 계정 또는 VM 및 실제 업무 환경에서 확인해야 합니다. 자동검사 통과를 이 실기검증의 완료로 표시하지 않습니다.
 

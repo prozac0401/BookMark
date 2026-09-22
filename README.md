@@ -4,7 +4,7 @@ Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·
 
 **[설치 및 사용 매뉴얼](docs/user-manual.ko.md)** — MSI·포터블 설치, 프로그램별 사용법, 설정, 백업·복원, 업데이트·제거와 문제 해결을 안내합니다. 처음 실행해 보려면 [빠른 시작](docs/quick-start.ko.md)을 참고하세요.
 
-**0.1.6-preview.1 로컬 배포 패키지:** 문서 열기 후 반복되던 확인 실패 알림과 Office 응답 대기 중 입력 지연을 수정했습니다. 새 MSI는 이전 MSI 설치를 자동 제거한 뒤 설치하며, 완료 화면의 **업무 책갈피 실행** 체크박스로 즉시 실행 여부를 고를 수 있습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.6-preview.1.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
+**[0.1.6-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.6-preview.1):** 문서 열기 후 반복되던 확인 실패 알림과 Office 응답 대기 중 입력 지연을 수정했습니다. 새 MSI는 이전 MSI 설치를 자동 제거한 뒤 설치하며, 완료 화면의 **업무 책갈피 실행** 체크박스로 즉시 실행 여부를 고를 수 있습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.6-preview.1.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
 
 **[0.1.5-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1):** 웹 Office의 사이트 루트 사전 접속과 열림 확인 대기, 확장 없이 웹페이지 저장, 사용자별 MSI 설치·로그인 자동 실행을 추가했습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.5-preview.1.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
 
@@ -57,4 +57,4 @@ $dotnet = ".\.tools\dotnet\dotnet.exe"
 
 `Core`: DTO·경로 정책·IPC / `Storage`: SQLite / `Windows`: Shell·Office·실험 PDF / `App`: WinForms UI·수명 관리. `tools/Probes`와 `tools/WindowsChecks`는 합성 자료로 P0를 재현하는 개발용 도구이며 실행 ZIP에 포함하지 않습니다.
 
-[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위·근거·제한을 기록했습니다. 원래 요구사항의 초기 기준은 이력으로 보존했습니다. 0.1.6 패키지는 로컬 `artifacts/releases/<빌드시각>/`에서 제공합니다. 이전 [0.1.5 시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1)의 다운로드도 계속 사용할 수 있습니다.
+[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위·근거·제한을 기록했습니다. 원래 요구사항의 초기 기준은 이력으로 보존했습니다. [0.1.6 시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.6-preview.1)에서 MSI·포터블 ZIP·소스·검증 파일을 제공합니다. 이전 [0.1.5 시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1)의 다운로드도 계속 사용할 수 있습니다.
