@@ -17,11 +17,37 @@ internal static class Program
     static void Assert(bool condition, string name) { Checks.Add(new { name, passed = condition }); if (!condition) throw new Exception("FAIL: " + name); Console.WriteLine("PASS: " + name); }
     [STAThread] static void Main(string[] args)
     {
+        // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
+        // the WinForms synchronization context when the final fixture form closes.
+        if (args.Length > 0) { RunSafely(args); return; }
+        using var dispatcher = new Control();
+        _ = dispatcher.Handle;
+        dispatcher.BeginInvoke((Action)(() =>
+        {
+            try { RunSafely(args); }
+            finally { Application.ExitThread(); }
+        }));
+        Application.Run();
+    }
+    private static void RunSafely(string[] args)
+    {
+        try { Run(args); }
+        catch (Exception error) { Console.Error.WriteLine(error); Environment.ExitCode = 1; }
+    }
+    private static void Run(string[] args)
+    {
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
+        if (args.Length == 1 && args[0] == "--stickers-only") { StickerFormChecks.Run(Assert); return; }
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
+        if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); return; }
         string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-UiQa-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(data);
+        SettingsDisplayChecks.Run(Path.Combine(data, "display-settings"), Assert);
+        StickerFormChecks.Run(Assert);
+        StickerIntegrationChecks.Run(Path.Combine(data, "sticker-integration"), Assert);
+        BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
+        StickerPersistenceChecks.Run(Assert);
         ResumeNotificationChecks.Run(Path.Combine(data, "resume-notifications"), Assert);
         var custom = UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F19), RecentHotkey = new Hotkey(7, (int)Keys.F20), IntroShown = true };
         UserSettings.Default.Save(data); custom.Save(data);

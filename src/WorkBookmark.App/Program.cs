@@ -40,7 +40,7 @@ internal static class Program
                     try
                     {
                         if (requested == 2) { dispatch.BeginInvoke(() => context.ExitThread()); break; }
-                        dispatch.BeginInvoke(() => context.ShowRecent());
+                        dispatch.BeginInvoke(() => context.ShowBookmarks());
                     }
                     catch (InvalidOperationException) { break; }
                 }

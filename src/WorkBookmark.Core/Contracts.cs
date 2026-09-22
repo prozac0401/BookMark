@@ -11,9 +11,15 @@ public sealed record WorkerResponse(int ProtocolVersion, Guid RequestId, ResultC
 public sealed record Bookmark(Guid Id, CapturedTarget Target, string NormalizedPath, string DisplayName, string Note, DateTimeOffset CreatedAtUtc, DateTimeOffset CapturedAtUtc, long CaptureSequence, DateTimeOffset? NoteUpdatedAtUtc, DateTimeOffset? LastResumeAtUtc, ResultCode? LastResumeResult, DateTimeOffset? DeletedAtUtc);
 public sealed record CaptureCommit(Bookmark Bookmark, bool ExistingNotePreserved, bool RestoredDeleted);
 public sealed record SearchResults(IReadOnlyList<Bookmark> Items, bool HasMore);
+/// <summary>Sticker position and expanded size in 96-DPI logical units relative to the monitor working area.</summary>
+public sealed record StickerLayout(Guid BookmarkId, string MonitorDevice, int Left, int Top, int Width, int Height, bool IsCollapsed = false, bool AlwaysOnTop = false);
 public interface IBookmarkRepository : IDisposable {
  CaptureCommit UpsertCapture(CapturedTarget target);
  SearchResults List(string query = "");
+ IReadOnlyList<Bookmark> ListActive() => List().Items;
+ IReadOnlyList<Bookmark> ListDeleted(int limit = 100) => [];
+ IReadOnlyList<StickerLayout> GetStickerLayouts() => [];
+ void SaveStickerLayout(StickerLayout layout) => throw new BookmarkException(ResultCode.InvalidRequest);
  Bookmark? Get(Guid id);
  void UpdateNote(Guid id, string note);
  void SoftDelete(Guid id);

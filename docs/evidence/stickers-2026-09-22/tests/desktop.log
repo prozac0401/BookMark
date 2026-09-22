@@ -1,0 +1,139 @@
+PASS: SET01 existing settings without display mode retain values and open as List
+PASS: SET02 sticker display choice survives saving and reloading
+PASS: SET03 unknown display mode is rejected without rewriting settings
+PASS: SET04 settings shows the saved List choice
+PASS: SET05 display choices remain mutually exclusive
+PASS: SET06 failed apply retains selected mode and existing settings for retry
+PASS: SET07 successful apply closes settings and includes the selected mode
+PASS: SET08 settings shows the saved Stickers choice
+PASS: SET09 closing settings discards unapplied display changes
+PASS: STK01 sticker accepts normal activation for accessible controls and keyboard navigation
+PASS: STK02 initial sticker display avoids focus stealing and taskbar clutter
+PASS: STK03 collapse preserves expanded dimensions and applies always-on-top
+PASS: STK04 restoring a saved presentation returns full size without a user-placement write
+PASS: STK05 resizing a collapsed sticker retains its new width and original expanded height
+PASS: STK06 minimum size preserves non-overlapping note, location and action controls
+PASS: STK07 resume and note commands always use the current shared bookmark revision
+PASS: STK08 busy state prevents duplicate resume and deletion commands
+PASS: STK09 explicit delete routes the bookmark identity to shared storage
+PASS: STK10 undo is routed centrally while native close only hides the sticker
+PASS: STK11 Escape hides the sticker without deleting or disposing its bookmark
+PASS: STK12 failed resume leaves an actionable message on the originating sticker
+PASS: SM01 existing list mode does not create sticker windows
+PASS: SM02 sticker mode loads all active bookmarks beyond recent twenty on the UI thread
+PASS: SM03 resized sticker commits expanded dimensions in logical pixels
+PASS: SM04 bookmark updates reuse the same sticker and preserve placement
+PASS: SM05 rejected deletion preserves both database entry and sticker
+PASS: SM06 committed deletion removes only the matching sticker identity
+PASS: SM07 consecutive delete and undo restore both independent bookmarks
+PASS: SM08 undo restores previous sticker placement and note
+PASS: SM09 native close hides without mutating shared bookmark storage
+PASS: SM10 switching to list hides all stickers without deleting records
+PASS: SM11 switching back restores windows at their saved positions
+PASS: SM12 capture respects explicit hide-all without losing new bookmark
+PASS: SM13 expired quick undo cannot restore a record
+PASS: SM14 persistent deleted-items restoration works after quick undo expires
+PASS: SM15 missing/offscreen display placement clamps within work area at 150 percent scaling
+PASS: SM16 application shutdown preserves bookmarks and final sticker placements
+PASS: SM17 reopening database retains bookmarks and resized layout
+PASS: RF01 authoritative deleted snapshot removes the matching sticker
+PASS: RF02 late active snapshot cannot recreate a deleted sticker or discard its undo
+PASS: RF03 late deleted snapshot cannot remove a recaptured bookmark or restore stale undo
+PASS: RF04 modeless editor stays above pinned stickers without owning a disposable bookmark view
+PASS: RF05 deleting a sticker preserves an open editor and its unsaved input
+PASS: SP01 moving during a pending layout write does not start a competing storage write
+PASS: SP02 a placement changed during the first batch is persisted by the next batch without reverting
+PASS: SP03 failed layout persistence reports once and does not claim a successful save
+PASS: SP04 movement after a failed write retries the newest placement rather than the failed snapshot
+PASS: SP06 shutdown flushes newer movement after storage completes but before its UI continuation runs
+PASS: SP08 a delayed successful-write continuation cannot overwrite the final shutdown placement
+PASS: SP05 shutdown flushes the latest layout when a failed write has not yet reached its UI continuation
+PASS: SP07 a delayed failed-write continuation cannot notify or rewrite after manager disposal
+PASS: notification area uses the product icon rather than the generic Windows application icon
+PASS: application forms use the product icon
+PASS: ResumeOutcomeUnknown quietly clears progress instead of displaying repetitive warning
+PASS: ResumeOutcomeUnknown remains quiet without an active progress toast
+PASS: OfficeDocumentOpened quietly clears progress instead of displaying repetitive warning
+PASS: OfficeDocumentOpened remains quiet without an active progress toast
+PASS: TargetUnavailable remains visible for user action
+PASS: OpenedPositionFailed remains visible for user action
+PASS: OfficeResumePending remains visible for user action
+PASS: verified position keeps success after focus changes
+PASS: disposing the application context removes the tray icon and closes owned forms
+PASS: settings atomic overwrite round-trip
+PASS: settings no temporary leftovers
+PASS: corrupt settings preserved
+PASS: native hotkeys registered
+PASS: conflict fixture registered
+PASS: replacement collision refused
+PASS: old registration retained and pending reservation rolled back
+PASS: duplicate shortcut pair refused
+PASS: Windows Shell parses Unicode startup target
+PASS: startup ownership description parsed
+PASS: startup working directory parsed
+PASS: IME composition suppresses submission
+PASS: IME commit Enter has a suppression window
+PASS: note write failure retains editable content
+PASS: note retry saves retained text
+PASS: recent form opens with loaded first selection
+PASS: input hooks run on a dedicated background message loop
+PASS: releasing the initiating key and moving the mouse do not interrupt a request
+PASS: input latches immediately and a blocking cancellation action cannot hold the hook callback
+PASS: cancellation work runs outside both the hook callback and its message loop
+PASS: additional input remains responsive while cancellation is blocked and notification is one-shot
+PASS: disposing the observer stops its hook message loop even with a callback blocked
+PASS: worker input signal is set before the UI can process queued cancellation
+PASS: input cancellation is posted to the original UI context
+PASS: the original UI thread performs cancellation exactly once
+PASS: late callbacks cannot cancel a completed request
+PASS: capture disposal flushes already observed input on its owner exactly once
+PASS: a monitored worker uses only its shared input signal and installs no input hooks on its COM thread
+PASS: standalone workers also keep input hooks off their COM thread
+PASS: an unexpected observer exit closes both the local guard and the worker's shared input signal
+PASS: capture shortcut key-up preserves the observed target
+PASS: new key before worker response prevents capture commit
+PASS: new mouse button before worker response prevents capture commit
+PASS: wheel input before worker response prevents capture commit
+PASS: new input wins against an already returned capture response
+PASS: accepted capture survives new work during the database write
+PASS: unsaved Korean and emoji snapshot: success waits for durable SQLite commit
+PASS: unsaved Korean and emoji snapshot: single capture without file selection
+PASS: unsaved Korean and emoji snapshot: original body and selection committed before success
+PASS: unsaved Korean and emoji snapshot: snapshot survives database reopen
+PASS: empty new Notepad snapshot: success waits for durable SQLite commit
+PASS: empty new Notepad snapshot: single capture without file selection
+PASS: empty new Notepad snapshot: original body and selection committed before success
+PASS: empty new Notepad snapshot: snapshot survives database reopen
+PASS: snapshot SQLite write failure: success waits for durable SQLite commit
+PASS: snapshot SQLite write failure: single capture without file selection
+PASS: snapshot SQLite write failure: rejected or rolled-back snapshot cannot report success
+PASS: snapshot content identity mismatch: single capture without file selection
+PASS: snapshot content identity mismatch: rejected or rolled-back snapshot cannot report success
+PASS: recent list over twenty records uses recent-count guidance
+PASS: search limit remains one hundred results
+PASS: UI04 NoteForm Escape closes without persisting edited text
+PASS: UI04 native note editor accepts 500 characters and refuses character 501
+PASS: UI04 NoteForm Enter persists the accepted 500-character note exactly once
+PASS: RL01 Cancel relink preview shows candidate path, retained note and existing cell read-only
+PASS: RL01 actual modal relink Cancel button returns the correct commit/cancel decision
+PASS: RL01 OK relink preview shows candidate path, retained note and existing cell read-only
+PASS: RL01 actual modal relink OK button returns the correct commit/cancel decision
+PASS: UI03 deleting a bookmark arms the real 10-second undo timer and menu
+PASS: UI03 expired undo is refused even when its timer callback has not fired
+PASS: UI03 real expiry callback clears the undo identity and hides its menu
+PASS: UI03 a stale undo action after the expiry callback cannot restore a deleted bookmark
+PASS: UI03 a fresh unexpired undo restores once and disarms both timer and menu
+PASS: UI03 repeated undo after successful restoration does not issue a second repository restore
+PASS: WEB01 manual entry refuses executable, file and credential URLs without saving
+PASS: WEB02 failed URL save preserves editable URL for retry
+PASS: WEB03 extension-free manual entry preserves URL state and supplies missing title
+PASS: MSI01 shutdown succeeds when no application instance exists
+PASS: MSI02 synthetic application publishes shutdown event and acquires instance mutex
+PASS: MSI03 installer shutdown signals the instance and waits for graceful mutex release
+PASS: browser success waits for repository commit
+PASS: browser simultaneous request returns busy without another write
+PASS: browser exact acknowledgment follows committed capture
+PASS: browser repository failure cannot report successful capture
+PASS: browser cancelled queued request cannot write
+PASS: browser invalid URI cannot reach repository
+RESULT: 138 checks passed. Native launch, actual IME and rendered UI remain separate manual gates.

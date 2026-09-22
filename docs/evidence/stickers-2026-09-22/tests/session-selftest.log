@@ -1,0 +1,15 @@
+PASS Exact predeclared target passes
+PASS Same filename in another path stops
+PASS Stable timeout cannot pass
+PASS Explicit rejection oracle passes its own case
+PASS Unexpected successful capture in a rejection case stops
+PASS Same view group cannot silently switch tabs
+PASS Distinct tab labels cannot reuse one active view
+PASS Same Excel process group cannot change PID
+PASS Fixture prefix sibling is outside root
+PASS One successful capture is not a 50-case gate
+PASS Fifty copies of one view do not satisfy scenario coverage
+PASS Focused checks never establish a P0 gate
+PASS Exact transition captures do not inflate the stable sample count
+PASS Complete synthetic two-window two-tab oracle can satisfy capture coverage
+Capture session verdict checks: 14 passed. Synthetic assertions only; no live P0 result.

@@ -2,7 +2,9 @@
 
 일반 사용자의 설치·사용·백업·문제 해결은 **[설치 및 사용 매뉴얼](user-manual.ko.md)**에서 한 번에 확인할 수 있습니다. 이 문서는 MSI 운영·빌드·검증의 상세 안내입니다.
 
-`WorkBookmark-0.1.7-win-x64.msi`는 Windows x64용 사용자별 설치 패키지입니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
+`WorkBookmark-0.2.0-win-x64.msi`는 Windows x64용 사용자별 설치 패키지입니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
+
+0.2.0은 설정에서 목록과 포스트잇 스티커를 선택하고 스티커 위치·크기를 저장하는 기능을 추가했습니다. [릴리스 안내](release-notes-v0.2.0.md)와 [이번 버전 검증 기록](evidence/stickers-2026-09-22/README.md)을 참고하세요.
 
 ## 설치, 실행, 재부팅
 
@@ -21,6 +23,8 @@
 
 더 높은 버전의 MSI를 실행하면 같은 사용자의 이전 MSI 설치를 자동으로 찾아 제거한 뒤 새 버전을 설치합니다. 사용자가 먼저 제어판에서 제거할 필요는 없습니다. 교체와 제거 전에 앱에 정상 종료를 요청합니다. 책갈피·메모·설정과 로그인 자동 실행 선택은 보존합니다. 포터블 ZIP 폴더는 Windows Installer에 등록된 설치가 아니므로 자동 제거 대상에 포함하지 않습니다. 낮은 버전으로의 덮어쓰기는 차단하며, 같은 버전의 실행은 Windows Installer 유지 관리 동작을 따릅니다. MSI를 다시 배포할 때에는 세 자리 제품 버전을 올려야 합니다.
 
+0.2.0 첫 실행은 기존 DB를 v5로 갱신하고 변경 전 `bookmarks.db.pre-migration-….bak`를 데이터 폴더에 남깁니다. **0.1.7은 갱신된 DB를 읽을 수 없습니다.** 구버전 복귀에는 현재 데이터 보존과 업그레이드 전 백업 복원이 필요하며, 복원한 백업 이후의 기록은 포함되지 않습니다. [백업·복원 안내](user-manual.ko.md#maintenance)를 확인하세요.
+
 **설정 → 앱 → 설치된 앱 → WorkBookmark → 제거**, 또는 **제어판 → 프로그램 및 기능 → WorkBookmark → 제거**를 이용합니다. 실행 파일, 시작 메뉴 및 자동 실행 바로가기를 제거합니다. 책갈피와 설정 데이터는 보존하므로 재설치 후 이어서 사용할 수 있습니다. 데이터까지 삭제하려면 앱 제거 후 `%LOCALAPPDATA%\WorkBookmark`를 사용자가 별도로 삭제합니다.
 
 ## 빌드
@@ -32,19 +36,19 @@ Windows에서 저장소 SDK 및 Node를 사용합니다.
 ./scripts/build.ps1 -Msi
 
 # 별도 obj/bin에서 검증/게시 (기존 실행 파일의 잠금과 병렬 작업 충돌 방지)
-./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-017
+./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-020
 
 # 커밋 후 ZIP + 커밋 소스 ZIP + MSI + 검증 JSON + SHA256SUMS 생성
 ./scripts/build.ps1 -Package -Msi
 
 # 커밋 전 수정과 새 파일까지 포함한 현재 작업 트리로 배포 패키지 생성
-./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-017
+./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-020
 
 # 이미 게시한 디렉터리에서 MSI만 생성
 ./scripts/build-msi.ps1 -PublishDirectory ./artifacts/publish/<게시폴더>
 
 # 설치 없이 관리 이미지 추출 및 모든 파일 해시 검증
-./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.1.7-win-x64.msi `
+./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.2.0-win-x64.msi `
     -PublishDirectory ./artifacts/publish/<게시폴더> -Extract
 ```
 

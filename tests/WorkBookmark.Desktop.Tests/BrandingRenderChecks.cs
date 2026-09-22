@@ -53,7 +53,7 @@ internal static class BrandingRenderChecks
         }
 
         Type toastType = assembly.GetType("WorkBookmark.App.UI.ToastForm")!;
-        string intro = $"업무 책갈피\n{Hotkey.CaptureDefault} 저장 · {Hotkey.RecentDefault} 최근 목록\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome: 확장 없이 저장 · 트레이에서 URL 입력 가능";
+        string intro = $"업무 책갈피\n{Hotkey.CaptureDefault} 저장 · {Hotkey.RecentDefault} 책갈피 보기\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome: 확장 없이 저장 · 트레이에서 URL 입력 가능";
         Render((Form)Activator.CreateInstance(toastType, intro, "설정", (Action)(() => { }), 10000)!, "toast-introduction.png");
         string capture = "책갈피를 남겼습니다 · 연구개발 R&D & 품질관리\n" +
             @"C:\합성 검증 자료\고객사 공동 연구 및 제품 개선 프로젝트\2026년 하반기 제품 검증 결과와 후속 조치 계획.xlsx" +

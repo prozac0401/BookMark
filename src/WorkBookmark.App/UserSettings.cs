@@ -11,7 +11,9 @@ public sealed record Hotkey(uint Modifiers, int VirtualKey)
     public override string ToString() => string.Join("+", new[] { (Modifiers & 2) != 0 ? "Ctrl" : null, (Modifiers & 1) != 0 ? "Alt" : null, (Modifiers & 4) != 0 ? "Shift" : null, (Modifiers & 8) != 0 ? "Win" : null, ((Keys)VirtualKey).ToString() }.Where(s => s is not null));
 }
 
-public sealed record UserSettings(int Version, Hotkey CaptureHotkey, Hotkey RecentHotkey, bool StartWithWindows, bool IntroShown)
+public enum BookmarkDisplayMode { List = 0, Stickers = 1 }
+
+public sealed record UserSettings(int Version, Hotkey CaptureHotkey, Hotkey RecentHotkey, bool StartWithWindows, bool IntroShown, BookmarkDisplayMode DisplayMode = BookmarkDisplayMode.List)
 {
     public static UserSettings Default => new(1, Hotkey.CaptureDefault, Hotkey.RecentDefault, false, false);
     public static UserSettings Load(string directory)
@@ -19,7 +21,7 @@ public sealed record UserSettings(int Version, Hotkey CaptureHotkey, Hotkey Rece
         string path = Path.Combine(directory, "settings.json");
         if (!File.Exists(path)) return Default;
         var value = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(path));
-        if (value is null || value.Version != 1 || value.CaptureHotkey is null || value.RecentHotkey is null || !value.CaptureHotkey.IsValid || !value.RecentHotkey.IsValid || value.CaptureHotkey == value.RecentHotkey)
+        if (value is null || value.Version != 1 || value.CaptureHotkey is null || value.RecentHotkey is null || !value.CaptureHotkey.IsValid || !value.RecentHotkey.IsValid || value.CaptureHotkey == value.RecentHotkey || !Enum.IsDefined(value.DisplayMode))
             throw new InvalidDataException("설정 파일을 읽을 수 없습니다. 원본은 유지됩니다.");
         return value;
     }

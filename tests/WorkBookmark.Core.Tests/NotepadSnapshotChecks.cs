@@ -124,10 +124,10 @@ internal static class NotepadSnapshotChecks
             CheckVersionThree(Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single(), before);
             using var repo = new SqliteBookmarkRepository(database);
             foreach (var item in expected) Check(repo.Get(item.Id) == item, "Successful retry preserves old rows.");
-            Check(repo.UpsertCapture(Snapshot()).Bookmark.CaptureSequence == 24, "Version 4 preserves version 3 capture sequence.");
+            Check(repo.UpsertCapture(Snapshot()).Bookmark.CaptureSequence == 24, "Version 5 preserves version 3 capture sequence.");
             using var db = Open(database);
-            Check(Scalar(db, "PRAGMA user_version") == 4 && Scalar(db, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name IN ('text_content','text_selection_end','snapshot_title')") == 3,
-                "Schema version 4 exposes each snapshot field once.");
+            Check(Scalar(db, "PRAGMA user_version") == 5 && Scalar(db, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name IN ('text_content','text_selection_end','snapshot_title')") == 3,
+                "Schema version 5 exposes each snapshot field once.");
         }
 
         void StorageConstraints()

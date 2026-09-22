@@ -4,7 +4,7 @@ Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·
 
 **[설치 및 사용 매뉴얼](docs/user-manual.ko.md)** — MSI·포터블 설치, 프로그램별 사용법, 설정, 백업·복원, 업데이트·제거와 문제 해결을 안내합니다. 처음 실행해 보려면 [빠른 시작](docs/quick-start.ko.md)을 참고하세요.
 
-**[WorkBookmark 0.1.7 다운로드](https://github.com/prozac0401/BookMark/releases/tag/v0.1.7)** — 청록색 책갈피 아이콘을 설치 마법사·트레이·프로그램 창에 적용하고, 문서가 열린 뒤 반복되던 위치 이동 미완료 알림을 제거했습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.7.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
+**[WorkBookmark 0.2.0 다운로드](https://github.com/prozac0401/BookMark/releases/tag/v0.2.0)** — 설정에서 목록과 포스트잇 스티커 중 표시 방식을 선택할 수 있습니다. 스티커의 위치·크기를 조절하고, 지운 책갈피는 최근 삭제에서 복원할 수 있습니다. [변경 사항과 업데이트 안내](docs/release-notes-v0.2.0.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
 
 ![WorkBookmark 아이콘과 설치 화면 디자인](docs/evidence/branding-2026-09-22/branding-preview.png)
 
@@ -13,17 +13,22 @@ Windows 빌드·자동검사와 실제 환경별 확인 결과는 [검증 보고
 - Ctrl+Alt+B: 탐색기 폴더/단일 선택 항목, Excel 셀, Word 본문 위치, PowerPoint 슬라이드 기록
 - 메모장: 새 문서·미저장 내용에서 Ctrl+Alt+B로 본문과 선택 위치 자동 보관. 재개 시 저장 당시 내용의 별도 복원본을 엽니다.
 - Edge·Chrome: 확장 없이 Ctrl+Alt+B로 현재 페이지의 제목·URL 저장. 주소 확인이 제한된 화면은 트레이의 ‘웹페이지 URL로 추가…’ 사용. 기존 [브라우저 확장](browser-extension/README.md)은 선택 사항입니다.
-- Ctrl+Alt+J → Enter: 최근 저장 위치 재개
-- 선택 메모, 검색, 삭제/10초 되돌리기, 접근 실패 항목의 경로 재지정
+- Ctrl+Alt+J: 설정에서 선택한 목록 또는 스티커 표시. 목록은 Enter, 스티커는 ‘이어가기’로 저장 위치 재개
+- 포스트잇 스티커: 이동·크기 조절, 접기, 항상 위 표시, 배치 기억. 기본 표시는 기존 목록 유지
+- 선택 메모, 검색, 삭제/10초 연속 되돌리기, 최근 삭제 복원, 접근 실패 항목의 경로 재지정
 - 사용자별 로컬 SQLite, 요청마다 별도 STA worker, 외부 전송 없음
 
 [후속 구현 진행·결정 기록](docs/implementation-progress.md) · [한국어 사용 안내](docs/quick-start.ko.md) · [P0 검증](docs/feasibility-report.md) · [구현 결정](docs/decisions.md)
 
 ## 실행
 
-`WorkBookmark-0.1.7-win-x64.msi`를 실행하면 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치합니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
+`WorkBookmark-0.2.0-win-x64.msi`를 실행하면 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치합니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
 
 포터블 사용은 self-contained win-x64 ZIP을 **폴더 전체**로 압축 해제하고 `WorkBookmark.exe`를 실행합니다. 트레이 메뉴에서 종료할 수 있습니다.
+
+포스트잇을 쓰려면 **트레이 → 설정 → 포스트잇 스티커로 보기 → 적용**을 선택하세요. 위쪽을 끌어 이동하고 가장자리를 끌어 크기를 바꿉니다. **지우기**는 같은 책갈피를 목록에서도 지우며, **× / Esc**는 스티커만 잠시 숨깁니다. 다시 보려면 **Ctrl+Alt+J**, 검색하려면 **트레이 → 목록에서 찾기**를 사용하세요.
+
+0.2.0은 데이터 형식을 v5로 갱신하고 변경 전 `.bak` 백업을 남깁니다. **0.1.7은 갱신된 DB를 읽을 수 없습니다.** 구버전 복귀에는 업그레이드 전 백업 복원이 필요합니다. [백업·업데이트 안내](docs/user-manual.ko.md#maintenance)를 확인하세요.
 
 ## 소스에서 빌드
 

@@ -1,0 +1,31 @@
+PASS plugin-free capture preserves the committed full URL after two stable observations
+PASS an elided HTTP address never becomes invented HTTPS
+PASS omitted www prefix is taken only from the document's committed URL
+PASS Unicode display is compared as a URI without dropping path or query
+PASS root slash display elision is accepted
+PASS different, elided or unsafe address refused: fixture 1
+PASS different, elided or unsafe address refused: fixture 2
+PASS different, elided or unsafe address refused: fixture 3
+PASS different, elided or unsafe address refused: fixture 4
+PASS different, elided or unsafe address refused: fixture 5
+PASS different, elided or unsafe address refused: fixture 6
+PASS different, elided or unsafe address refused: fixture 7
+PASS different, elided or unsafe address refused: fixture 8
+PASS different, elided or unsafe address refused: fixture 9
+PASS different, elided or unsafe address refused: fixture 10
+PASS editing the omnibox cannot capture a typed but unvisited URL
+PASS browser-internal, local and credential-bearing URLs require no capture
+PASS browser-internal, local and credential-bearing URLs require no capture
+PASS browser-internal, local and credential-bearing URLs require no capture
+PASS browser-internal, local and credential-bearing URLs require no capture
+PASS browser-internal, local and credential-bearing URLs require no capture
+PASS missing accessibility identity cannot be saved
+PASS tab, navigation, title or element changes fail the stable observation check
+PASS tab, navigation, title or element changes fail the stable observation check
+PASS tab, navigation, title or element changes fail the stable observation check
+PASS tab, navigation, title or element changes fail the stable observation check
+PASS tab, navigation, title or element changes fail the stable observation check
+PASS foreground context is checked before browser metadata is read
+PASS expired captures do not read browser metadata
+PASS title cap preserves surrogate pairs and strips controls
+RESULT: 30 browser adapter checks passed. Native Edge/Chrome acceptance remains manual.
