@@ -21,6 +21,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private readonly SemaphoreSlim _settingsGate = new(1, 1);
     private readonly Control _dispatcher = new();
     private readonly NotifyIcon _tray;
+    private readonly Icon _trayIcon;
     private readonly HotkeyWindow _hotkeys;
     private readonly RecentForm _recent;
     private readonly ToolStripMenuItem _undoMenu;
@@ -70,7 +71,8 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("설정", null, (_, _) => ShowSettings());
         menu.Items.Add("종료", null, (_, _) => ExitThread());
-        _tray = new NotifyIcon { Icon = SystemIcons.Application, Text = "업무 책갈피 · 제한된 시험판", ContextMenuStrip = menu, Visible = true };
+        _trayIcon = Branding.CreateTrayIcon();
+        _tray = new NotifyIcon { Icon = _trayIcon, Text = "업무 책갈피", ContextMenuStrip = menu, Visible = true };
         _tray.DoubleClick += (_, _) => ShowRecent();
         _undoTimer.Tick += (_, _) => { _undoTimer.Stop(); _undoId = null; _undoMenu.Visible = false; };
         _browserServer = new BrowserCaptureServer(CaptureBrowserAsync);
@@ -283,9 +285,10 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private void NotifyResumeResult(ResultCode result)
     {
-        // Keep genuinely unconfirmed outcomes in history/diagnostics without interrupting
-        // the user with an actionable-looking warning after a document has already opened.
-        if (result == ResultCode.ResumeOutcomeUnknown)
+        // Preserve the actual result in history without interrupting work after Office
+        // opens the document, or when the final outcome could not be confirmed.
+        // Confirmed failures and login actions still have their own notifications.
+        if (result is ResultCode.ResumeOutcomeUnknown or ResultCode.OfficeDocumentOpened)
         {
             _toast?.Close();
             _toast = null;
@@ -470,7 +473,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             Notify("다른 앱과 단축키가 충돌했거나 등록할 수 없습니다.\n" + unavailable, "단축키 설정", ShowSettings, 10000);
         }
         else if (!_settings.IntroShown)
-            Notify($"업무 책갈피 · 제한된 시험판\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 최근 목록\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome: 확장 없이 저장 · 트레이에서 URL 입력 가능", "설정", ShowSettings, 10000);
+            Notify($"업무 책갈피\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 최근 목록\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome: 확장 없이 저장 · 트레이에서 URL 입력 가능", "설정", ShowSettings, 10000);
         if (!_settings.IntroShown)
         {
             await _settingsGate.WaitAsync();
@@ -492,13 +495,23 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _toast?.Close();
         _toast = new ToastForm(text, actionText, action, duration); _toast.Show();
     }
-    protected override void ExitThreadCore()
+    private void ReleaseResources()
     {
         if (_exiting) return;
         _exiting = true; _browserServer.Dispose(); _captureInput?.Dispose(); _worker.Cancel(); StartupRegistration.StopWorker();
         _tray.Visible = false; _hotkeys.Dispose(); _undoTimer.Dispose();
         _toast?.Close(); _note?.Dispose(); _webPage?.Dispose(); _settingsForm?.Dispose(); _recent.Dispose();
-        _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); _dispatcher.Dispose();
+        _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); _trayIcon.Dispose(); _dispatcher.Dispose();
+    }
+    protected override void ExitThreadCore()
+    {
+        if (_exiting) return;
+        ReleaseResources();
         base.ExitThreadCore();
+    }
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) ReleaseResources();
+        base.Dispose(disposing);
     }
 }

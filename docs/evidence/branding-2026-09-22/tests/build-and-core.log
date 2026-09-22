@@ -1,0 +1,80 @@
+  복원할 프로젝트를 확인하는 중...
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Core\WorkBookmark.Core.csproj을(를) 1.27초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.BrowserHost\WorkBookmark.BrowserHost.csproj을(를) 1.25초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Storage\WorkBookmark.Storage.csproj을(를) 1.3초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.App\WorkBookmark.App.csproj을(를) 1.33초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Integration.Tests\WorkBookmark.Integration.Tests.csproj을(를) 13밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tools\Probes\Probes.csproj을(를) 6밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tools\WindowsChecks\WindowsChecks.csproj을(를) 27밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\WorkBookmark.Desktop.Tests.csproj을(를) 16밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Browser.Tests\WorkBookmark.Browser.Tests.csproj을(를) 5밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\tests\WorkBookmark.Core.Tests\WorkBookmark.Core.Tests.csproj을(를) 9밀리초 동안 복원했습니다.
+  D:\Github_REPOS\BookMark\src\WorkBookmark.Windows\WorkBookmark.Windows.csproj을(를) 7밀리초 동안 복원했습니다.
+  WorkBookmark.Core -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Core\release\WorkBookmark.Core.dll
+  WorkBookmark.BrowserHost -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.BrowserHost\release\WorkBookmark.BrowserHost.dll
+  WorkBookmark.Browser.Tests -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Browser.Tests\release\WorkBookmark.Browser.Tests.dll
+  WorkBookmark.Integration.Tests -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Integration.Tests\release\WorkBookmark.Integration.Tests.dll
+  WorkBookmark.Storage -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Storage\release\WorkBookmark.Storage.dll
+  WorkBookmark.Windows -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Windows\release\WorkBookmark.Windows.dll
+  Probes -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\Probes\release\Probes.dll
+  WorkBookmark.Core.Tests -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Core.Tests\release\WorkBookmark.Core.Tests.dll
+  WorkBookmark.App -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.App\release_win-x64\WorkBookmark.dll
+  WindowsChecks -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WindowsChecks\release\WindowsChecks.dll
+  WorkBookmark.Desktop.Tests -> D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Desktop.Tests\release\WorkBookmark.Desktop.Tests.dll
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:20.01
+PASS E06/X12 Windows path policy and conservative identity
+PASS E07 Document allowlist and executable reveal policy
+PASS X01/X12 Absolute single Excel cell bounds
+PASS U05/U06/U07 Duplicate capture preserves note and separates cells
+PASS U08 Sequence survives clock rollback, notes, resume, and restart
+PASS U10 Delete, undo, and recapture preserve identity and notes
+  Synthetic 1,026-record repository recent query: 2.81 ms (not UI p95).
+PASS U13 Full-history search, literal query, and result bounds
+PASS D01/D02 All mutation failures roll back without false commits
+PASS E09 Relink preserves metadata and rejects collisions/location edits
+PASS D03 Corruption and unknown schemas are preserved
+PASS D03 Migration creates consistent backup and rolls back on failure
+PASS D01 Concurrent writer serialization keeps unique monotonic sequence
+  Real SQLite writer lock rejected after 3.32 s.
+PASS D01/D02 Real SQLite writer lock fails atomically within a bounded wait
+RESULT: 13 passed; 0 failed. Policy/SQLite execution only; Windows/Office acceptance remains separate.
+PASS Browser URL state is preserved and unsupported handlers are rejected
+PASS Word/PowerPoint/PDF coordinates reject mixed or incomplete target metadata
+PASS Notepad requires an unambiguous nonnegative text offset and unsaved state
+PASS Notepad offsets preserve notes, separate positions and survive restart
+PASS Notepad failed capture preserves committed state and sequence
+PASS Version 2 migration preserves all target kinds and history with backup
+PASS Version 2 migration failure restores schema, rows and sequence before retry
+PASS Browser exact-URL recapture updates title and preserves notes
+PASS Word offsets, stable slide IDs and PDF pages survive persistence
+PASS Position relink preserves coordinates and rejects collisions
+PASS Extended-target mutation failures preserve metadata and sequence
+PASS Version 1 migration preserves history, sequence and a consistent backup
+PASS Version 1 migration failure rolls back schema and rows before retry
+EXTENDED RESULT: 13 passed; 0 failed. No browser or Office automation.
+PASS N-S01 Empty, Korean, emoji and newline snapshots use canonical UTF-16 selections
+PASS N-S02 Snapshot bodies, selections, metadata and content hashes reject tampering
+PASS N-S03 Snapshot boundaries allow two Mi UTF-16 characters and reject larger input
+PASS N-S04 Snapshot metadata cannot leak onto file, browser or legacy position targets
+PASS N-S05 Snapshot identity preserves notes and distinguishes content, title and selection
+PASS N-S06 Snapshot content, selection, history and deletion survive restart
+PASS N-S07 Failed snapshot transactions preserve committed content and capture sequence
+PASS N-S08 Schema 3 migration preserves every historical field and consistent backup
+PASS N-S09 Schema 3 migration failure rolls back all fields and can be retried
+PASS N-S10 SQLite snapshot constraints and read validation reject corrupted content
+PASS N-S11 Full-size request/response frames round-trip and over-limit frames fail
+SNAPSHOT RESULT: 11 passed; 0 failed. Isolated Core/SQLite/protocol checks; editor acceptance remains separate.
+PASS HTTP/HTTPS Office targets retain their coordinates and original URL
+PASS Office URL validation rejects credentials, handler injection and malformed input
+PASS Office IRI identity preserves document paths and URL state
+PASS Office URI launch always selects the recorded application
+PASS Office URLs, distinct positions, notes and resume results survive SQLite restart
+PASS Office URL failed writes and file relinking preserve committed records
+PASS Office URL metadata survives the worker frame protocol
+OFFICE URL RESULT: 7 passed; 0 failed. No Office or authentication session used.
+Unhandled exception: An error occurred trying to start process 'D:\Github_REPOS\BookMark\artifacts\verification-017\bin\WorkBookmark.Integration.Tests\release\WorkBookmark.Integration.Tests.exe' with working directory 'D:\Github_REPOS\BookMark'. 액세스가 거부되었습니다.

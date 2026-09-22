@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="493" height="312" viewBox="0 0 493 312">
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#1C3B47"/>
+      <stop offset="1" stop-color="#102832"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#73E8CD"/>
+      <stop offset="1" stop-color="#31BFAE"/>
+    </linearGradient>
+    <clipPath id="art"><rect width="164" height="312"/></clipPath>
+  </defs>
+  <!-- WiX reserves the entire white region for its localized dialog controls. -->
+  <rect width="493" height="312" fill="#FFFFFF"/>
+  <g clip-path="url(#art)">
+    <rect width="164" height="312" fill="url(#panel)"/>
+    <path d="M-48 4H87Q109 4 109 26V187L31 145L-48 187Z" fill="none" stroke="#6FE1CB" stroke-opacity=".055" stroke-width="2" transform="rotate(-15 31 90)"/>
+    <path d="M101 122H189Q202 122 202 135V290L146 259L88 290V135Q88 122 101 122Z" fill="none" stroke="#6FE1CB" stroke-opacity=".07" stroke-width="2" transform="rotate(17 146 208)"/>
+    <rect x="38" y="60" width="88" height="88" rx="23" fill="#0D252F" fill-opacity=".3" stroke="#FFFFFF" stroke-opacity=".1"/>
+    <path d="M69 77H95Q101 77 101 83V132L82 120L63 132V83Q63 77 69 77Z" fill="url(#ribbon)"/>
+    <path d="M73 91H91" stroke="#F4FFFC" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M73 100H85" stroke="#F4FFFC" stroke-opacity=".64" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M24 230H47" stroke="#67DFC8" stroke-width="2" stroke-linecap="round"/>
+    <text x="23" y="256" fill="#F6FCFC" font-family="Segoe UI, sans-serif" font-size="17" font-weight="600" letter-spacing="-.4">WorkBookmark</text>
+    <text x="24" y="276" fill="#A8BEC6" font-family="Segoe UI, sans-serif" font-size="9.4">Your place, remembered.</text>
+  </g>
+</svg>

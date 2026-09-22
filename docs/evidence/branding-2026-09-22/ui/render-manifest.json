@@ -1,0 +1,182 @@
+{
+  "suite": "Branding render verification",
+  "scale": "100%",
+  "renders": [
+    {
+      "filename": "toast-introduction.png",
+      "width": 432,
+      "height": 129,
+      "dpi": 96,
+      "labels": [
+        {
+          "Text": "\uC5C5\uBB34 \uCC45\uAC08\uD53C\nCtrl\u002BAlt\u002BB \uC800\uC7A5 \u00B7 Ctrl\u002BAlt\u002BJ \uCD5C\uADFC \uBAA9\uB85D\n\uD0D0\uC0C9\uAE30 \u00B7 Excel \u00B7 Word \u00B7 PowerPoint \u00B7 \uBA54\uBAA8\uC7A5\nEdge\u00B7Chrome: \uD655\uC7A5 \uC5C6\uC774 \uC800\uC7A5 \u00B7 \uD2B8\uB808\uC774\uC5D0\uC11C URL \uC785\uB825 \uAC00\uB2A5",
+          "UseMnemonic": false,
+          "x": 17,
+          "y": 13,
+          "width": 396,
+          "height": 76,
+          "preferredHeight": 76
+        },
+        {
+          "Text": "\uC124\uC815",
+          "UseMnemonic": true,
+          "x": 17,
+          "y": 94,
+          "width": 37,
+          "height": 19,
+          "preferredHeight": 19
+        }
+      ]
+    },
+    {
+      "filename": "toast-long-korean-path.png",
+      "width": 432,
+      "height": 167,
+      "dpi": 96,
+      "labels": [
+        {
+          "Text": "\uCC45\uAC08\uD53C\uB97C \uB0A8\uACBC\uC2B5\uB2C8\uB2E4 \u00B7 \uC5F0\uAD6C\uAC1C\uBC1C R\u0026D \u0026 \uD488\uC9C8\uAD00\uB9AC\nC:\\\uD569\uC131 \uAC80\uC99D \uC790\uB8CC\\\uACE0\uAC1D\uC0AC \uACF5\uB3D9 \uC5F0\uAD6C \uBC0F \uC81C\uD488 \uAC1C\uC120 \uD504\uB85C\uC81D\uD2B8\\2026\uB144 \uD558\uBC18\uAE30 \uC81C\uD488 \uAC80\uC99D \uACB0\uACFC\uC640 \uD6C4\uC18D \uC870\uCE58 \uACC4\uD68D.xlsx \u00B7 \uAC80\uD1A0 \uD604\uD669!$D$127\n14:32 \u00B7 \uC774\uC804 \uBA54\uBAA8 \uC720\uC9C0\n\uC9C0\uC6E0\uB358 \uCC45\uAC08\uD53C\uB97C \uBCF5\uC6D0\uD588\uC2B5\uB2C8\uB2E4.",
+          "UseMnemonic": false,
+          "x": 17,
+          "y": 13,
+          "width": 396,
+          "height": 114,
+          "preferredHeight": 114
+        },
+        {
+          "Text": "\uBA54\uBAA8",
+          "UseMnemonic": true,
+          "x": 17,
+          "y": 132,
+          "width": 37,
+          "height": 19,
+          "preferredHeight": 19
+        }
+      ]
+    },
+    {
+      "filename": "recent-bookmarks.png",
+      "width": 676,
+      "height": 601,
+      "dpi": 96,
+      "labels": [
+        {
+          "Text": "\uCD5C\uADFC \uC800\uC7A5 \uC21C\uC11C \u00B7 Enter/\uD074\uB9AD \uC774\uC5B4\uAC00\uAE30 \u00B7 \uC6B0\uD074\uB9AD \uBA54\uB274",
+          "UseMnemonic": true,
+          "x": 16,
+          "y": 528,
+          "width": 520,
+          "height": 26,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uC694\uCCAD \uC911\uB2E8",
+          "UseMnemonic": true,
+          "x": 558,
+          "y": 528,
+          "width": 70,
+          "height": 19,
+          "preferredHeight": 19
+        }
+      ]
+    },
+    {
+      "filename": "settings.png",
+      "width": 626,
+      "height": 457,
+      "dpi": 96,
+      "labels": [
+        {
+          "Text": "\uC5C5\uBB34 \uCC45\uAC08\uD53C",
+          "UseMnemonic": true,
+          "x": 20,
+          "y": 18,
+          "width": 560,
+          "height": 28,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uD0D0\uC0C9\uAE30 \u00B7 Excel \u00B7 Word \u00B7 PowerPoint \u00B7 \uBA54\uBAA8\uC7A5(\uBBF8\uC800\uC7A5 \uB0B4\uC6A9 \uC790\uB3D9 \uBCF4\uAD00)\nEdge\u00B7Chrome: \uD655\uC7A5 \uC5C6\uC774 \uC800\uC7A5 \uB2E8\uCD95\uD0A4 \uC0AC\uC6A9 \u00B7 \uD2B8\uB808\uC774\uC5D0\uC11C URL \uC785\uB825 \uAC00\uB2A5",
+          "UseMnemonic": true,
+          "x": 20,
+          "y": 51,
+          "width": 570,
+          "height": 48,
+          "preferredHeight": 38
+        },
+        {
+          "Text": "\uD604\uC7AC \uC704\uCE58 \uB0A8\uAE30\uAE30",
+          "UseMnemonic": true,
+          "x": 20,
+          "y": 115,
+          "width": 170,
+          "height": 27,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uCD5C\uADFC \uCC45\uAC08\uD53C \uC5F4\uAE30",
+          "UseMnemonic": true,
+          "x": 20,
+          "y": 158,
+          "width": 170,
+          "height": 27,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uC0AC\uC6A9 \uC911",
+          "UseMnemonic": true,
+          "x": 451,
+          "y": 115,
+          "width": 148,
+          "height": 27,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uC0AC\uC6A9 \uC911",
+          "UseMnemonic": true,
+          "x": 451,
+          "y": 158,
+          "width": 148,
+          "height": 27,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uC785\uB825\uCE78\uC744 \uC120\uD0DD\uD558\uACE0 Ctrl \uB610\uB294 Alt\uB97C \uD3EC\uD568\uD55C \uC870\uD569\uC744 \uB204\uB974\uC138\uC694.",
+          "UseMnemonic": true,
+          "x": 20,
+          "y": 197,
+          "width": 570,
+          "height": 25,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uB370\uC774\uD130 \uD3F4\uB354",
+          "UseMnemonic": true,
+          "x": 20,
+          "y": 274,
+          "width": 84,
+          "height": 19,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uC9C4\uB2E8 \uB85C\uADF8",
+          "UseMnemonic": true,
+          "x": 133,
+          "y": 274,
+          "width": 70,
+          "height": 19,
+          "preferredHeight": 19
+        },
+        {
+          "Text": "\uACBD\uB85C\u00B7\uBA54\uBAA8\uC640 \uBA54\uBAA8\uC7A5\uC5D0 \uAE30\uB85D\uD55C \uBCF8\uBB38\u00B7\uC120\uD0DD \uC704\uCE58\uB294 \uC774 PC\uC758 DB\uC5D0 \uBCF4\uAD00\uB429\uB2C8\uB2E4.",
+          "UseMnemonic": true,
+          "x": 20,
+          "y": 312,
+          "width": 570,
+          "height": 48,
+          "preferredHeight": 19
+        }
+      ]
+    }
+  ]
+}

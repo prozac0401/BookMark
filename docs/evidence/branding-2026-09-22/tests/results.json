@@ -1,0 +1,79 @@
+[
+  {
+    "suite": "integration",
+    "exitCode": 0,
+    "elapsedMs": 7545,
+    "stdout": "integration.log",
+    "stderr": "integration.err"
+  },
+  {
+    "suite": "adapter-checks",
+    "exitCode": 0,
+    "elapsedMs": 2507,
+    "stdout": "adapter-checks.log",
+    "stderr": "adapter-checks.err"
+  },
+  {
+    "suite": "evidence-selftest",
+    "exitCode": 0,
+    "elapsedMs": 257,
+    "stdout": "evidence-selftest.log",
+    "stderr": "evidence-selftest.err"
+  },
+  {
+    "suite": "session-selftest",
+    "exitCode": 0,
+    "elapsedMs": 247,
+    "stdout": "session-selftest.log",
+    "stderr": "session-selftest.err"
+  },
+  {
+    "suite": "word-checks",
+    "exitCode": 0,
+    "elapsedMs": 269,
+    "stdout": "word-checks.log",
+    "stderr": "word-checks.err"
+  },
+  {
+    "suite": "office-url-checks",
+    "exitCode": 0,
+    "elapsedMs": 381,
+    "stdout": "office-url-checks.log",
+    "stderr": "office-url-checks.err"
+  },
+  {
+    "suite": "browser-checks",
+    "exitCode": 0,
+    "elapsedMs": 265,
+    "stdout": "browser-checks.log",
+    "stderr": "browser-checks.err"
+  },
+  {
+    "suite": "notepad-checks",
+    "exitCode": 0,
+    "elapsedMs": 667,
+    "stdout": "notepad-checks.log",
+    "stderr": "notepad-checks.err"
+  },
+  {
+    "suite": "pdf-checks",
+    "exitCode": 0,
+    "elapsedMs": 379,
+    "stdout": "pdf-checks.log",
+    "stderr": "pdf-checks.err"
+  },
+  {
+    "suite": "browser-native",
+    "exitCode": 0,
+    "elapsedMs": 10291,
+    "stdout": "browser-native.log",
+    "stderr": "browser-native.err"
+  },
+  {
+    "suite": "browser-extension",
+    "exitCode": 0,
+    "elapsedMs": 382,
+    "stdout": "browser-extension.log",
+    "stderr": "browser-extension.err"
+  }
+]

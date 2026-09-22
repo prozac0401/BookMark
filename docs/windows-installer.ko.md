@@ -2,7 +2,7 @@
 
 일반 사용자의 설치·사용·백업·문제 해결은 **[설치 및 사용 매뉴얼](user-manual.ko.md)**에서 한 번에 확인할 수 있습니다. 이 문서는 MSI 운영·빌드·검증의 상세 안내입니다.
 
-`WorkBookmark-0.1.6-win-x64.msi`는 Windows x64용 사용자별 설치 패키지입니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
+`WorkBookmark-0.1.7-win-x64.msi`는 Windows x64용 사용자별 설치 패키지입니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
 
 ## 설치, 실행, 재부팅
 
@@ -32,19 +32,19 @@ Windows에서 저장소 SDK 및 Node를 사용합니다.
 ./scripts/build.ps1 -Msi
 
 # 별도 obj/bin에서 검증/게시 (기존 실행 파일의 잠금과 병렬 작업 충돌 방지)
-./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-016
+./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-017
 
 # 커밋 후 ZIP + 커밋 소스 ZIP + MSI + 검증 JSON + SHA256SUMS 생성
 ./scripts/build.ps1 -Package -Msi
 
 # 커밋 전 수정과 새 파일까지 포함한 현재 작업 트리로 배포 패키지 생성
-./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-016
+./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-017
 
 # 이미 게시한 디렉터리에서 MSI만 생성
 ./scripts/build-msi.ps1 -PublishDirectory ./artifacts/publish/<게시폴더>
 
 # 설치 없이 관리 이미지 추출 및 모든 파일 해시 검증
-./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.1.6-win-x64.msi `
+./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.1.7-win-x64.msi `
     -PublishDirectory ./artifacts/publish/<게시폴더> -Extract
 ```
 
@@ -56,7 +56,7 @@ Windows에서 저장소 SDK 및 Node를 사용합니다.
 
 ## 검증 범위
 
-자동 검증은 MSI의 사용자 범위, 관리자 권한 요구 없음, x64 플랫폼, 제품 버전, 제어판 제거 등록, 설치/바로가기 경로, 자동 실행 선택 보존 조건, 업그레이드/종료 순서, 완료 화면의 실행 선택 조건, 데이터 삭제 동작 없음, 파일 목록을 검사합니다. `-Extract`는 `msiexec /a`로 관리 이미지만 만들고 게시 파일 전체의 SHA-256을 대조합니다. 실제 사용자에게 설치하거나 기존 앱을 제거하지 않습니다.
+자동 검증은 MSI의 사용자 범위, 관리자 권한 요구 없음, x64 플랫폼, 제품 버전, 제어판 제거 등록, 설치/바로가기 경로, 자동 실행 선택 보존 조건, 업그레이드/종료 순서, 완료 화면의 실행 선택 조건, 데이터 삭제 동작 없음, 파일 목록을 검사합니다. 설치 화면의 전용 이미지와 앱 아이콘은 MSI 내부 바이너리의 SHA-256까지 대조합니다. `-Extract`는 `msiexec /a`로 관리 이미지만 만들고 게시 파일 전체의 SHA-256을 대조합니다. 실제 사용자에게 설치하거나 기존 앱을 제거하지 않습니다.
 
 실제 설치·제거·재부팅 동작은 별도 Windows 계정 또는 VM에서 다음 순서로 확인하세요.
 

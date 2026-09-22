@@ -13,12 +13,14 @@ internal sealed class ToastForm : Form
         UiStyle.Apply(this);
         FormBorderStyle = FormBorderStyle.FixedSingle;
         ControlBox = false; TopMost = true;
-        ClientSize = new Size(430, actionText is null ? 96 : 122);
-        var label = new Label { Text = message, AutoEllipsis = true, Location = new Point(17, 13), Size = new Size(396, 71) };
+        var label = new Label { Text = message, UseMnemonic = false, AutoEllipsis = true, Location = new Point(17, 13), Width = 396, Font = Font };
+        int messageHeight = Math.Clamp(label.GetPreferredSize(new Size(396, 0)).Height, 71, 176);
+        label.Height = messageHeight;
+        ClientSize = new Size(430, messageHeight + (actionText is null ? 25 : 51));
         Controls.Add(label);
         if (actionText is not null)
         {
-            var link = new LinkLabel { Text = actionText, AutoSize = true, LinkColor = UiStyle.Accent, Location = new Point(17, 89) };
+            var link = new LinkLabel { Text = actionText, AutoSize = true, LinkColor = UiStyle.Accent, Location = new Point(17, messageHeight + 18) };
             link.LinkClicked += (_, _) => { Close(); action?.Invoke(); };
             Controls.Add(link);
         }

@@ -4,6 +4,7 @@
     [switch]$Extract
 )
 $ErrorActionPreference = 'Stop'
+$taskRoot = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
 $msiPath = (Resolve-Path -LiteralPath $MsiPath).Path
 $publishPath = (Resolve-Path -LiteralPath $PublishDirectory).Path.TrimEnd('\')
 $checks = [Collections.Generic.List[object]]::new()
@@ -29,6 +30,35 @@ function ReadRows([string]$query) {
         return ,$rows
     }
     finally { [void]$view.Close(); [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view) }
+}
+function ReadStreamHash([string]$table, [string]$name) {
+    if ($table -notin @('Binary', 'Icon') -or $name -notmatch '^[A-Za-z0-9_]+$') { throw 'Invalid MSI asset identifier.' }
+    $view = $database.OpenView(('SELECT `Data` FROM `{0}` WHERE `Name` = ''{1}''' -f $table, $name))
+    $stream = [IO.MemoryStream]::new()
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try {
+        [void]$view.Execute()
+        $record = $view.Fetch()
+        if ($null -eq $record) { throw "Missing MSI asset: $table/$name" }
+        try {
+            # msiReadStreamBytes returns a BSTR with one byte per character, including zero bytes.
+            $byteEncoding = [Text.Encoding]::GetEncoding(28591)
+            do {
+                $chunk = [string]$record.ReadStream(1, 65536, 1)
+                if ($chunk.Length -gt 0) {
+                    $bytes = $byteEncoding.GetBytes($chunk)
+                    $stream.Write($bytes, 0, $bytes.Length)
+                }
+            } while ($chunk.Length -gt 0)
+            $stream.Position = 0
+            return [pscustomobject]@{ Length = $stream.Length; Hash = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '') }
+        }
+        finally { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($record) }
+    }
+    finally {
+        $sha.Dispose(); $stream.Dispose()
+        [void]$view.Close(); [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view)
+    }
 }
 try {
     $properties = @{}
@@ -56,9 +86,12 @@ try {
     Assert ($startupComponent.Count -eq 1 -and $startupComponent[0][4] -eq 'STARTUP_PREFERENCE <> "#0"') 'Startup default respects persisted opt-out on install and upgrade'
     $registry = ReadRows 'SELECT `Root`, `Key`, `Name` FROM `Registry`'
     Assert (@($registry | Where-Object { $_[0] -ne '1' -or -not $_[1].StartsWith('Software\WorkBookmark\Installer') }).Count -eq 0) 'Installer owns only its HKCU registration keys'
-    $shortcuts = ReadRows 'SELECT `Shortcut`, `Directory_`, `Target`, `Description` FROM `Shortcut`'
+    $shortcuts = ReadRows 'SELECT `Shortcut`, `Directory_`, `Target`, `Description`, `Icon_` FROM `Shortcut`'
     Assert (@($shortcuts | Where-Object { $_[1] -eq 'WorkBookmarkMenu' -and $_[2] -eq '[INSTALLFOLDER]WorkBookmark.exe' }).Count -eq 1) 'Start Menu shortcut launches installed application'
     Assert (@($shortcuts | Where-Object { $_[1] -eq 'StartupFolder' -and $_[2] -eq '[INSTALLFOLDER]WorkBookmark.exe' -and $_[3] -eq 'WorkBookmark per-user startup shortcut v1' }).Count -eq 1) 'Logon shortcut is recognized by application settings'
+    Assert ($properties.ARPPRODUCTICON -eq 'WorkBookmarkIcon' -and @($shortcuts | Where-Object { $_[4] -ne 'WorkBookmarkIcon' }).Count -eq 0) 'Windows Apps and every application shortcut use the branded product icon'
+    $productIcon = ReadStreamHash 'Icon' 'WorkBookmarkIcon'
+    Assert ($productIcon.Hash -eq (Get-FileHash -LiteralPath (Join-Path $publishPath 'WorkBookmark.exe') -Algorithm SHA256).Hash) 'Packaged product icon resource matches the published application executable'
     $removals = ReadRows 'SELECT `FileName`, `DirProperty`, `InstallMode` FROM `RemoveFile`'
     Assert (@($removals | Where-Object { ($_[0] -split '\|')[-1] -eq 'WorkBookmark.lnk' -and $_[1] -eq 'StartupFolder' -and $_[2] -eq '2' }).Count -eq 1) 'Uninstall removes startup shortcut even when recreated by application'
     Assert (@($removals | Where-Object { $_[0] -match '[*?]' -or $_[1] -eq 'LocalAppDataFolder' }).Count -eq 0) 'Uninstall has no wildcard or user-data cleanup'
@@ -83,6 +116,14 @@ try {
 
     Assert ($properties.WIXUI_EXITDIALOGOPTIONALCHECKBOX -eq '1' -and $properties.WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT -eq '업무 책갈피 실행') 'Completion launch checkbox is labeled in Korean and checked by default'
     $controls = ReadRows 'SELECT `Dialog_`, `Control`, `Type`, `Property`, `Text` FROM `Control`'
+    foreach ($artwork in @(@{ Name = 'WixUI_Bmp_Dialog'; File = 'dialog.bmp' }, @{ Name = 'WixUI_Bmp_Banner'; File = 'banner.bmp' })) {
+        $compiledArtwork = ReadStreamHash 'Binary' $artwork.Name
+        $sourceArtwork = Join-Path $taskRoot ('installer/Assets/' + $artwork.File)
+        Assert ($compiledArtwork.Hash -eq (Get-FileHash -LiteralPath $sourceArtwork -Algorithm SHA256).Hash) ("Installer embeds the exact branded artwork: " + $artwork.File)
+    }
+    Assert (@($controls | Where-Object { $_[0] -in @('WelcomeDlg', 'ExitDialog') -and $_[2] -eq 'Bitmap' -and $_[4] -eq 'WixUI_Bmp_Dialog' }).Count -eq 2) 'Welcome and completion dialogs display the branded artwork'
+    Assert (@($controls | Where-Object { $_[0] -eq 'ProgressDlg' -and $_[2] -eq 'Bitmap' -and $_[4] -eq 'WixUI_Bmp_Banner' }).Count -eq 1) 'Installation progress displays the branded banner'
+    Assert (@($controls | Where-Object { $_[4] -match '시험판|체험판|제한된\s*(버전|시험판)|\btrial\b|\blimited\s+(version|edition)\b' }).Count -eq 0) 'Installer screens contain no trial or limited-edition wording'
     Assert (@($controls | Where-Object { $_[0] -eq 'ExitDialog' -and $_[1] -eq 'OptionalCheckBox' -and $_[2] -eq 'CheckBox' -and $_[3] -eq 'WIXUI_EXITDIALOGOPTIONALCHECKBOX' -and $_[4] -eq '[WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT]' }).Count -eq 1) 'Completion dialog contains the launch checkbox'
     $checkboxes = ReadRows 'SELECT `Property`, `Value` FROM `CheckBox`'
     Assert (@($checkboxes | Where-Object { $_[0] -eq 'WIXUI_EXITDIALOGOPTIONALCHECKBOX' -and $_[1] -eq '1' }).Count -eq 1) 'Checkbox selection controls the launch property'
@@ -136,7 +177,6 @@ finally {
 }
 
 if ($Extract) {
-    $taskRoot = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
     $extractionPath = Join-Path $taskRoot ('artifacts/installer-extraction/' + [Guid]::NewGuid().ToString('N'))
     New-Item -ItemType Directory -Path $extractionPath -Force | Out-Null
     $logPath = Join-Path $extractionPath 'administrative-extraction.log'

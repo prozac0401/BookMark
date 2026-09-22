@@ -20,6 +20,7 @@ internal static class Program
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
+        if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
         string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-UiQa-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(data);
         ResumeNotificationChecks.Run(Path.Combine(data, "resume-notifications"), Assert);
         var custom = UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F19), RecentHotkey = new Hotkey(7, (int)Keys.F20), IntroShown = true };

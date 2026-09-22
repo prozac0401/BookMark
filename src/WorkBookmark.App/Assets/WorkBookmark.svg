@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#203F4C"/>
+      <stop offset="1" stop-color="#102832"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#73E8CD"/>
+      <stop offset="1" stop-color="#31BFAE"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="57" fill="url(#tile)"/>
+  <rect x="8.75" y="8.75" width="238.5" height="238.5" rx="56.25" fill="none" stroke="#FFFFFF" stroke-opacity=".12" stroke-width="1.5"/>
+  <path d="M93 52H163Q181 52 181 70V211L128 178L75 211V70Q75 52 93 52Z" fill="#071C25" fill-opacity=".25" transform="translate(0 5)"/>
+  <path d="M93 48H163Q181 48 181 66V207L128 174L75 207V66Q75 48 93 48Z" fill="url(#ribbon)"/>
+  <path d="M101 87H155" stroke="#F4FFFC" stroke-width="10" stroke-linecap="round"/>
+  <path d="M101 113H137" stroke="#F4FFFC" stroke-opacity=".64" stroke-width="10" stroke-linecap="round"/>
+</svg>

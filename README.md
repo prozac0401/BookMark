@@ -4,17 +4,11 @@ Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·
 
 **[설치 및 사용 매뉴얼](docs/user-manual.ko.md)** — MSI·포터블 설치, 프로그램별 사용법, 설정, 백업·복원, 업데이트·제거와 문제 해결을 안내합니다. 처음 실행해 보려면 [빠른 시작](docs/quick-start.ko.md)을 참고하세요.
 
-**[0.1.6-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.6-preview.1):** 문서 열기 후 반복되던 확인 실패 알림과 Office 응답 대기 중 입력 지연을 수정했습니다. 새 MSI는 이전 MSI 설치를 자동 제거한 뒤 설치하며, 완료 화면의 **업무 책갈피 실행** 체크박스로 즉시 실행 여부를 고를 수 있습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.6-preview.1.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
+**[WorkBookmark 0.1.7 다운로드](https://github.com/prozac0401/BookMark/releases/tag/v0.1.7)** — 청록색 책갈피 아이콘을 설치 마법사·트레이·프로그램 창에 적용하고, 문서가 열린 뒤 반복되던 위치 이동 미완료 알림을 제거했습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.7.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
 
-**[0.1.5-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1):** 웹 Office의 사이트 루트 사전 접속과 열림 확인 대기, 확장 없이 웹페이지 저장, 사용자별 MSI 설치·로그인 자동 실행을 추가했습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.5-preview.1.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
+![WorkBookmark 아이콘과 설치 화면 디자인](docs/evidence/branding-2026-09-22/branding-preview.png)
 
-**[0.1.4-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.4-preview.1):** 데스크톱 Office에서 웹 URL로 연 Excel·Word·PowerPoint의 작업 위치를 저장·재개하도록 확장했습니다. [사용 방법과 사내 AD 자체 검증 항목](docs/office-url-support.ko.md)을 확인하세요. 실제 AD·Office 실기검증은 별도입니다.
-
-**[0.1.3-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.3-preview.1):** 메모장 자동 보관. 새 문서·미저장 내용도 파일 선택 없이 본문과 선택 위치를 기록합니다. [변경 및 테스트 분담](docs/notepad-snapshot-and-test-plan.ko.md)을 확인하세요.
-
-**0.1.1 수정판:** Word·PowerPoint의 실제 저장 실패를 수정하고, 메모장 원본 파일 선택·커서 위치 저장을 추가했습니다. [수정 내용과 검증 범위](docs/capture-fixes.ko.md)를 확인하세요.
-
-**현재 상태: 제한된 시험판.** Windows 빌드·규칙/장애 시험 및 일부 실제 연동을 확인했습니다. 다중 탭·Excel 다중 인스턴스 50회, IME, DRM/UNC 등 모든 필수 실기 수용시험을 통과한 정식 v1은 아닙니다. 정확한 상태는 [검증 보고서](docs/validation-report.md)와 [호환성표](docs/compatibility.md)를 확인하세요.
+Windows 빌드·자동검사와 실제 환경별 확인 결과는 [검증 보고서](docs/validation-report.md)와 [호환성표](docs/compatibility.md)에 정리했습니다.
 
 - Ctrl+Alt+B: 탐색기 폴더/단일 선택 항목, Excel 셀, Word 본문 위치, PowerPoint 슬라이드 기록
 - 메모장: 새 문서·미저장 내용에서 Ctrl+Alt+B로 본문과 선택 위치 자동 보관. 재개 시 저장 당시 내용의 별도 복원본을 엽니다.
@@ -27,7 +21,7 @@ Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·
 
 ## 실행
 
-`WorkBookmark-0.1.6-win-x64.msi`를 실행하면 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치합니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
+`WorkBookmark-0.1.7-win-x64.msi`를 실행하면 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치합니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
 
 포터블 사용은 self-contained win-x64 ZIP을 **폴더 전체**로 압축 해제하고 `WorkBookmark.exe`를 실행합니다. 트레이 메뉴에서 종료할 수 있습니다.
 
@@ -57,4 +51,4 @@ $dotnet = ".\.tools\dotnet\dotnet.exe"
 
 `Core`: DTO·경로 정책·IPC / `Storage`: SQLite / `Windows`: Shell·Office·실험 PDF / `App`: WinForms UI·수명 관리. `tools/Probes`와 `tools/WindowsChecks`는 합성 자료로 P0를 재현하는 개발용 도구이며 실행 ZIP에 포함하지 않습니다.
 
-[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위·근거·제한을 기록했습니다. 원래 요구사항의 초기 기준은 이력으로 보존했습니다. [0.1.6 시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.6-preview.1)에서 MSI·포터블 ZIP·소스·검증 파일을 제공합니다. 이전 [0.1.5 시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1)의 다운로드도 계속 사용할 수 있습니다.
+[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위와 근거를 기록했습니다. [GitHub 릴리스](https://github.com/prozac0401/BookMark/releases)에서 MSI·포터블 ZIP·소스·검증 파일과 이전 버전을 받을 수 있습니다.

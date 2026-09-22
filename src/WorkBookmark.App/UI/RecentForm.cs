@@ -25,7 +25,7 @@ internal sealed class RecentForm : Form
     public RecentForm(Func<string, Task<SearchResults>> load)
     {
         UiStyle.Apply(this); _load = load;
-        Text = "최근 책갈피 · 제한된 시험판";
+        Text = "최근 책갈피 · 업무 책갈피";
         FormBorderStyle = FormBorderStyle.FixedToolWindow;
         ClientSize = new Size(660, 562);
         _search.SetBounds(16, 16, 628, 28);

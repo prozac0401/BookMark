@@ -10,6 +10,16 @@ if (-not $publishPath.StartsWith($taskRoot + '\', [StringComparison]::OrdinalIgn
 foreach ($required in @('WorkBookmark.exe', 'WorkBookmark.dll', 'coreclr.dll', 'hostpolicy.dll')) {
     if (-not (Test-Path -LiteralPath (Join-Path $publishPath $required))) { throw "Missing self-contained publish file: $required" }
 }
+$installerAssetsPath = Join-Path $taskRoot 'installer/Assets'
+foreach ($artwork in @(@{ File = 'dialog.bmp'; Height = 312 }, @{ File = 'banner.bmp'; Height = 58 })) {
+    $artworkPath = Join-Path $installerAssetsPath $artwork.File
+    if (-not (Test-Path -LiteralPath $artworkPath -PathType Leaf)) { throw "Missing installer artwork: $artworkPath" }
+    $artworkBytes = [IO.File]::ReadAllBytes($artworkPath)
+    if ($artworkBytes.Length -lt 54 -or $artworkBytes[0] -ne 0x42 -or $artworkBytes[1] -ne 0x4d -or
+        [BitConverter]::ToInt32($artworkBytes, 18) -ne 493 -or [Math]::Abs([BitConverter]::ToInt32($artworkBytes, 22)) -ne $artwork.Height) {
+        throw "Installer artwork must be a 493 x $($artwork.Height) BMP: $artworkPath"
+    }
+}
 $version = ((Get-Item -LiteralPath (Join-Path $publishPath 'WorkBookmark.exe')).VersionInfo.ProductVersion -split '\+')[0]
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'MSI version must be a three-part numeric version.' }
 $versionParts = $version.Split('.') | ForEach-Object { [int]$_ }
@@ -126,7 +136,7 @@ try {
     }
     finally { $writer.Dispose() }
     $msiPath = Join-Path $outputPath "WorkBookmark-$version-win-x64.msi"
-    & $wix build (Join-Path $taskRoot 'installer/Package.wxs') (Join-Path $taskRoot 'installer/WorkBookmarkUI.wxs') (Join-Path $taskRoot 'installer/WorkBookmarkUI.ko-kr.wxl') $manifestPath @extensionPaths -culture ko-kr -arch x64 -d "Version=$version" -d "ProductCode=$(StableGuid ('product|' + $version))" -d "PublishDirectory=$publishPath" -intermediatefolder $workPath -pdbtype none -out $msiPath | Out-Host
+    & $wix build (Join-Path $taskRoot 'installer/Package.wxs') (Join-Path $taskRoot 'installer/WorkBookmarkUI.wxs') (Join-Path $taskRoot 'installer/WorkBookmarkUI.ko-kr.wxl') $manifestPath @extensionPaths -culture ko-kr -arch x64 -d "Version=$version" -d "ProductCode=$(StableGuid ('product|' + $version))" -d "PublishDirectory=$publishPath" -d "InstallerAssetsDirectory=$installerAssetsPath" -intermediatefolder $workPath -pdbtype none -out $msiPath | Out-Host
     if ($LASTEXITCODE -ne 0) { throw 'MSI build or Windows Installer validation failed.' }
     & (Join-Path $PSScriptRoot 'test-msi.ps1') -MsiPath $msiPath -PublishDirectory $publishPath | Out-Host
     Write-Output $msiPath

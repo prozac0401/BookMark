@@ -12,7 +12,7 @@ internal sealed class SettingsForm : Form
     private readonly Button _apply;
     public SettingsForm(UserSettings settings, bool captureRegistered, bool recentRegistered, string directory, Func<UserSettings, Task<string?>> apply, Action openData, Action openLogs)
     {
-        UiStyle.Apply(this); Text = "업무 책갈피 설정 · 제한된 시험판";
+        UiStyle.Apply(this); Text = "업무 책갈피 설정";
         FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
         ClientSize = new Size(610, 418);
         var title = new Label { Text = "업무 책갈피", Font = new Font(Font, FontStyle.Bold), Location = new Point(20, 18), Size = new Size(560, 28) };

@@ -1,0 +1,34 @@
+{
+  "desktop": {
+    "exitCode": 0,
+    "passedChecks": 87,
+    "artifactsPath": "artifacts/render-017",
+    "invocation": "Start-Process WorkBookmark.Desktop.Tests.exe (no arguments)",
+    "stdout": "desktop.log",
+    "stderr": "desktop.err"
+  },
+  "browserSqlite": {
+    "exitCode": 0,
+    "passedChecks": 15,
+    "durationMs": 3507,
+    "artifactsPath": "artifacts/render-017",
+    "nativeHostArtifactsPath": "artifacts/verification-017",
+    "invocation": "Start-Process .tools/dotnet/dotnet.exe WorkBookmark.Desktop.Tests.dll --browser-sqlite WorkBookmark.BrowserHost.exe",
+    "stdout": "browser-sqlite.log",
+    "stderr": "browser-sqlite.err"
+  },
+  "render": {
+    "exitCode": 0,
+    "dpi": 96,
+    "imagesInspected": [
+      "../ui/toast-introduction.png",
+      "../ui/toast-long-korean-path.png",
+      "../ui/recent-bookmarks.png",
+      "../ui/settings.png"
+    ],
+    "manifest": "../ui/render-manifest.json",
+    "stdout": "render.log",
+    "stderr": "render.err"
+  },
+  "limitations": "Synthetic component renders and native integration checks; installed browser interaction and actual Korean IME are separate manual checks."
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="493" height="58" viewBox="0 0 493 58">
+  <defs>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#73E8CD"/>
+      <stop offset="1" stop-color="#31BFAE"/>
+    </linearGradient>
+  </defs>
+  <!-- Keep the left 426 pixels clear for WiX titles and descriptive text. -->
+  <rect width="493" height="58" fill="#FFFFFF"/>
+  <rect x="437" y="8" width="42" height="42" rx="10" fill="#16333F"/>
+  <path d="M453 16H463Q467 16 467 20V43L458 37.5L449 43V20Q449 16 453 16Z" fill="url(#ribbon)"/>
+  <path d="M454 23H462" stroke="#F4FFFC" stroke-width="2" stroke-linecap="round"/>
+  <path d="M454 28H459" stroke="#F4FFFC" stroke-opacity=".64" stroke-width="2" stroke-linecap="round"/>
+</svg>

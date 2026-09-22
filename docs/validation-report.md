@@ -1,5 +1,7 @@
 # 검증 및 인수 보고서
 
+> 2026-09-22 WorkBookmark 0.1.7의 아이콘·설치 화면·알림 개선과 최신 검증 결과는 [릴리스 기록](release-notes-v0.1.7.md) 및 [검증 증거](evidence/branding-2026-09-22/README.md)를 참고하세요. 아래는 이전 버전의 검증 이력입니다.
+
 > 2026-09-22 0.1.5의 최신 변경·검사 결과는 [별도 릴리스 기록](release-notes-v0.1.5-preview.1.md)을 참고하세요. 아래 기록은 이전 버전의 검증 이력입니다.
 
 > 2026-09-21 0.1.4 시험 빌드: 웹 URL Office 문서 지원을 추가하고, Release 빌드 경고 0·오류 0 및 자동검사 333항목을 확인했습니다. 실제 사내 AD·Office 연동은 사용자가 검증합니다. [검사 분류와 자체 검증 안내](office-url-support.ko.md), [전체 실행 로그](evidence/office-url-2026-09-21/build-and-tests.log).

@@ -19,7 +19,9 @@ internal static class UiStyle
         form.Shown += (_, _) => Position(form);
         form.StartPosition = FormStartPosition.Manual;
         form.ShowInTaskbar = false;
-        form.Icon = SystemIcons.Application;
+        var icon = Branding.CreateApplicationIcon();
+        form.Icon = icon;
+        form.Disposed += (_, _) => icon.Dispose();
     }
     public static void Position(Form form)
     {
@@ -61,7 +63,7 @@ internal static class UiStyle
         ResultCode.OpenedPositionFailed => "파일은 열렸지만 기록한 위치로 이동하지 못했습니다.",
         ResultCode.ResumeOutcomeUnknown => "처리 결과를 확인하지 못했습니다. 대상 앱을 확인해 주세요.",
         ResultCode.OfficeResumePending => "문서 열기를 요청했습니다. 로그인이 필요하면 사이트에 로그인한 뒤 책갈피를 다시 실행해 주세요.",
-        ResultCode.OfficeDocumentOpened => "문서가 열려 있습니다. 저장한 위치로의 이동은 완료되지 않았습니다.",
+        ResultCode.OfficeDocumentOpened => "문서가 열려 있습니다.",
         ResultCode.TargetUnavailable => "저장한 대상에 접근할 수 없습니다.",
         ResultCode.EnumerationIncomplete => "열린 문서를 모두 확인하지 못했습니다. 대상 앱을 확인해 주세요.",
         ResultCode.DuplicateTarget => "같은 위치의 책갈피가 이미 있습니다. 기존 기록은 유지됩니다.",

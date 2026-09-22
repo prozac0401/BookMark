@@ -1,0 +1,28 @@
+PASS: real native host forwards exact title, case, URL escaping, query and fragment to same-user/session pipe
+PASS: core preserves exact browser URL state
+PASS: blank title uses host without discarding URL
+PASS: host rejects non-HTTP URI before contacting app
+PASS: host rejects URI credentials before contacting app
+PASS: host rejects invalid protocol before contacting app
+PASS: host rejects invalid action before contacting app
+PASS: host rejects missing request ID before contacting app
+PASS: host rejects control character in title before contacting app
+PASS: host rejects oversized URL before contacting app
+PASS: core rejects document coordinate cross-fields 10
+PASS: core rejects document coordinate cross-fields 11
+PASS: core rejects document coordinate cross-fields 12
+PASS: core rejects document coordinate cross-fields 13
+PASS: core rejects document coordinate cross-fields 14
+PASS: native request rejects unexpected coordinate fields
+PASS: host rejects mismatched response ID
+PASS: host rejects success flag with failure code
+PASS: host rejects failure flag with commit code
+PASS: valid application failure is relayed without success
+PASS: host rejects oversized native frame
+PASS: host rejects truncated native frame
+PASS: host rejects truncated native header
+PASS: host rejects invalid UTF-8 JSON
+PASS: host rejects null JSON request
+PASS: oversized app response cannot report a commit
+PASS: absent application pipe reports AppNotRunning within host connect deadline
+RESULT: 27 browser checks passed in 9036 ms. Real BrowserHost process + private mock pipe; no GUI, extension loading or actual database commit claimed.
