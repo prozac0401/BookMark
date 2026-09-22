@@ -43,8 +43,8 @@ internal static class StickerFormChecks
         assert(Get<bool>(form, "IsCollapsed") && form.TopMost && form.Height < fullSize.Height && Get<Size>(form, "ExpandedSize") == fullSize,
             "STK03 collapse preserves expanded dimensions and applies always-on-top");
         Apply(form, false, false);
-        assert(!Get<bool>(form, "IsCollapsed") && !form.TopMost && form.Size == fullSize && placement.Count == 0,
-            "STK04 restoring a saved presentation returns full size without a user-placement write");
+        assert(!Get<bool>(form, "IsCollapsed") && form.TopMost && form.Size == fullSize && placement.Count == 0,
+            "STK04 restoring a legacy unpinned presentation keeps the sticker above ordinary windows and returns its full size");
         Command(form, Keys.Control | Keys.Space);
         form.Width += 40;
         Command(form, Keys.Control | Keys.Space);

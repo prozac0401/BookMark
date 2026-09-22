@@ -19,7 +19,8 @@ internal sealed class StickerManager : IDisposable
     private Task? _writeTask;
     private StickerLayout[] _writingBatch = [];
     private int _loadVersion, _revision;
-    private bool _enabled, _hidden, _disposed, _busy, _applying;
+    private bool _enabled, _hidden, _disposed, _applying;
+    private Guid? _busyBookmarkId;
 
     internal event Action<Bookmark>? ResumeRequested, NoteRequested, DeleteRequested, RelinkRequested;
     internal event Action? ShowListRequested, SettingsRequested, UndoRequested;
@@ -101,7 +102,9 @@ internal sealed class StickerManager : IDisposable
                 form.Location = screen.WorkingArea.Location;
                 _ = form.Handle;
                 form.Bounds = RestoreBounds(layout, screen.WorkingArea, form.DeviceDpi, form.MinimumSize);
-                form.ApplyPresentation(layout.IsCollapsed, layout.AlwaysOnTop);
+                // Sticker mode is always above ordinary windows, including layouts
+                // saved by older releases before that became the display contract.
+                form.ApplyPresentation(layout.IsCollapsed, true);
             }
             else
             {
@@ -110,7 +113,7 @@ internal sealed class StickerManager : IDisposable
                 _ = form.Handle;
                 form.Bounds = DefaultBounds(screen.WorkingArea, form.Size, _forms.Count - 1);
             }
-            form.SetBusy(_busy);
+            form.SetBusy(item.Id == _busyBookmarkId);
             if (!_hidden) form.Show();
         }
         finally { _applying = false; }
@@ -133,10 +136,25 @@ internal sealed class StickerManager : IDisposable
         foreach (var form in _forms.Values) form.Hide();
     }
 
-    internal void SetBusy(bool busy)
+    internal void SetBusy(Guid? bookmarkId)
     {
-        _busy = busy;
-        foreach (var form in _forms.Values) form.SetBusy(busy);
+        if (_busyBookmarkId == bookmarkId) return;
+        Guid? previous = _busyBookmarkId;
+        _busyBookmarkId = bookmarkId;
+        if (previous is { } oldId && _forms.TryGetValue(oldId, out var oldForm)) oldForm.SetBusy(false);
+        if (bookmarkId is { } id && _forms.TryGetValue(id, out var form)) form.SetBusy(true);
+    }
+
+    internal void EditNote(Bookmark bookmark, Func<string, Task> saveNote)
+    {
+        if (!_enabled || _disposed) return;
+        Upsert(bookmark);
+        if (!_forms.TryGetValue(bookmark.Id, out var form)) return;
+        EnsureOnScreen(form);
+        // A note request reveals only its sticker, preserving all other hidden views.
+        form.Show();
+        form.Activate();
+        form.BeginNoteEdit(saveNote);
     }
 
     internal async Task ArrangeAsync()

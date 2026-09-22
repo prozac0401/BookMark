@@ -110,7 +110,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
 
     private Task<T> ReadAsync<T>(Func<T> action) => Task.Run(() => { lock (_repositoryLock) return action(); });
     private Task WriteAsync(Action action) => Task.Run(() => { lock (_repositoryLock) action(); });
-    private bool BeginOperation(Guid id)
+    private bool BeginOperation(Guid id, Guid? bookmarkId = null)
     {
         if (_operationInFlight || _worker.IsBusy)
         {
@@ -119,14 +119,14 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         }
         _operationInFlight = true; _busyNotified = false; _activeRequest = id;
         _recent.SetBusy(true);
-        _stickers.SetBusy(true);
+        _stickers.SetBusy(bookmarkId);
         return true;
     }
     private void EndOperation(Guid id)
     {
         if (_activeRequest != id) return;
         _activeRequest = null; _operationInFlight = false; _busyNotified = false;
-        if (!_exiting) { _recent.SetBusy(false); _stickers.SetBusy(false); }
+        if (!_exiting) { _recent.SetBusy(false); _stickers.SetBusy(null); }
     }
     private void NotifyCaptureFailure(ResultCode code)
     {
@@ -351,7 +351,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private async Task ResumeAsync(Bookmark bookmark, TargetSnapshot? baseline)
     {
         var id = Guid.NewGuid();
-        if (!BeginOperation(id)) return;
+        if (!BeginOperation(id, bookmark.Id)) return;
         ResultCode result = ResultCode.ResumeOutcomeUnknown;
         bool recordingResult = false;
         try
@@ -438,11 +438,13 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _openingNote = true;
         try
         {
-            if (_note is { IsDisposed: false }) { _note.Activate(); return; }
-            Bookmark? bookmark = await ReadAsync(() => _repository.Get(id));
+            if (_settings.DisplayMode != BookmarkDisplayMode.Stickers && _note is { IsDisposed: false }) { _note.Activate(); return; }
+            // Versioned refresh prevents a delayed editor read from recreating a
+            // sticker deleted or recaptured while that read was in flight.
+            Bookmark? bookmark = await RefreshBookmarkAsync(id);
             if (bookmark is null || bookmark.DeletedAtUtc is not null || _exiting) return;
             _recent.Hide();
-            _note = new NoteForm(bookmark, async text =>
+            async Task SaveNote(string text)
             {
                 try
                 {
@@ -450,7 +452,13 @@ public sealed class BookmarkApplicationContext : ApplicationContext
                     if (!_exiting) await RefreshBookmarkAsync(id);
                 }
                 catch { DiagnosticLog.Write("note", ResultCode.PersistenceFailed); throw; }
-            });
+            }
+            if (_settings.DisplayMode == BookmarkDisplayMode.Stickers)
+            {
+                _stickers.EditNote(bookmark, SaveNote);
+                return;
+            }
+            _note = new NoteForm(bookmark, SaveNote);
             ShowAuxiliary(_note);
         }
         catch { Notify("메모를 읽을 수 없습니다. 기존 기록은 유지됩니다."); }
@@ -551,7 +559,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         if (path is null) return;
         var candidate = bookmark.Target with { Path = path };
         var id = Guid.NewGuid();
-        if (!BeginOperation(id)) return;
+        if (!BeginOperation(id, bookmark.Id)) return;
         try
         {
             Notify("새 경로와 기존 위치를 확인하는 중…");

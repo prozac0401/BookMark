@@ -36,15 +36,20 @@ internal static class Program
     }
     private static void Run(string[] args)
     {
+        if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { StickerFormChecks.Run(Assert); return; }
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
-        if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); return; }
+        if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); StickerInlineNoteChecks.Render(args[1]); return; }
         string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-UiQa-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(data);
         SettingsDisplayChecks.Run(Path.Combine(data, "display-settings"), Assert);
         StickerFormChecks.Run(Assert);
+        StickerInlineNoteChecks.Run(Assert);
+        BookmarkTypeIconChecks.Run(Assert);
+        StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
+        StickerOperationChecks.Run(Path.Combine(data, "sticker-operations"), Assert);
         StickerIntegrationChecks.Run(Path.Combine(data, "sticker-integration"), Assert);
         BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
         StickerPersistenceChecks.Run(Assert);

@@ -74,6 +74,50 @@ internal static class BookmarkRefreshChecks
         Invoke(manager, "Remove", bookmark.Id);
         assert(!editor.IsDisposed && editor.Visible && unsaved.Text == "아직 저장하지 않은 메모",
             "RF05 deleting a sticker preserves an open editor and its unsaved input");
+
+        // Inline note opening also publishes its read into StickerManager. Exercise
+        // the real application route with the same deliberate continuation reorder.
+        SetField(context, "_settings", Field<UserSettings>(context, "_settings") with { DisplayMode = BookmarkDisplayMode.Stickers });
+        Pump(Refresh(context, bookmark.Id));
+        var noteDeleteQueue = new QueuedContext();
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(noteDeleteQueue);
+            Task delayedNote = EditNote(context, bookmark.Id);
+            noteDeleteQueue.WaitForCount(1);
+            repository.SoftDelete(bookmark.Id);
+            Task<Bookmark?> latestDeleted = Refresh(context, bookmark.Id);
+            noteDeleteQueue.WaitForCount(2);
+            noteDeleteQueue.RunLast();
+            noteDeleteQueue.RunFirst();
+            assert(latestDeleted.IsCompletedSuccessfully && delayedNote.IsCompletedSuccessfully && Forms().Length == 0 &&
+                repository.Get(bookmark.Id)!.DeletedAtUtc is not null,
+                "RF06 a delayed inline-note read cannot resurrect a sticker after a newer deletion refresh");
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
+
+        repository.UpsertCapture(target);
+        Pump(Refresh(context, bookmark.Id));
+        var noteCaptureQueue = new QueuedContext();
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(noteCaptureQueue);
+            Task delayedNote = EditNote(context, bookmark.Id);
+            noteCaptureQueue.WaitForCount(1);
+            var recaptured = repository.UpsertCapture(target).Bookmark;
+            repository.UpdateNote(bookmark.Id, "메모 열기 요청 뒤에 저장된 최신 내용");
+            Task<Bookmark?> latestCapture = Refresh(context, bookmark.Id);
+            noteCaptureQueue.WaitForCount(2);
+            noteCaptureQueue.RunLast();
+            noteCaptureQueue.RunFirst();
+            Form form = Forms().Single();
+            var current = (Bookmark)form.GetType().GetProperty("Bookmark")!.GetValue(form)!;
+            assert(latestCapture.IsCompletedSuccessfully && delayedNote.IsCompletedSuccessfully &&
+                current.CaptureSequence == recaptured.CaptureSequence && current.Note == "메모 열기 요청 뒤에 저장된 최신 내용" &&
+                !(bool)form.GetType().GetProperty("IsEditingNote")!.GetValue(form)!,
+                "RF07 a delayed inline-note read cannot replace a newer recapture/note revision with a stale draft");
+        }
+        finally { SynchronizationContext.SetSynchronizationContext(previous); }
     }
 
     private static Task<Bookmark?> Refresh(object context, Guid id)
@@ -81,6 +125,11 @@ internal static class BookmarkRefreshChecks
         // Keep the worker from completing before the async method captures our context.
         lock (Field<object>(context, "_repositoryLock"))
             return (Task<Bookmark?>)Invoke(context, "RefreshBookmarkAsync", id)!;
+    }
+    private static Task EditNote(object context, Guid id)
+    {
+        lock (Field<object>(context, "_repositoryLock"))
+            return (Task)Invoke(context, "EditNoteAsync", id)!;
     }
     private static T Field<T>(object value, string name) => (T)value.GetType().GetField(name, Private)!.GetValue(value)!;
     private static void SetField(object value, string name, object? replacement) => value.GetType().GetField(name, Private)!.SetValue(value, replacement);
