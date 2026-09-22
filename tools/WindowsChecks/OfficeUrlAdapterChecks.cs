@@ -183,7 +183,8 @@ internal static class OfficeUrlAdapterChecks
         }
         Assert(Refused(() => { using var guard = new ResumeGuard(null, Guid.NewGuid()); }, ResultCode.Cancelled),
             "a missing requested input signal fails closed before Office automation starts");
-        Console.WriteLine($"RESULT: {passed} Office URL adapter checks passed. AD/Office desktop acceptance remains manual.");
+        passed += OfficeResumeChecks.Run();
+        Console.WriteLine($"RESULT: {passed} Office URL/resume adapter checks passed. AD/Office desktop acceptance remains manual.");
         return 0;
     }
 }

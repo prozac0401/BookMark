@@ -2,20 +2,24 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="WorkBookmark" Manufacturer="WorkBookmark" Version="$(var.Version)"
            ProductCode="$(var.ProductCode)" UpgradeCode="BB5C5CA8-5BA0-4B01-875E-9E295690C711"
-           Language="1033" Scope="perUser" InstallerVersion="500" Compressed="yes">
+           Language="1033" Codepage="949" Scope="perUser" InstallerVersion="500" Compressed="yes">
     <SummaryInformation Description="WorkBookmark per-user Windows desktop installer" />
-    <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A newer WorkBookmark version is already installed." />
+    <!-- Keep ProductLanguage and UpgradeCode compatible with the previously shipped MSI family. -->
+    <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="더 최신 버전의 업무 책갈피가 이미 설치되어 있습니다." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
     <Property Id="ARPNOMODIFY" Value="1" />
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/prozac0401/BookMark" />
     <Property Id="ARPPRODUCTICON" Value="WorkBookmarkIcon" />
-    <Property Id="LIMITUI" Value="1" />
     <Property Id="REBOOT" Value="ReallySuppress" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="업무 책갈피 실행" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <Property Id="WixUnelevatedShellExecTarget" Value="[#WorkBookmarkExecutable]" />
+    <UIRef Id="WorkBookmarkUI" />
     <Property Id="STARTUP_PREFERENCE" Secure="yes">
       <RegistrySearch Id="ReadStartupPreference" Root="HKCU" Key="Software\WorkBookmark\Preferences"
                       Name="StartWithWindows" Type="raw" Bitness="always64" />
     </Property>
-    <Launch Condition="Installed OR VersionNT64" Message="WorkBookmark requires 64-bit Windows." />
+    <Launch Condition="Installed OR VersionNT64" Message="업무 책갈피는 64비트 Windows가 필요합니다." />
     <Icon Id="WorkBookmarkIcon" SourceFile="$(var.PublishDirectory)\WorkBookmark.exe" />
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="ProgramsFolder" Name="Programs">
@@ -46,10 +50,11 @@
       </Component>
     </StandardDirectory>
     <CustomAction Id="StopWorkBookmark" FileRef="WorkBookmarkExecutable" ExeCommand="--installer-shutdown" Return="ignore" />
-    <CustomAction Id="LaunchWorkBookmarkAfterInstall" FileRef="WorkBookmarkExecutable" ExeCommand="" Return="asyncNoWait" />
+    <!-- Only the successful completion dialog can launch the app, in the interactive user's shell. -->
+    <CustomAction Id="LaunchWorkBookmarkAfterInstall" BinaryRef="Wix4UtilCA_X64" DllEntry="WixUnelevatedShellExec"
+                  Execute="immediate" Impersonate="yes" Return="ignore" />
     <InstallExecuteSequence>
       <Custom Action="StopWorkBookmark" Before="InstallValidate" Condition="Installed OR WIX_UPGRADE_DETECTED" />
-      <Custom Action="LaunchWorkBookmarkAfterInstall" After="InstallFinalize" Condition="NOT Installed AND NOT REMOVE AND UILevel &gt;= 3" />
     </InstallExecuteSequence>
     <Feature Id="WorkBookmarkFeature" Title="WorkBookmark" Level="1">
       <ComponentGroupRef Id="PublishedFiles" />

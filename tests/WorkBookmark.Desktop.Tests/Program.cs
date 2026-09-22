@@ -18,8 +18,10 @@ internal static class Program
     [STAThread] static void Main(string[] args)
     {
         Console.OutputEncoding = Encoding.UTF8;
+        if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-UiQa-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(data);
+        ResumeNotificationChecks.Run(Path.Combine(data, "resume-notifications"), Assert);
         var custom = UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F19), RecentHotkey = new Hotkey(7, (int)Keys.F20), IntroShown = true };
         UserSettings.Default.Save(data); custom.Save(data);
         Assert(UserSettings.Load(data) == custom, "settings atomic overwrite round-trip");
@@ -90,6 +92,7 @@ internal static class Program
                 bitmap.Save(Path.Combine(Path.GetDirectoryName(args[0])!, "recent-component.png"), ImageFormat.Png);
             }
         }
+        InputMonitorChecks.Run(Assert);
         CaptureInputChecks(data, target);
         NotepadSnapshotChecks(data);
         RecentCountChecks(assembly, sample);
@@ -111,8 +114,11 @@ internal static class Program
         (UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F15), RecentHotkey = new Hotkey(7, (int)Keys.F16), IntroShown = true }).Save(settingsPath);
         var observedTarget = new CapturedTarget(TargetKind.File, target);
 
-        void Inject(object monitor, string method, int message) => monitor.GetType().GetMethod(method, instance)!
-            .Invoke(monitor, [0, (IntPtr)message, IntPtr.Zero]);
+        void Inject(object monitor, string method, int message)
+        {
+            object observer = monitor.GetType().GetField("_observer", instance)!.GetValue(monitor)!;
+            observer.GetType().GetMethod(method, instance)!.Invoke(observer, [0, (IntPtr)message, IntPtr.Zero]);
+        }
         void PumpUntil(Func<bool> finished)
         {
             var limit = DateTime.UtcNow.AddSeconds(5);

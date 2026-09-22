@@ -17,10 +17,11 @@ internal static partial class NotepadAdapter
     {
         PathPolicy.Validate(target);
         if (validateOnly) throw new BookmarkException(ResultCode.InvalidRequest);
-        using var guard = new ResumeGuard(context.Request.Snapshot);
-        guard.Check(); context.Check();
+        using var guard = new ResumeGuard(context.Request.Snapshot,
+            context.Request.MonitorInput ? context.Request.RequestId : null);
+        context.Check();
         var path = WriteRecoveryCopy(target, context);
-        guard.Check(); context.Check();
+        context.Check();
         context.ExternalActionStarted = true;
         SnapshotTrace?.Invoke("Notepad activation recovery=" + path);
         try { NotepadLauncher.Open(path); }
@@ -42,7 +43,7 @@ internal static partial class NotepadAdapter
             {
                 var editor = matches[0];
                 guard.Permit(editor.Root);
-                guard.Check(); context.Check();
+                context.Check();
                 EditorState? ReadReadyState()
                 {
                     try { return ReadEditor(editor, context); }
@@ -50,7 +51,7 @@ internal static partial class NotepadAdapter
                     {
                         // File loading can temporarily block a read-only editor message. A retry is
                         // safe only before any navigation and while the input/identity guard holds.
-                        guard.Check(); context.Check();
+                        context.Check();
                         SnapshotTrace?.Invoke("waiting for busy recovery editor");
                         return null;
                     }
@@ -70,6 +71,8 @@ internal static partial class NotepadAdapter
                 }
                 var stable = ReadReadyState();
                 if (stable != before) { Thread.Sleep(25); continue; }
+                context.DocumentObserved = true;
+                context.TargetHwnd = editor.Root.ToInt64();
                 SnapshotTrace?.Invoke("recovery text verified characters=" + NormalizeText(before.Text).Length);
                 guard.Check(); context.Check();
                 // Close the race with tab reuse immediately before sending EM_SETSEL.
@@ -88,6 +91,7 @@ internal static partial class NotepadAdapter
                 SnapshotTrace?.Invoke("recovery selection observed=" + after.Start + ":" + after.End + " expected=" + begin + ":" + end);
                 if (!IsRecoveryState(after, path, target) || after.Start != begin || after.End != end)
                     throw new BookmarkException(ResultCode.OpenedPositionFailed);
+                context.PositionVerified = true;
                 guard.Check(); context.Check();
                 context.TargetHwnd = editor.Root.ToInt64();
                 return context.Response(Native.GetForegroundWindow() == editor.Root

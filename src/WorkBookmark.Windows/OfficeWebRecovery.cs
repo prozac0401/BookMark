@@ -12,6 +12,7 @@ internal sealed class OfficeWebRecovery
     private readonly RequestContext context;
     private readonly Func<DateTimeOffset> now;
     private readonly Func<Uri, Task> warmUp;
+    private readonly DateTimeOffset startedAt;
     private DateTimeOffset? openedAt;
     private Task? warmUpTask;
     private bool retried, actionsCancelled, observed;
@@ -21,17 +22,28 @@ internal sealed class OfficeWebRecovery
     {
         this.target = target; this.context = context;
         this.now = now ?? (() => DateTimeOffset.UtcNow);
+        startedAt = this.now();
         this.warmUp = warmUp ?? (origin => Task.Run(() => OfficeOriginWarmUp.Visit(origin)));
     }
 
     internal bool IsWeb => OfficeLocation.IsWebTarget(target);
     internal bool NearDeadline => IsWeb && context.Request.DeadlineUtc <= now().AddMilliseconds(750);
-    internal ResultCode IncompleteResult => observed ? ResultCode.OfficeDocumentOpened : ResultCode.OfficeResumePending;
+    internal ResultCode IncompleteResult => context.PositionVerified ? ResultCode.PositionRestoredFocusPending :
+        observed ? ResultCode.OfficeDocumentOpened : ResultCode.OfficeResumePending;
+    // Each pass inventories native windows, processes and several cross-process COM collections.
+    // Authentication can take tens of seconds, so avoid continuously hammering Office's UI thread.
+    internal int ObservationIntervalMilliseconds => now() - startedAt < TimeSpan.FromSeconds(2) ? 250 : 500;
+    internal void WaitForObservation()
+    {
+        System.Windows.Forms.Application.DoEvents();
+        Thread.Sleep(ObservationIntervalMilliseconds);
+    }
     internal void Opened() => openedAt ??= now();
     internal void Observed(long hwnd)
     {
         if (hwnd == 0) return;
         observed = true;
+        context.DocumentObserved = true;
         context.TargetHwnd = hwnd;
     }
 

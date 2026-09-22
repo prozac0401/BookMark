@@ -45,23 +45,23 @@ public static class WindowsAdapter
             if (saved.Kind == TargetKind.WebPage)
             {
                 if (request.Operation != Operation.Resume) throw new BookmarkException(ResultCode.UnsupportedTarget);
-                using var browserGuard = new ResumeGuard(request.Snapshot);
-                browserGuard.Check(); context.Check();
+                context.Check();
                 context.ExternalActionStarted = true;
                 var opened = Native.ShellExecute(0, "open", saved.Path, null, null, 1).ToInt64();
                 if (opened <= 32) { context.ExternalActionStarted = false; throw new BookmarkException(ResultCode.TargetUnavailable); }
                 return context.Response(ResultCode.OpenRequested);
             }
-            using var guard = request.Operation == Operation.Resume ? new ResumeGuard(request.Snapshot) : null;
+            using var guard = request.Operation == Operation.Resume ? new ResumeGuard(request.Snapshot,
+                request.MonitorInput ? request.RequestId : null) : null;
             CheckExists(saved);
             if (request.Operation == Operation.ValidateRelink) return context.Response(ResultCode.Validated, saved);
-            guard!.Check(); context.Check();
+            context.Check();
             if (saved.Kind == TargetKind.Folder || PathPolicy.ShouldOpenDocument(saved.Path))
             {
                 ShellOpen(saved.Path, context);
                 return context.Response(ResultCode.OpenRequested);
             }
-            Reveal(saved.Path, context, guard.Check);
+            Reveal(saved.Path, context, guard!.Check);
             return context.Response(ResultCode.RevealRequested);
         }
         catch (Exception exception)
@@ -76,13 +76,7 @@ public static class WindowsAdapter
             };
             if (request.Target?.Kind == TargetKind.NotepadSnapshot)
                 NotepadAdapter.SnapshotTrace?.Invoke("snapshot worker failure=" + code + " exception=" + exception.GetType().Name + " HRESULT=" + exception.HResult.ToString("X8"));
-            bool webOfficeResume = request.Operation == Operation.Resume && request.Target is { } target && OfficeLocation.IsWebTarget(target);
-            if (webOfficeResume && context.TargetHwnd != 0 &&
-                code is not (ResultCode.OpenedPositionFailed or ResultCode.PositionRestoredFocusPending or ResultCode.PositionRestored))
-                code = ResultCode.OfficeDocumentOpened;
-            else if (context.ExternalActionStarted && code is not (ResultCode.OpenedPositionFailed or ResultCode.PositionRestoredFocusPending or ResultCode.PositionRestored))
-                code = webOfficeResume ? ResultCode.OfficeResumePending : ResultCode.ResumeOutcomeUnknown;
-            return context.Response(code);
+            return context.Response(context.ResumeFailure(code));
         }
     }
     private static bool IsSupportedBrowser(uint processId)
@@ -128,6 +122,22 @@ internal sealed class RequestContext(WorkerRequest request)
     internal WorkerRequest Request { get; } = request;
     internal bool ExternalActionStarted { get; set; }
     internal long TargetHwnd { get; set; }
+    internal bool DocumentObserved { get; set; }
+    internal bool PositionVerified { get; set; }
+    internal ResultCode ResumeFailure(ResultCode code)
+    {
+        if (Request.Operation != Operation.Resume ||
+            code is ResultCode.OpenedPositionFailed or ResultCode.PositionRestoredFocusPending or ResultCode.PositionRestored) return code;
+        // A changed foreground is not evidence that a verified document/position disappeared.
+        if (PositionVerified) return ResultCode.PositionRestoredFocusPending;
+        if (DocumentObserved)
+            return Request.Target?.Kind is TargetKind.ExcelCell or TargetKind.WordPosition or TargetKind.PowerPointSlide
+                ? ResultCode.OfficeDocumentOpened : ResultCode.OpenedPositionFailed;
+        if (ExternalActionStarted)
+            return Request.Target is { } target && OfficeLocation.IsWebTarget(target)
+                ? ResultCode.OfficeResumePending : ResultCode.ResumeOutcomeUnknown;
+        return code;
+    }
     internal void Check()
     {
         if (DateTimeOffset.UtcNow >= Request.DeadlineUtc)

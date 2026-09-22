@@ -2,6 +2,10 @@
 
 Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·Chrome 웹페이지를 로컬에 남기는 트레이 도구입니다.
 
+**[설치 및 사용 매뉴얼](docs/user-manual.ko.md)** — MSI·포터블 설치, 프로그램별 사용법, 설정, 백업·복원, 업데이트·제거와 문제 해결을 안내합니다. 처음 실행해 보려면 [빠른 시작](docs/quick-start.ko.md)을 참고하세요.
+
+**0.1.6-preview.1 로컬 배포 패키지:** 문서 열기 후 반복되던 확인 실패 알림과 Office 응답 대기 중 입력 지연을 수정했습니다. 새 MSI는 이전 MSI 설치를 자동 제거한 뒤 설치하며, 완료 화면의 **업무 책갈피 실행** 체크박스로 즉시 실행 여부를 고를 수 있습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.6-preview.1.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
+
 **[0.1.5-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1):** 웹 Office의 사이트 루트 사전 접속과 열림 확인 대기, 확장 없이 웹페이지 저장, 사용자별 MSI 설치·로그인 자동 실행을 추가했습니다. [변경 사항과 검증 범위](docs/release-notes-v0.1.5-preview.1.md) · [MSI 설치 안내](docs/windows-installer.ko.md).
 
 **[0.1.4-preview.1 시험판](https://github.com/prozac0401/BookMark/releases/tag/v0.1.4-preview.1):** 데스크톱 Office에서 웹 URL로 연 Excel·Word·PowerPoint의 작업 위치를 저장·재개하도록 확장했습니다. [사용 방법과 사내 AD 자체 검증 항목](docs/office-url-support.ko.md)을 확인하세요. 실제 AD·Office 실기검증은 별도입니다.
@@ -23,7 +27,7 @@ Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·
 
 ## 실행
 
-`WorkBookmark-0.1.5-win-x64.msi`를 실행하면 현재 사용자에게 설치하고 Windows 로그인 시 자동 실행합니다. 시작 메뉴에서 실행하며, 설정에서 자동 실행을 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
+`WorkBookmark-0.1.6-win-x64.msi`를 실행하면 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치합니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
 
 포터블 사용은 self-contained win-x64 ZIP을 **폴더 전체**로 압축 해제하고 `WorkBookmark.exe`를 실행합니다. 트레이 메뉴에서 종료할 수 있습니다.
 
@@ -47,10 +51,10 @@ $dotnet = ".\.tools\dotnet\dotnet.exe"
 & $dotnet publish src/WorkBookmark.App -c Release -r win-x64 --self-contained true --no-restore -o artifacts/publish/win-x64
 ```
 
-배포 MSI·ZIP·Source.zip·검증 JSON·SHA256SUMS.txt는 `artifacts/releases/<빌드시각>/`에 생성됩니다. MSI만 만들 때는 `scripts/build.ps1 -Msi`를 사용합니다. Source.zip은 Git에 커밋한 HEAD에서 생성하므로 ZIP 패키징 전 변경 사항을 커밋해야 합니다. 런타임/패키지는 lock 파일로 고정합니다. 자동시험은 Office 실기시험을 대신하지 않습니다.
+배포 MSI·ZIP·Source.zip·검증 JSON·SHA256SUMS.txt는 `artifacts/releases/<빌드시각>/`에 생성됩니다. MSI만 만들 때는 `scripts/build.ps1 -Msi`를 사용합니다. 기본 `Commit` 모드는 깨끗한 작업 트리의 Git HEAD로 Source.zip을 만듭니다. 아직 커밋하지 않은 수정까지 함께 배포하려면 `scripts/build.ps1 -Package -Msi -SourceMode WorkingTree`를 사용합니다. `SourceSnapshot.json`에 기준 커밋과 소스 모드를 기록합니다. 런타임/패키지는 lock 파일로 고정합니다. 자동시험은 Office 실기시험을 대신하지 않습니다.
 
 ## 구조
 
 `Core`: DTO·경로 정책·IPC / `Storage`: SQLite / `Windows`: Shell·Office·실험 PDF / `App`: WinForms UI·수명 관리. `tools/Probes`와 `tools/WindowsChecks`는 합성 자료로 P0를 재현하는 개발용 도구이며 실행 ZIP에 포함하지 않습니다.
 
-[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위·근거·제한을 기록했습니다. 원래 요구사항의 초기 기준은 이력으로 보존했습니다. [시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1)에서 MSI·실행 ZIP·소스 ZIP·SHA-256을 제공합니다.
+[확장 요구명세](docs/extension-requirements.md)와 [확장 검증 결과](docs/extension-validation.md)에 변경 범위·근거·제한을 기록했습니다. 원래 요구사항의 초기 기준은 이력으로 보존했습니다. 0.1.6 패키지는 로컬 `artifacts/releases/<빌드시각>/`에서 제공합니다. 이전 [0.1.5 시험판 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.1.5-preview.1)의 다운로드도 계속 사용할 수 있습니다.

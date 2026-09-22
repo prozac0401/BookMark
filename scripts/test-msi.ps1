@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory=$true)][string]$MsiPath,
     [Parameter(Mandatory=$true)][string]$PublishDirectory,
     [switch]$Extract
@@ -43,6 +43,8 @@ try {
     }
     finally { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($summary) }
     Assert ($properties.UpgradeCode -eq '{BB5C5CA8-5BA0-4B01-875E-9E295690C711}') 'MSI uses the stable upgrade family'
+    Assert ($properties.ProductLanguage -eq '1033') 'MSI keeps the product language compatible with older releases'
+    Assert (-not $properties.ContainsKey('LIMITUI')) 'Interactive install allows the full completion dialog'
     Assert ($properties.ARPNOMODIFY -eq '1' -and -not $properties.ContainsKey('ARPSYSTEMCOMPONENT') -and -not $properties.ContainsKey('ARPNOREMOVE')) 'MSI is removable in Windows Apps / Control Panel'
     $directories = @{}
     foreach ($row in (ReadRows 'SELECT `Directory`, `Directory_Parent`, `DefaultDir` FROM `Directory`')) { $directories[$row[0]] = $row }
@@ -69,7 +71,64 @@ try {
     Assert ($stop.Count -eq 1 -and [int]$stop[0][2] -lt [int]$validate[0][2] -and $stop[0][1] -eq 'Installed OR WIX_UPGRADE_DETECTED') 'Upgrade/uninstall request graceful shutdown before file validation'
     $removeOld = @($actions | Where-Object { $_[0] -eq 'RemoveExistingProducts' })
     $initialize = @($actions | Where-Object { $_[0] -eq 'InstallInitialize' })
-    Assert ($removeOld.Count -eq 1 -and [int]$removeOld[0][2] -gt [int]$initialize[0][2]) 'Upgrade removal occurs inside the rollback transaction'
+    $installFiles = @($actions | Where-Object { $_[0] -eq 'InstallFiles' })
+    Assert ($removeOld.Count -eq 1 -and [int]$removeOld[0][2] -gt [int]$initialize[0][2] -and [int]$removeOld[0][2] -lt [int]$installFiles[0][2]) 'Upgrade removes the old product before installing files within the rollback transaction'
+    $upgradeRows = ReadRows 'SELECT `UpgradeCode`, `VersionMin`, `VersionMax`, `Language`, `Attributes`, `Remove`, `ActionProperty` FROM `Upgrade`'
+    $olderProducts = @($upgradeRows | Where-Object { $_[6] -eq 'WIX_UPGRADE_DETECTED' })
+    Assert ($olderProducts.Count -eq 1 -and $olderProducts[0][0] -eq $properties.UpgradeCode -and $olderProducts[0][2] -eq $expectedVersion -and ([int]$olderProducts[0][4] -band 2) -eq 0 -and ([int]$olderProducts[0][4] -band 512) -eq 0 -and -not $olderProducts[0][5]) 'Older MSI versions are detected for complete automatic removal'
+    $newerProducts = @($upgradeRows | Where-Object { $_[6] -eq 'WIX_DOWNGRADE_DETECTED' })
+    Assert ($newerProducts.Count -eq 1 -and $newerProducts[0][1] -eq $expectedVersion -and ([int]$newerProducts[0][4] -band 2) -ne 0) 'Newer versions are detected without removing them'
+    $launchConditions = ReadRows 'SELECT `Condition`, `Description` FROM `LaunchCondition`'
+    Assert (@($launchConditions | Where-Object { $_[0] -eq 'NOT WIX_DOWNGRADE_DETECTED' }).Count -eq 1) 'Downgrades are blocked by a launch condition'
+
+    Assert ($properties.WIXUI_EXITDIALOGOPTIONALCHECKBOX -eq '1' -and $properties.WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT -eq '업무 책갈피 실행') 'Completion launch checkbox is labeled in Korean and checked by default'
+    $controls = ReadRows 'SELECT `Dialog_`, `Control`, `Type`, `Property`, `Text` FROM `Control`'
+    Assert (@($controls | Where-Object { $_[0] -eq 'ExitDialog' -and $_[1] -eq 'OptionalCheckBox' -and $_[2] -eq 'CheckBox' -and $_[3] -eq 'WIXUI_EXITDIALOGOPTIONALCHECKBOX' -and $_[4] -eq '[WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT]' }).Count -eq 1) 'Completion dialog contains the launch checkbox'
+    $checkboxes = ReadRows 'SELECT `Property`, `Value` FROM `CheckBox`'
+    Assert (@($checkboxes | Where-Object { $_[0] -eq 'WIXUI_EXITDIALOGOPTIONALCHECKBOX' -and $_[1] -eq '1' }).Count -eq 1) 'Checkbox selection controls the launch property'
+    $controlConditions = ReadRows 'SELECT `Dialog_`, `Control_`, `Action`, `Condition` FROM `ControlCondition`'
+    Assert (@($controlConditions | Where-Object { $_[0] -eq 'ExitDialog' -and $_[1] -eq 'OptionalCheckBox' -and $_[2] -eq 'Show' -and $_[3] -eq 'WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT AND NOT Installed' }).Count -eq 1) 'Launch checkbox is shown for first installation and upgrades, not maintenance'
+    $uiActions = ReadRows 'SELECT `Action`, `Condition`, `Sequence` FROM `InstallUISequence`'
+    Assert (@($uiActions | Where-Object { $_[0] -eq 'ExitDialog' -and $_[2] -eq '-1' }).Count -eq 1) 'Completion dialog is scheduled only after successful installation'
+    $events = ReadRows 'SELECT `Dialog_`, `Control_`, `Event`, `Argument`, `Condition`, `Ordering` FROM `ControlEvent`'
+    $launchEvents = @($events | Where-Object { $_[2] -eq 'DoAction' -and $_[3] -eq 'LaunchWorkBookmarkAfterInstall' })
+    $launchCondition = 'WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed AND NOT REMOVE AND NOT REINSTALL AND NOT UPGRADINGPRODUCTCODE AND ACTION = "INSTALL" AND UILevel = 5'
+    Assert ($launchEvents.Count -eq 1 -and $launchEvents[0][0] -eq 'ExitDialog' -and $launchEvents[0][1] -eq 'Finish' -and $launchEvents[0][4] -eq $launchCondition) 'Only checked Finish on successful interactive install or upgrade can launch the application'
+    $finish = @($events | Where-Object { $_[0] -eq 'ExitDialog' -and $_[1] -eq 'Finish' -and $_[2] -eq 'EndDialog' -and $_[3] -eq 'Return' })
+    Assert ($finish.Count -eq 1 -and [int]$finish[0][5] -gt [int]$launchEvents[0][5]) 'Finish closes the wizard after processing the optional launch'
+    Assert (@($actions | Where-Object { $_[0] -eq 'LaunchWorkBookmarkAfterInstall' }).Count -eq 0 -and @($uiActions | Where-Object { $_[0] -eq 'LaunchWorkBookmarkAfterInstall' }).Count -eq 0) 'Silent, basic UI, repair, and uninstall sequences never launch the application'
+    $customActions = ReadRows 'SELECT `Action`, `Type`, `Source`, `Target` FROM `CustomAction`'
+    $launchAction = @($customActions | Where-Object { $_[0] -eq 'LaunchWorkBookmarkAfterInstall' })
+    Assert ($launchAction.Count -eq 1 -and $launchAction[0][2] -eq 'Wix4UtilCA_X64' -and $launchAction[0][3] -eq 'WixUnelevatedShellExec' -and ([int]$launchAction[0][1] -band 3072) -eq 0 -and $properties.WixUnelevatedShellExecTarget -eq '[#WorkBookmarkExecutable]') 'Finish launches the installed executable through the unelevated user shell'
+
+    # OpenPackage option 1 creates a restricted, machine-state-independent session. No install actions run.
+    # Evaluate the actual compiled MSI expression with Windows Installer instead of a mock expression parser.
+    $conditionSession = $installer.OpenPackage($msiPath, 1)
+    try {
+        $scenarios = @(
+            @{ Name = 'checked fresh install'; Values = @{}; Expected = 1 },
+            @{ Name = 'checked upgrade'; Values = @{ WIX_UPGRADE_DETECTED = '{A809F096-5045-076F-33A2-EDCFC2189C28}' }; Expected = 1 },
+            @{ Name = 'unchecked install'; Values = @{ WIXUI_EXITDIALOGOPTIONALCHECKBOX = '' }; Expected = 0 },
+            @{ Name = 'unchecked upgrade'; Values = @{ WIX_UPGRADE_DETECTED = '{A809F096-5045-076F-33A2-EDCFC2189C28}'; WIXUI_EXITDIALOGOPTIONALCHECKBOX = '' }; Expected = 0 },
+            @{ Name = 'silent install'; Values = @{ UILevel = '2' }; Expected = 0 },
+            @{ Name = 'basic UI install'; Values = @{ UILevel = '3' }; Expected = 0 },
+            @{ Name = 'reduced UI install'; Values = @{ UILevel = '4' }; Expected = 0 },
+            @{ Name = 'repair'; Values = @{ Installed = '1'; REINSTALL = 'ALL' }; Expected = 0 },
+            @{ Name = 'uninstall'; Values = @{ Installed = '1'; REMOVE = 'ALL' }; Expected = 0 },
+            @{ Name = 'old product removal during upgrade'; Values = @{ UPGRADINGPRODUCTCODE = '{00000000-0000-0000-0000-000000000001}' }; Expected = 0 },
+            @{ Name = 'administrative extraction'; Values = @{ ACTION = 'ADMIN' }; Expected = 0 }
+        )
+        foreach ($scenario in $scenarios) {
+            $scenarioProperties = @{
+                WIXUI_EXITDIALOGOPTIONALCHECKBOX = '1'; Installed = ''; REMOVE = ''; REINSTALL = ''
+                UPGRADINGPRODUCTCODE = ''; WIX_UPGRADE_DETECTED = ''; ACTION = 'INSTALL'; UILevel = '5'
+            }
+            foreach ($key in $scenario.Values.Keys) { $scenarioProperties[$key] = $scenario.Values[$key] }
+            foreach ($key in $scenarioProperties.Keys) { $conditionSession.Property($key) = $scenarioProperties[$key] }
+            Assert ($conditionSession.EvaluateCondition($launchEvents[0][4]) -eq $scenario.Expected) ("Windows Installer launch condition: " + $scenario.Name)
+        }
+    }
+    finally { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($conditionSession) }
 }
 finally {
     [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($database)

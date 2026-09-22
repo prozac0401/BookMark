@@ -119,20 +119,23 @@ internal sealed class ResumeGuard : IDisposable
     private readonly nint original;
     private readonly Dictionary<nint, (uint Pid, long Stamp)> expected = [];
     private readonly (uint Pid, long Stamp) originalIdentity;
-    private readonly Native.HookProc keyboardCallback, mouseCallback;
     private readonly ResumeInputSignal? inputSignal;
-    private nint keyboard, mouse;
-    private bool newInput;
+    private readonly InputPressObserver? inputObserver;
+    private bool HasNewInput => inputSignal?.HasInput == true || inputObserver?.HasNewInput == true;
     internal ResumeGuard(TargetSnapshot? snapshot, Guid? inputSignalRequest = null)
     {
         inputSignal = inputSignalRequest is { } requestId ? ResumeInputSignal.OpenExisting(requestId) : null;
         original = snapshot is null ? Native.GetForegroundWindow() : (nint)snapshot.Hwnd;
         originalIdentity = snapshot is null ? Identity(original) : (snapshot.ProcessId, snapshot.ProcessStartTimeUtcTicks);
-        keyboardCallback = (code, message, data) => { if (code >= 0 && (message == 0x100 || message == 0x104)) newInput = true; return Native.CallNextHookEx(0, code, message, data); };
-        mouseCallback = (code, message, data) => { if (code >= 0 && (message == 0x201 || message == 0x204 || message == 0x207 || message == 0x20B || message == 0x20A || message == 0x20E)) newInput = true; return Native.CallNextHookEx(0, code, message, data); };
-        keyboard = Native.SetWindowsHookEx(13, keyboardCallback, Native.GetModuleHandle(null), 0);
-        mouse = Native.SetWindowsHookEx(14, mouseCallback, Native.GetModuleHandle(null), 0);
-        if (keyboard == 0 || mouse == 0) { Dispose(); throw new BookmarkException(ResultCode.Cancelled); }
+        // Production requests share the parent observer's latch. Standalone probes and
+        // unmonitored callers still get an observer with its own dedicated message loop.
+        // Never install a low-level hook on this STA: a pending Office COM call can block
+        // the installing thread for seconds and stall the entire desktop's mouse input.
+        if (inputSignal is null)
+        {
+            try { inputObserver = new InputPressObserver(); }
+            catch (BookmarkException) { throw new BookmarkException(ResultCode.Cancelled); }
+        }
     }
     private static (uint Pid, long Stamp) Identity(nint hwnd)
     {
@@ -147,24 +150,21 @@ internal sealed class ResumeGuard : IDisposable
     internal void CheckForNewInput()
     {
         System.Windows.Forms.Application.DoEvents();
-        if (newInput || inputSignal?.HasInput == true) throw new BookmarkException(ResultCode.Cancelled);
+        if (HasNewInput) throw new BookmarkException(ResultCode.Cancelled);
     }
     internal void Check()
     {
         System.Windows.Forms.Application.DoEvents();
         var foreground = Native.GetForegroundWindow();
-        ProbeTrace?.Invoke("input=" + newInput + ":original=" + original + ":foreground=" + foreground + ":permitted=" + expected.ContainsKey(foreground));
-        if (newInput || inputSignal?.HasInput == true || foreground == 0 ||
+        ProbeTrace?.Invoke("input=" + HasNewInput + ":original=" + original + ":foreground=" + foreground + ":permitted=" + expected.ContainsKey(foreground));
+        if (HasNewInput || foreground == 0 ||
             (foreground == original ? !IsSameWindow(original, originalIdentity) : !expected.ContainsKey(foreground)) ||
             expected.Any(window => !IsSameWindow(window.Key, window.Value)))
             throw new BookmarkException(ResultCode.Cancelled);
     }
     public void Dispose()
     {
-        if (keyboard != 0) Native.UnhookWindowsHookEx(keyboard);
-        if (mouse != 0) Native.UnhookWindowsHookEx(mouse);
-        keyboard = mouse = 0;
+        inputObserver?.Dispose();
         inputSignal?.Dispose();
-        GC.KeepAlive(keyboardCallback); GC.KeepAlive(mouseCallback);
     }
 }

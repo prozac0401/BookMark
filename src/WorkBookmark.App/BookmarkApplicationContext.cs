@@ -249,20 +249,17 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         try
         {
             bool webOffice = OfficeLocation.IsWebTarget(bookmark.Target);
-            using var inputSignal = webOffice ? ResumeInputSignal.Create(id) : null;
+            using var inputSignal = ResumeInputSignal.Create(id);
             var request = new WorkerRequest(1, id, Operation.Resume,
                 DateTimeOffset.UtcNow.AddSeconds(FrameProtocol.ResumeTimeoutSeconds(Operation.Resume, bookmark.Target)), baseline, bookmark.Target,
-                MonitorInput: webOffice);
-            using var input = new ResumeInputMonitor(() =>
-            {
-                // Login clicks must not kill read-only Office observation. The worker's guard
-                // still prevents position changes, focus steals and retries after new input.
-                if (webOffice) { inputSignal!.MarkInput(); return; }
-                if (!_exiting && !_dispatcher.IsDisposed) _dispatcher.BeginInvoke((Action)(() => { if (_activeRequest == id) _worker.Cancel(); }));
-            });
+                MonitorInput: true);
+            // Input stops later navigation/focus changes, not the requested open or its
+            // read-only verification. Killing the worker here lost successful open results.
+            using var input = new ResumeInputMonitor(() => { }, inputSignal);
             Task<WorkerResponse> pending = _worker.RunAsync(request);
             _ = ShowResumeProgressAsync(id, webOffice);
             WorkerResponse response = await pending;
+            input.Dispose();
             if (_exiting || _activeRequest != id) return;
             result = response.RequestId == id && response.ProtocolVersion == 1 ? response.Code : ResultCode.ResumeOutcomeUnknown;
             recordingResult = true;
@@ -273,22 +270,35 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             {
                 if (webOffice && result == ResultCode.OfficeResumePending)
                     Notify(UiStyle.Result(result), "사이트 로그인", () => _ = OpenOfficeSiteAsync(bookmark.Target), 10000);
-                else Notify(UiStyle.Result(result));
+                else NotifyResumeResult(result);
             }
         }
         catch (Exception exception)
         {
             DiagnosticLog.Write("resume", exception is BookmarkException known ? known.Code : ResultCode.PersistenceFailed);
-            Notify(recordingResult ? UiStyle.Result(result) + "\n재개 기록을 저장하지 못했을 수 있습니다." : UiStyle.Result(exception is BookmarkException typed ? typed.Code : ResultCode.ResumeOutcomeUnknown));
+            if (recordingResult) Notify("재개 기록을 저장하지 못했을 수 있습니다.");
+            else NotifyResumeResult(exception is BookmarkException typed ? typed.Code : ResultCode.ResumeOutcomeUnknown);
         }
         finally { EndOperation(id); }
+    }
+    private void NotifyResumeResult(ResultCode result)
+    {
+        // Keep genuinely unconfirmed outcomes in history/diagnostics without interrupting
+        // the user with an actionable-looking warning after a document has already opened.
+        if (result == ResultCode.ResumeOutcomeUnknown)
+        {
+            _toast?.Close();
+            _toast = null;
+            return;
+        }
+        Notify(UiStyle.Result(result));
     }
     private async Task ShowResumeProgressAsync(Guid id, bool webOffice)
     {
         await Task.Delay(1000);
         if (!_exiting && _activeRequest == id)
         {
-            string message = webOffice ? "웹 문서를 여는 중… 로그인과 문서 준비를 최대 45초 기다립니다." : "여는 중…";
+            string message = webOffice ? "웹 문서를 여는 중… 준비되는 동안 다른 작업을 계속할 수 있습니다." : "여는 중…";
             Notify(message, "요청 중단", CancelOperation, webOffice ? 10000 : 3000);
             _recent.SetBusy(true, "여는 중… 요청 중단 후에도 이미 전달된 동작은 완료될 수 있습니다.");
         }
@@ -491,47 +501,4 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); _dispatcher.Dispose();
         base.ExitThreadCore();
     }
-}
-
-
-/// <summary>Observes new input after the initiating UI message. No key/mouse payload is read or retained.</summary>
-internal sealed class ResumeInputMonitor : IDisposable
-{
-    private readonly HookProc _keyboardProcedure, _mouseProcedure;
-    private readonly Action _cancel;
-    private IntPtr _keyboard, _mouse;
-    private bool _notified, _disposed;
-    public bool HasNewInput => _notified;
-    public ResumeInputMonitor(Action cancel)
-    {
-        _cancel = cancel;
-        _keyboardProcedure = Keyboard;
-        _mouseProcedure = Mouse;
-        IntPtr module = GetModuleHandle(null);
-        _keyboard = SetWindowsHookEx(13, _keyboardProcedure, module, 0);
-        _mouse = SetWindowsHookEx(14, _mouseProcedure, module, 0);
-        if (_keyboard == IntPtr.Zero || _mouse == IntPtr.Zero) { Dispose(); throw new BookmarkException(ResultCode.ContextChanged); }
-    }
-    private IntPtr Keyboard(int code, IntPtr message, IntPtr data)
-    {
-        if (code >= 0 && message.ToInt64() is 0x0100 or 0x0104) Notify();
-        return CallNextHookEx(IntPtr.Zero, code, message, data);
-    }
-    private IntPtr Mouse(int code, IntPtr message, IntPtr data)
-    {
-        if (code >= 0 && message.ToInt64() is 0x0201 or 0x0204 or 0x0207 or 0x020A or 0x020B or 0x020E) Notify();
-        return CallNextHookEx(IntPtr.Zero, code, message, data);
-    }
-    private void Notify() { if (!_disposed && !_notified) { _notified = true; _cancel(); } }
-    public void Dispose()
-    {
-        _disposed = true;
-        if (_keyboard != IntPtr.Zero) { UnhookWindowsHookEx(_keyboard); _keyboard = IntPtr.Zero; }
-        if (_mouse != IntPtr.Zero) { UnhookWindowsHookEx(_mouse); _mouse = IntPtr.Zero; }
-    }
-    private delegate IntPtr HookProc(int code, IntPtr message, IntPtr data);
-    [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetWindowsHookEx(int hook, HookProc procedure, IntPtr module, uint thread);
-    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool UnhookWindowsHookEx(IntPtr hook);
-    [DllImport("user32.dll")] private static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr message, IntPtr data);
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr GetModuleHandle(string? name);
 }

@@ -35,7 +35,7 @@ public static class FrameProtocol
 
     public static bool IsValid(WorkerRequest request, DateTimeOffset now) =>
         request.ProtocolVersion == Version && request.RequestId != Guid.Empty && Enum.IsDefined(request.Operation) &&
-        (!request.MonitorInput || request.Operation == Operation.Resume && request.Target is not null && OfficeLocation.IsWebTarget(request.Target)) &&
+        (!request.MonitorInput || request.Operation == Operation.Resume && request.Target is not null) &&
         request.DeadlineUtc > now && request.DeadlineUtc <= now.AddSeconds(ResumeTimeoutSeconds(request.Operation, request.Target) + 1) &&
         (request.Operation == Operation.Capture ? request.Snapshot is { Hwnd: not 0, ProcessId: > 0 } : request.Target is not null);
 

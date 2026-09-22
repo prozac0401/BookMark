@@ -120,7 +120,7 @@ internal static class WordAdapter
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
         using var guard = new ResumeGuard(context.Request.Snapshot,
-            context.Request.MonitorInput && OfficeLocation.IsWebTarget(target) ? context.Request.RequestId : null);
+            context.Request.MonitorInput ? context.Request.RequestId : null);
         var normalized = RequireSupportedLocation(target.Path);
         var opened = false;
         var recovery = new OfficeWebRecovery(target, context);
@@ -134,7 +134,11 @@ internal static class WordAdapter
                 var enumeration = Enumerate(normalized, scope, context);
                 if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
                 if (enumeration.Matches.Count == 1)
+                {
                     recovery.Observed(enumeration.Matches[0].Windows.FirstOrDefault(w => Native.IsWindow(w.Hwnd))?.Hwnd.ToInt64() ?? 0);
+                    foreach (var candidate in enumeration.Matches[0].Windows) guard.Permit(candidate.Hwnd);
+                    if (!validateOnly && context.DocumentObserved) guard.Check();
+                }
                 if (!enumeration.Complete)
                 {
                     if (!opened && !recovery.IsWeb)
@@ -144,12 +148,11 @@ internal static class WordAdapter
                     }
                     // Wait through Word startup/authentication, with no retry while inventory is incomplete.
                     recovery.Recover(false, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
-                    System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
+                    recovery.WaitForObservation(); continue;
                 }
                 if (enumeration.Matches.Count == 1)
                 {
                     var match = enumeration.Matches[0];
-                    foreach (var candidate in match.Windows) guard.Permit(candidate.Hwnd);
                     var selected = ChooseWindow(match, scope);
                     context.TargetHwnd = selected.Hwnd.ToInt64();
                     var nativeWindow = Connect(selected.Hwnd, scope, context, visibleOnly: false);
@@ -173,12 +176,13 @@ internal static class WordAdapter
                         context.Check();
                         bool PositionMatches()
                         {
-                            var actual = ReadPosition(selected, scope, context, requireActive: true);
+                            var actual = ReadPosition(selected, scope, context, requireActive: false);
                             return string.Equals(OfficeLocation.Normalize(TargetKind.WordPosition, actual.Target.Path), normalized, StringComparison.Ordinal) &&
                                 actual.Target.WordStart == target.WordStart && actual.SelectionEnd == target.WordStart;
                         }
                         if (!OfficeDocumentAccess.VerifyPosition(target, context, PositionMatches))
                             return context.Response(ResultCode.OpenedPositionFailed);
+                        context.PositionVerified = true;
                         guard.Check(); context.Check();
                         if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
                         if (Native.IsIconic(selected.Hwnd)) Native.ShowWindowAsync(selected.Hwnd, 9);
@@ -195,7 +199,9 @@ internal static class WordAdapter
                 {
                     OfficeDocumentAccess.CheckExists(target);
                     if (Type.GetTypeFromProgID("Word.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
-                    guard.Check(); context.Check();
+                    // Opening was explicitly requested; input only stops subsequent navigation,
+                    // focus acquisition and retries after this first launch.
+                    context.Check();
                     OfficeDocumentAccess.Open(target, context);
                     opened = true;
                     recovery.Opened();
@@ -203,7 +209,7 @@ internal static class WordAdapter
                 else recovery.Recover(true, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
             }
             catch (Exception exception) when (recovery.ShouldObserveAfter(exception)) { }
-            System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125);
+            recovery.WaitForObservation();
         }
     }
 

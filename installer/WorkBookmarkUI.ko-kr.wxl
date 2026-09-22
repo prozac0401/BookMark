@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="ko-kr" Codepage="949" xmlns="http://wixtoolset.org/schemas/v4/wxl">
+  <String Id="WelcomeDlgTitle" Value="{\WixUI_Font_Bigger}업무 책갈피 [ProductVersion] 설치" />
+  <String Id="WelcomeDlgDescription" Value="업무 책갈피를 설치합니다. 기존 버전이 있으면 자동으로 제거한 뒤 새 버전을 설치합니다. 계속하려면 다음을 누르세요." />
+  <String Id="VerifyReadyDlgInstallText" Value="설치를 누르면 업무 책갈피를 설치합니다. 기존 책갈피와 설정은 유지됩니다." />
+  <String Id="ExitDialogTitle" Value="{\WixUI_Font_Bigger}업무 책갈피 설치가 완료되었습니다." />
+  <String Id="ExitDialogDescription" Value="마침을 눌러 설치를 종료하세요." />
+  <String Id="MaintenanceWelcomeDlgDescription" Value="업무 책갈피가 이미 설치되어 있습니다. 다음을 눌러 복구하거나 제거할 수 있습니다." />
+</WixLocalization>

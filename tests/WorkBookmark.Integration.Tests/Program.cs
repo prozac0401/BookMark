@@ -25,6 +25,19 @@ internal static class Program
             await FrameProtocol.WriteAsync(stream, request); stream.Position = 0;
             Assert(await FrameProtocol.ReadAsync<WorkerRequest>(stream) == request, "DTO changed.");
         });
+        await Check("D11 all-resumes-share-input-without-cancelling-open", async () =>
+        {
+            foreach (var kind in Enum.GetValues<TargetKind>())
+            {
+                var request = Request(Operation.Resume) with { MonitorInput = true, Target = new(kind, @"C:\fixture\report.txt") };
+                Assert(FrameProtocol.IsValid(request, DateTimeOffset.UtcNow), "Input signal rejected for " + kind);
+                using var stream = new MemoryStream();
+                await FrameProtocol.WriteAsync(stream, request); stream.Position = 0;
+                Assert(await FrameProtocol.ReadAsync<WorkerRequest>(stream) == request, "Input monitoring lost for " + kind);
+            }
+            Assert(!FrameProtocol.IsValid(Request() with { MonitorInput = true }, DateTimeOffset.UtcNow), "Resume monitor accepted for capture.");
+            Assert(!FrameProtocol.IsValid(Request(Operation.ValidateRelink) with { MonitorInput = true }, DateTimeOffset.UtcNow), "Resume monitor accepted for relink validation.");
+        });
         await Check("D11 oversized-and-truncated-frames", async () =>
         {
             foreach (int n in new[] { -1, 0, FrameProtocol.MaximumFrameBytes + 1 })

@@ -1,4 +1,5 @@
-param([string]$DotNetPath, [string]$NodePath, [switch]$SkipTests, [switch]$Package, [switch]$Msi, [string]$ArtifactsPath)
+param([string]$DotNetPath, [string]$NodePath, [switch]$SkipTests, [switch]$Package, [switch]$Msi, [string]$ArtifactsPath,
+      [ValidateSet('Commit', 'WorkingTree')][string]$SourceMode = 'Commit')
 $ErrorActionPreference = 'Stop'
 $taskRoot = Split-Path -Parent $PSScriptRoot
 if (-not $DotNetPath) {
@@ -73,7 +74,7 @@ try {
         Copy-Item -LiteralPath (Join-Path $taskRoot 'README.md') -Destination $outputDirectory -Force
         $msiPath = $null
         if ($Msi) { $msiPath = & (Join-Path $PSScriptRoot 'build-msi.ps1') -PublishDirectory $outputDirectory -DotNetPath $DotNetPath }
-        if ($Package) { & (Join-Path $PSScriptRoot 'package.ps1') -PublishDirectory $outputDirectory -MsiPath $msiPath }
+        if ($Package) { & (Join-Path $PSScriptRoot 'package.ps1') -PublishDirectory $outputDirectory -MsiPath $msiPath -SourceMode $SourceMode }
         elseif ($msiPath) { Write-Output $msiPath }
     }
 }

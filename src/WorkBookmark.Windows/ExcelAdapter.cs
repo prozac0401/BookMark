@@ -97,7 +97,7 @@ internal static class ExcelAdapter
     internal static WorkerResponse Resume(CapturedTarget target, RequestContext context, bool validateOnly)
     {
         using var guard = new ResumeGuard(context.Request.Snapshot,
-            context.Request.MonitorInput && OfficeLocation.IsWebTarget(target) ? context.Request.RequestId : null);
+            context.Request.MonitorInput ? context.Request.RequestId : null);
         var normalized = OfficeDocumentAccess.Normalize(TargetKind.ExcelCell, target.Path);
         var opened = false;
         var recovery = new OfficeWebRecovery(target, context);
@@ -111,7 +111,13 @@ internal static class ExcelAdapter
                 var enumeration = Enumerate(normalized, scope, context);
                 if (enumeration.Matches.Count > 1) throw new BookmarkException(ResultCode.AmbiguousTarget);
                 if (enumeration.Matches.Count == 1)
+                {
                     recovery.Observed(enumeration.Matches[0].Windows.FirstOrDefault(w => Native.IsWindow(w.Hwnd))?.Hwnd.ToInt64() ?? 0);
+                    foreach (var candidate in enumeration.Matches[0].Windows) guard.Permit(candidate.Hwnd);
+                    // An exact open document can be reported after input even if another Excel
+                    // instance keeps the overall inventory incomplete. Never navigate in that case.
+                    if (!validateOnly && context.DocumentObserved) guard.Check();
+                }
                 if (!enumeration.Complete)
                 {
                     if (!opened && !recovery.IsWeb)
@@ -122,12 +128,11 @@ internal static class ExcelAdapter
                     // Startup may expose an XLMAIN before its native workbook is ready.
                     // A root visit may proceed, but incomplete inventory never permits a second open.
                     recovery.Recover(false, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
-                    System.Windows.Forms.Application.DoEvents(); Thread.Sleep(125); continue;
+                    recovery.WaitForObservation(); continue;
                 }
                 if (enumeration.Matches.Count == 1)
                 {
                     var match = enumeration.Matches[0];
-                    foreach (var candidate in match.Windows) guard.Permit(candidate.Hwnd);
                     var selected = ChooseWindow(match, scope);
                     context.TargetHwnd = selected.Hwnd.ToInt64();
                     var nativeWindow = Connect(selected.Hwnd, scope, visibleOnly: false);
@@ -149,12 +154,13 @@ internal static class ExcelAdapter
                         context.Check();
                         bool PositionMatches()
                         {
-                            var actual = ReadPosition(selected, scope, requireActive: true);
+                            var actual = ReadPosition(selected, scope, requireActive: false);
                             return string.Equals(OfficeLocation.Normalize(TargetKind.ExcelCell, actual.Target.Path), normalized, StringComparison.Ordinal) &&
                                 actual.Target.SheetName == target.SheetName && actual.Target.CellAddress == target.CellAddress;
                         }
                         if (!OfficeDocumentAccess.VerifyPosition(target, context, PositionMatches))
                             return context.Response(ResultCode.OpenedPositionFailed);
+                        context.PositionVerified = true;
                         // Foreground acquisition is separate from verified cell movement.
                         guard.Check(); context.Check();
                         if (!Native.IsWindow(selected.Hwnd)) return context.Response(ResultCode.PositionRestoredFocusPending);
@@ -172,7 +178,9 @@ internal static class ExcelAdapter
                 {
                     OfficeDocumentAccess.CheckExists(target);
                     if (Type.GetTypeFromProgID("Excel.Application") is null) throw new BookmarkException(ResultCode.UnsupportedTarget);
-                    guard.Check(); context.Check();
+                    // The requested initial open remains authorized if the user switches windows
+                    // while Office is being enumerated. Later navigation/retries still honor input.
+                    context.Check();
                     OfficeDocumentAccess.Open(target, context);
                     opened = true;
                     recovery.Opened();
@@ -180,8 +188,7 @@ internal static class ExcelAdapter
                 else recovery.Recover(true, guard.CheckForNewInput, () => OfficeDocumentAccess.Open(target, context));
             }
             catch (Exception exception) when (recovery.ShouldObserveAfter(exception)) { }
-            System.Windows.Forms.Application.DoEvents();
-            Thread.Sleep(125);
+            recovery.WaitForObservation();
         }
     }
 

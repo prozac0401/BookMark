@@ -35,7 +35,8 @@ internal static class PdfAdapter
     {
         PathPolicy.Validate(target);
         if (target.Kind != TargetKind.PdfPage || target.PdfPage is not > 0) throw new BookmarkException(ResultCode.UnsupportedTarget);
-        using var guard = new ResumeGuard(context.Request.Snapshot);
+        using var guard = new ResumeGuard(context.Request.Snapshot,
+            context.Request.MonitorInput ? context.Request.RequestId : null);
         var path = PathPolicy.Normalize(target.Path);
         var opened = false;
         while (true)
@@ -63,8 +64,10 @@ internal static class PdfAdapter
             {
                 var viewer = matches[0];
                 guard.Permit(viewer.Hwnd); context.TargetHwnd = viewer.Hwnd.ToInt64();
+                context.DocumentObserved = true;
                 using var dde = new PdfDdeClient(viewer.Hwnd, context);
-                VerifyViewer(viewer); guard.Check(); context.Check();
+                VerifyViewer(viewer); context.Check();
+                guard.Check();
                 // GotoPage binds its file argument to the existing document. Acknowledgement alone
                 // is insufficient: re-read the visible document's path and 1-based page afterwards.
                 if (validateOnly)
@@ -78,8 +81,10 @@ internal static class PdfAdapter
                 context.ExternalActionStarted = true;
                 dde.Execute(PageCommand(path, target.PdfPage.Value));
                 var actual = ParseState(dde.Request("[GetFileState()]"));
-                VerifyViewer(viewer); guard.Check(); context.Check();
+                VerifyViewer(viewer); context.Check();
                 if (!Matches(actual, target)) return context.Response(ResultCode.OpenedPositionFailed);
+                context.PositionVerified = true;
+                guard.Check();
                 if (Native.IsIconic(viewer.Hwnd)) Native.ShowWindowAsync(viewer.Hwnd, 9);
                 guard.Check(); context.Check();
                 var focused = Native.SetForegroundWindow(viewer.Hwnd) && Native.GetForegroundWindow() == viewer.Hwnd;
@@ -94,14 +99,14 @@ internal static class PdfAdapter
                 {
                     var viewer = inventory[0].Viewer;
                     using var dde = new PdfDdeClient(viewer.Hwnd, context);
-                    guard.Permit(viewer.Hwnd); VerifyViewer(viewer); guard.Check(); context.Check();
+                    guard.Permit(viewer.Hwnd); VerifyViewer(viewer); context.Check();
                     context.ExternalActionStarted = true;
                     dde.Execute(OpenCommand(path));
                 }
                 else
                 {
                     var executable = FindRegisteredExecutable() ?? throw new BookmarkException(ResultCode.UnsupportedTarget);
-                    guard.Check(); context.Check();
+                    context.Check();
                     // Launch this verified registered viewer directly; the default PDF app is irrelevant.
                     var start = new ProcessStartInfo(executable) { UseShellExecute = false };
                     start.ArgumentList.Add(path);

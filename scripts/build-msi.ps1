@@ -41,6 +41,21 @@ try {
     }
     $actualWix = & $wix --version
     if ($LASTEXITCODE -ne 0 -or $actualWix -notmatch '^4\.0\.6(\+|$)') { throw 'MSI build requires pinned WiX 4.0.6.' }
+    # Keep build extensions local to .tools and pin them to the same release as the compiler.
+    $extensionPaths = @()
+    foreach ($extension in @('WixToolset.UI.wixext', 'WixToolset.Util.wixext')) {
+        $extensionPath = Join-Path $wixDirectory ".wix/extensions/$extension/$wixVersion/wixext4/$extension.dll"
+        if (-not (Test-Path -LiteralPath $extensionPath)) {
+            Push-Location $wixDirectory
+            try {
+                & $wix extension add "$extension/$wixVersion" | Out-Host
+                if ($LASTEXITCODE -ne 0) { throw "WiX extension installation failed: $extension/$wixVersion" }
+            }
+            finally { Pop-Location }
+        }
+        if (-not (Test-Path -LiteralPath $extensionPath)) { throw "Missing pinned WiX extension: $extensionPath" }
+        $extensionPaths += @('-ext', $extensionPath)
+    }
 
     function StableHash([string]$value) {
         $sha = [Security.Cryptography.SHA256]::Create()
@@ -111,7 +126,7 @@ try {
     }
     finally { $writer.Dispose() }
     $msiPath = Join-Path $outputPath "WorkBookmark-$version-win-x64.msi"
-    & $wix build (Join-Path $taskRoot 'installer/Package.wxs') $manifestPath -arch x64 -d "Version=$version" -d "ProductCode=$(StableGuid ('product|' + $version))" -d "PublishDirectory=$publishPath" -intermediatefolder $workPath -pdbtype none -out $msiPath | Out-Host
+    & $wix build (Join-Path $taskRoot 'installer/Package.wxs') (Join-Path $taskRoot 'installer/WorkBookmarkUI.wxs') (Join-Path $taskRoot 'installer/WorkBookmarkUI.ko-kr.wxl') $manifestPath @extensionPaths -culture ko-kr -arch x64 -d "Version=$version" -d "ProductCode=$(StableGuid ('product|' + $version))" -d "PublishDirectory=$publishPath" -intermediatefolder $workPath -pdbtype none -out $msiPath | Out-Host
     if ($LASTEXITCODE -ne 0) { throw 'MSI build or Windows Installer validation failed.' }
     & (Join-Path $PSScriptRoot 'test-msi.ps1') -MsiPath $msiPath -PublishDirectory $publishPath | Out-Host
     Write-Output $msiPath

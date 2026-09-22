@@ -52,8 +52,7 @@ internal static partial class NotepadAdapter
             return context.Response(ResultCode.Validated, target);
         }
         WindowsAdapter.CheckExists(target);
-        using var guard = new ResumeGuard(context.Request.Snapshot);
-        guard.Check(); context.Check();
+        context.Check();
         var executable = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "notepad.exe");
         var start = new ProcessStartInfo(executable) { UseShellExecute = false };
         start.ArgumentList.Add(path);
