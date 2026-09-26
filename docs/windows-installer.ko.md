@@ -27,6 +27,31 @@
 
 **설정 → 앱 → 설치된 앱 → WorkBookmark → 제거**, 또는 **제어판 → 프로그램 및 기능 → WorkBookmark → 제거**를 이용합니다. 실행 파일, 시작 메뉴 및 자동 실행 바로가기를 제거합니다. 책갈피와 설정 데이터는 보존하므로 재설치 후 이어서 사용할 수 있습니다. 데이터까지 삭제하려면 앱 제거 후 `%LOCALAPPDATA%\WorkBookmark`를 사용자가 별도로 삭제합니다.
 
+## 0.2.4 후보: 사용자 지정 설치 경로
+
+0.2.4 소스 후보는 실제 설치 경로를 현재 사용자의 `HKCU\Software\WorkBookmark\Installer\InstallFolder`에 기록합니다. 복구·제거와 이후 업데이트는 이 경로를 다시 사용합니다. 유지 관리 명령에서 다른 `INSTALLFOLDER`를 전달해도 설치 위치를 옮기지 않습니다. 위치를 바꾸려면 먼저 제거한 뒤 원하는 경로에 새로 설치하세요. 이 후보는 아직 공개 릴리스가 아닙니다.
+
+새 설치에서 경로를 지정한 예입니다. 기본 설치 화면은 경로 선택 기능을 제공하지 않습니다.
+
+```powershell
+msiexec /i "WorkBookmark-0.2.4-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
+msiexec /fa "WorkBookmark-0.2.4-win-x64.msi"
+msiexec /x "WorkBookmark-0.2.4-win-x64.msi"
+```
+
+**0.2.3 이전 사용자 지정 경로 설치는 먼저 기존 MSI에 원래 경로를 지정하여 제거하세요.** 이전 MSI는 설치 경로를 기록하지 않았으므로 일반 복구·제거가 기본 경로를 사용하고 원래 폴더에 파일을 남길 수 있습니다. 새 MSI도 과거 패키지의 제거 코드를 소급 변경하지 못합니다. 기본 경로의 기존 설치는 평소대로 업데이트할 수 있습니다.
+
+```powershell
+# 기존 설치 경로를 확인하고 앱을 정상 종료한 후 순서대로 실행
+msiexec /x "WorkBookmark-0.2.3-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
+# 위 제거의 성공을 확인한 다음 새 버전을 설치
+msiexec /i "WorkBookmark-0.2.4-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
+```
+
+사용자 데이터 폴더는 위 경로와 별도이며 제거 시 보존합니다. 원래 경로가 불명확하거나 이미 복구 후 두 위치에 파일이 생긴 경우에는 기존 설치 로그·바로가기 대상을 먼저 확인하세요. 임의의 폴더를 일괄 삭제하지 마세요.
+
+개발자는 `scripts/test-install-location.ps1`로 설치가 없는 일반 사용자 환경에서 후보 SHA-256을 고정하고 사용자 지정 경로의 복구·제거, 기본 경로 0.2.3 업데이트, 이전 사용자 지정 경로의 명시적 이전 절차를 순차 검증합니다. 기존 사용자 데이터는 내용 대신 해시로 보존 여부를 확인하며, 설치 파일 외의 시험용 파일도 남기는지 확인합니다. 시험용 후속 MSI를 사용하는 업데이트 검사와 118개 실기 체크포인트의 결과는 [0.2.4 설치 경로 검증 기록](evidence/install-location-2026-09-27/README.md)에 남겼습니다.
+
 ## 빌드
 
 Windows에서 저장소 SDK 및 Node를 사용합니다.

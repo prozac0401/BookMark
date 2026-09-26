@@ -66,3 +66,15 @@
 | DB v5와 목록 모드 메모 창 유지 | 저장되는 값은 기존 한 줄 최대 500자 메모이며 새 스키마 이전이나 업무 원본 변경은 없습니다. |
 
 [0.2.3 릴리스 기록](release-notes-v0.2.3.md)과 [검증 기록](evidence/note-autosave-2026-09-22/README.md)에 실제 시험 결과와 미실행 범위를 구분합니다.
+
+## 2026-09-27 사용자 지정 설치 경로 보존 · 0.2.4 후보
+
+0.2.3 공개 MSI의 사용자 지정 경로 실기에서 복구가 기본 경로에 파일을 다시 설치하고 제거가 원래 경로에 파일을 남기는 문제가 확인됐습니다. 원래 명세의 사용자별 설치·데이터 보존 범위에서 설치 경로를 명시적으로 유지합니다.
+
+- 설치한 경로를 제품 소유 HKCU Installer 키의 별도 component에 기록합니다. AppSearch로 읽고 UI/실행 시퀀스 모두 CostInitialize 전에 INSTALLFOLDER를 복원합니다. 관리자 권한이나 전역 설정은 추가하지 않습니다.
+- 기록이 있으면 유지 관리·업데이트 명령의 다른 경로보다 원래 경로를 우선합니다. 경로 변경은 제거 후 신규 설치로만 수행하여 두 위치에 payload가 갈라지는 상황을 막습니다.
+- 과거 MSI의 제거 동작은 수정되지 않습니다. 0.2.3 이전의 사용자 지정 경로는 원래 MSI와 경로를 명시한 제거 후 새로 설치합니다. 기본 경로의 기존 설치는 자동 업데이트합니다.
+- 데이터 폴더·DB v5·스티커 UI와 업무 파일은 변경하지 않습니다. 제거는 MSI 소유 파일만 대상으로 하고 설치 폴더에 추가된 다른 파일은 보존합니다.
+- 제품 버전을 0.2.4로 올려 기존 0.2.3 MSI와 구분합니다. 공개 배포는 별도이며 서명 없는 로컬 후보의 검증 결과를 상용 승인으로 표현하지 않습니다.
+
+[설치 및 이전 절차](windows-installer.ko.md#024-후보-사용자-지정-설치-경로), [RegistrySearch](https://docs.firegiant.com/wix/schema/wxs/registrysearch/), [Windows Installer AppSearch](https://learn.microsoft.com/en-us/windows/win32/msi/searching-for-existing-applications-files-registry-entries-or--ini-file-entries)를 참고합니다.
