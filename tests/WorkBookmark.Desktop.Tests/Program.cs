@@ -36,6 +36,7 @@ internal static class Program
     }
     private static void Run(string[] args)
     {
+        if (args.Length == 3 && args[0] == "--manual-ui") { ManualUiAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
