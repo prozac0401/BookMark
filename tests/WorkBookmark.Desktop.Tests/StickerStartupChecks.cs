@@ -21,7 +21,7 @@ internal static class StickerStartupChecks
             CaptureHotkey = new Hotkey(7, (int)Keys.F23),
             RecentHotkey = new Hotkey(7, (int)Keys.F24),
             IntroShown = true,
-            DisplayMode = BookmarkDisplayMode.Stickers
+            DisplayMode = BookmarkDisplayMode.List
         };
         settings.Save(directory);
         using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"));
@@ -34,6 +34,7 @@ internal static class StickerStartupChecks
         var screen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
         repository.SaveStickerLayout(new(first.Id, screen.DeviceName, 32, 42, 360, 340, false, false));
         repository.SaveStickerLayout(new(collapsed.Id, screen.DeviceName, 82, 92, 370, 350, true, false));
+        repository.SaveStickerLayout(new(deleted.Id, screen.DeviceName, 122, 132, 390, 380, true, false));
 
         using var worker = new WorkerClient();
         using var context = new BookmarkApplicationContext(repository, worker, directory);
@@ -50,12 +51,23 @@ internal static class StickerStartupChecks
             // active stickers while leaving a deliberately deleted record hidden.
             PumpUntil(() => Forms().Length == 2 && Forms().All(form => form.Visible));
             assert(Forms().All(form => !form.InvokeRequired) && Forms().All(form => BookmarkFor(form).Id != deleted.Id),
-                "SS01 saved sticker mode automatically shows active bookmarks on the UI thread before any view hotkey");
+                "SS01 a legacy List installation automatically starts active stickers on the UI thread before any view hotkey");
             assert(Forms().All(IsNativeTopMost),
                 "SS02 startup restores legacy unpinned stickers as native always-on-top windows");
             assert((bool)FormFor(collapsed.Id).GetType().GetProperty("IsCollapsed")!.GetValue(FormFor(collapsed.Id))! &&
                 !Field<Form>(context, "_recent").Visible && UserSettings.Load(directory).DisplayMode == BookmarkDisplayMode.Stickers,
                 "SS03 startup retains collapsed presentation and saved sticker mode without opening the list");
+            var size = (Size)manager.GetType().GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+            var layouts = repository.GetStickerLayouts().ToDictionary(value => value.BookmarkId);
+            assert(layouts.Values.All(layout => layout.Width == size.Width && layout.Height == size.Height) &&
+                layouts[first.Id].Left == 32 && layouts[first.Id].Top == 42 &&
+                layouts[collapsed.Id].Left == 82 && layouts[collapsed.Id].Top == 92 && layouts[collapsed.Id].IsCollapsed &&
+                layouts[deleted.Id].Left == 122 && layouts[deleted.Id].Top == 132 && layouts[deleted.Id].IsCollapsed &&
+                repository.Get(deleted.Id)!.DeletedAtUtc is not null &&
+                UserSettings.Load(directory).StickerPresentationVersion == UserSettings.CurrentStickerPresentationVersion,
+                "SS08 startup resizes active, collapsed and deleted layouts before recording completion while retaining their placement");
+            assert(FormFor(first.Id).Size == (Size)FormFor(first.Id).GetType().GetProperty("DefaultExpandedSize")!.GetValue(FormFor(first.Id))!,
+                "SS09 the migrated outer size matches the default client size including the DPI-scaled window frame");
             var originalBounds = FormFor(first.Id).Bounds;
             var collapsedBounds = FormFor(collapsed.Id).Bounds;
 
@@ -63,6 +75,8 @@ internal static class StickerStartupChecks
             Invoke(context, "PublishBookmark", added);
             assert(Forms().Length == 3 && FormFor(added.Id).Visible && IsNativeTopMost(FormFor(added.Id)),
                 "SS04 a newly committed bookmark appears immediately above ordinary windows in sticker mode");
+            assert(FormFor(added.Id).Size == (Size)FormFor(added.Id).GetType().GetProperty("DefaultExpandedSize")!.GetValue(FormFor(added.Id))!,
+                "SS10 newly captured bookmarks use the same compact default outer size");
 
             Invoke(manager, "HideAll");
             var hiddenCapture = Capture("잠시 숨긴 동안 저장한 합성 책갈피");
@@ -81,6 +95,136 @@ internal static class StickerStartupChecks
                 "SS07 startup, capture and reveal never request resume or open a bookmarked target");
         }
         finally { context.ExitThread(); }
+
+        var customLayout = repository.GetStickerLayouts().Single(layout => layout.BookmarkId == first.Id)
+            with { Width = 410, Height = 330 };
+        repository.SaveStickerLayout(customLayout);
+        var chosen = UserSettings.Load(directory) with { DisplayMode = BookmarkDisplayMode.List };
+        chosen.Save(directory);
+        using (var nextWorker = new WorkerClient())
+        using (var next = new BookmarkApplicationContext(repository, nextWorker, directory))
+        {
+            try
+            {
+                Application.DoEvents();
+                object nextManager = Field<object>(next, "_stickers");
+                assert(!((System.Collections.IEnumerable)nextManager.GetType().GetProperty("Forms", Private)!.GetValue(nextManager)!).Cast<Form>().Any() &&
+                    UserSettings.Load(directory).DisplayMode == BookmarkDisplayMode.List &&
+                    repository.GetStickerLayouts().Single(layout => layout.BookmarkId == first.Id) == customLayout,
+                    "SS11 the next startup retains the user's later List choice and custom size without repeating migration");
+            }
+            finally { next.ExitThread(); }
+        }
+        (chosen with { DisplayMode = BookmarkDisplayMode.Stickers }).Save(directory);
+        using (var nextWorker = new WorkerClient())
+        using (var next = new BookmarkApplicationContext(repository, nextWorker, directory))
+        {
+            try
+            {
+                object nextManager = Field<object>(next, "_stickers");
+                Form[] Restarted() => ((System.Collections.IEnumerable)nextManager.GetType().GetProperty("Forms", Private)!.GetValue(nextManager)!).Cast<Form>().ToArray();
+                PumpUntil(() => Restarted().Length == repository.ListActive().Count && Restarted().All(form => form.Visible));
+                var restored = Restarted().Single(form => BookmarkFor(form).Id == first.Id);
+                var expected = (Rectangle)nextManager.GetType().GetMethod("RestoreBounds", BindingFlags.Static | BindingFlags.NonPublic)!
+                    .Invoke(null, [customLayout, screen.WorkingArea, restored.DeviceDpi, restored.MinimumSize])!;
+                assert(restored.Bounds == expected,
+                    "SS12 later user-sized stickers restore at restart without returning to the compact default");
+            }
+            finally { next.ExitThread(); }
+        }
+        EmptyAndInvalidStartup(Path.Combine(directory, "fresh"), assert);
+        FailedUpgradeStartup(Path.Combine(directory, "failed-upgrade"), assert);
+    }
+
+    private static void EmptyAndInvalidStartup(string directory, Action<bool, string> assert)
+    {
+        Directory.CreateDirectory(directory);
+        using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"));
+        using (var worker = new WorkerClient())
+        using (var context = new BookmarkApplicationContext(repository, worker, directory))
+        {
+            try
+            {
+                PumpUntil(() => Field<UserSettings>(context, "_settings").StickerPresentationVersion == UserSettings.CurrentStickerPresentationVersion &&
+                    Field<UserSettings>(context, "_settings").IntroShown);
+                object manager = Field<object>(context, "_stickers");
+                assert(UserSettings.Load(directory).DisplayMode == BookmarkDisplayMode.Stickers &&
+                    !((System.Collections.IEnumerable)manager.GetType().GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().Any() &&
+                    !Field<Form>(context, "_recent").Visible && !worker.IsBusy,
+                    "SS13 a new empty installation defaults to stickers without inventing a window or opening a target");
+            }
+            finally { context.ExitThread(); }
+        }
+        string path = Path.Combine(directory, "settings.json"), invalid = "{invalid synthetic settings";
+        File.WriteAllText(path, invalid);
+        using (var worker = new WorkerClient())
+        using (var context = new BookmarkApplicationContext(repository, worker, directory))
+        {
+            try
+            {
+                Application.DoEvents();
+                assert(File.ReadAllText(path) == invalid && Field<bool>(context, "_settingsInvalid"),
+                    "SS14 startup does not overwrite corrupt settings with a presentation completion marker");
+            }
+            finally { context.ExitThread(); }
+        }
+    }
+
+    private static void FailedUpgradeStartup(string directory, Action<bool, string> assert)
+    {
+        Directory.CreateDirectory(directory);
+        var settings = UserSettings.Default with
+        {
+            CaptureHotkey = new Hotkey(7, (int)Keys.F23), RecentHotkey = new Hotkey(7, (int)Keys.F24), IntroShown = true
+        };
+        settings.Save(directory);
+        using var stored = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"));
+        var bookmark = stored.UpsertCapture(new CapturedTarget(TargetKind.File, Path.Combine(directory, "synthetic.txt"))).Bookmark;
+        var screen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+        stored.SaveStickerLayout(new(bookmark.Id, screen.DeviceName, 32, 42, 440, 400));
+        using var repository = new FailFirstLayoutReadRepository(stored);
+        using (var worker = new WorkerClient())
+        using (var context = new BookmarkApplicationContext(repository, worker, directory))
+        {
+            try
+            {
+                object manager = Field<object>(context, "_stickers");
+                Form[] Forms() => ((System.Collections.IEnumerable)manager.GetType().GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
+                PumpUntil(() => Forms().Length == 1 && Forms()[0].Visible);
+                assert(UserSettings.Load(directory).StickerPresentationVersion == 0 && !worker.IsBusy,
+                    "SS15 a failed startup upgrade leaves its marker incomplete while the previously selected sticker mode remains usable");
+            }
+            finally { context.ExitThread(); }
+        }
+        using (var worker = new WorkerClient())
+        using (var context = new BookmarkApplicationContext(repository, worker, directory))
+        {
+            try
+            {
+                PumpUntil(() => UserSettings.Load(directory).StickerPresentationVersion == UserSettings.CurrentStickerPresentationVersion);
+                assert(UserSettings.Load(directory).DisplayMode == BookmarkDisplayMode.Stickers,
+                    "SS16 the next startup retries and completes a previously failed presentation upgrade");
+            }
+            finally { context.ExitThread(); }
+        }
+    }
+
+    private sealed class FailFirstLayoutReadRepository(IBookmarkRepository inner) : IBookmarkRepository
+    {
+        private int _reads;
+        public IReadOnlyList<StickerLayout> GetStickerLayouts() => Interlocked.Increment(ref _reads) == 1
+            ? throw new IOException("Injected startup layout read failure") : inner.GetStickerLayouts();
+        public void SaveStickerLayout(StickerLayout layout) => inner.SaveStickerLayout(layout);
+        public CaptureCommit UpsertCapture(CapturedTarget target) => inner.UpsertCapture(target);
+        public SearchResults List(string query = "") => inner.List(query);
+        public IReadOnlyList<Bookmark> ListActive() => inner.ListActive();
+        public Bookmark? Get(Guid id) => inner.Get(id);
+        public void UpdateNote(Guid id, string note) => inner.UpdateNote(id, note);
+        public void SoftDelete(Guid id) => inner.SoftDelete(id);
+        public void Restore(Guid id) => inner.Restore(id);
+        public void RecordResume(Guid id, ResultCode result) => inner.RecordResume(id, result);
+        public void Relink(Guid id, CapturedTarget target) => inner.Relink(id, target);
+        public void Dispose() { }
     }
 
     private static Bookmark BookmarkFor(Form form) => (Bookmark)form.GetType().GetProperty("Bookmark")!.GetValue(form)!;

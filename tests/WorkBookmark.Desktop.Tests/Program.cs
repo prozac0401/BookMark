@@ -19,7 +19,8 @@ internal static class Program
     {
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        if (args.Length > 0) { RunSafely(args); return; }
+        bool stickerChecks = args.Length == 1 && args[0] == "--stickers-only";
+        if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
         dispatcher.BeginInvoke((Action)(() =>
@@ -39,7 +40,7 @@ internal static class Program
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
-        if (args.Length == 1 && args[0] == "--stickers-only") { StickerFormChecks.Run(Assert); return; }
+        if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); StickerInlineNoteChecks.Render(args[1]); return; }
@@ -134,6 +135,18 @@ internal static class Program
         if (args.Length == 1) File.WriteAllText(args[0], JsonSerializer.Serialize(new { suite = "Desktop checks", checks = Checks, limitations = "Synthetic IME messages test event suppression only; actual Korean IME and rendered interaction require manual verification." }, new JsonSerializerOptions { WriteIndented = true }));
 
     }
+    private static void RunStickerChecks()
+    {
+        string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-StickerQa-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(data);
+        SettingsDisplayChecks.Run(Path.Combine(data, "display-settings"), Assert);
+        StickerFormChecks.Run(Assert);
+        StickerInlineNoteChecks.Run(Assert);
+        StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
+        StickerPersistenceChecks.Run(Assert);
+        Console.WriteLine($"RESULT: {Checks.Count} sticker display, note, settings, startup and layout checks passed. Native input and rendered UI require separate verification.");
+    }
+
     private static void CaptureInputChecks(string data, string target)
     {
         const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;

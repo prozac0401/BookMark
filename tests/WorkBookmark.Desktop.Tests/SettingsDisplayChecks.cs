@@ -17,15 +17,34 @@ internal static class SettingsDisplayChecks
             CaptureHotkey = new Hotkey(7, (int)Keys.F19),
             RecentHotkey = new Hotkey(7, (int)Keys.F20),
             StartWithWindows = true,
-            IntroShown = true
+            IntroShown = true,
+            DisplayMode = BookmarkDisplayMode.List,
+            StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
         };
         File.WriteAllText(path, JsonSerializer.Serialize(new
         {
             previous.Version, previous.CaptureHotkey, previous.RecentHotkey,
             previous.StartWithWindows, previous.IntroShown
         }));
-        assert(UserSettings.Load(directory) == previous,
-            "SET01 existing settings without display mode retain values and open as List");
+        var legacyWithoutMode = UserSettings.Load(directory);
+        assert(legacyWithoutMode == (previous with { DisplayMode = BookmarkDisplayMode.Stickers, StickerPresentationVersion = 0 }),
+            "SET01 old settings without display mode retain other values and await the sticker presentation upgrade");
+        assert(UserSettings.Default.DisplayMode == BookmarkDisplayMode.Stickers && UserSettings.Default.StickerPresentationVersion == 0,
+            "SET10 new settings default to stickers and apply presentation once at startup");
+        var legacyList = previous with { StickerPresentationVersion = 0 };
+        legacyList.Save(directory);
+        assert(UserSettings.Load(directory) == legacyList,
+            "SET11 an explicit legacy List choice is loaded without marking the startup upgrade complete");
+        int resets = 0, saves = 0;
+        var upgraded = Upgrade(legacyList, () => { resets++; return Task.CompletedTask; },
+            value => { saves++; value.Save(directory); return Task.CompletedTask; }).GetAwaiter().GetResult();
+        assert(upgraded == (previous with { DisplayMode = BookmarkDisplayMode.Stickers }) && UserSettings.Load(directory) == upgraded && resets == 1 && saves == 1,
+            "SET12 the one-time upgrade changes legacy List to Stickers while preserving hotkeys and startup preferences");
+        var chosenList = upgraded with { DisplayMode = BookmarkDisplayMode.List };
+        var retained = Upgrade(chosenList, () => throw new Exception("Unexpected repeated layout reset"),
+            _ => throw new Exception("Unexpected repeated settings save")).GetAwaiter().GetResult();
+        assert(retained == chosenList,
+            "SET13 a List choice made after the upgrade is retained without another reset");
 
         var stickers = previous with { DisplayMode = BookmarkDisplayMode.Stickers };
         stickers.Save(directory);
@@ -38,6 +57,14 @@ internal static class SettingsDisplayChecks
         catch (InvalidDataException) { rejected = true; }
         assert(rejected && File.ReadAllText(path) == invalid,
             "SET03 unknown display mode is rejected without rewriting settings");
+
+        string invalidVersion = JsonSerializer.Serialize(stickers with { StickerPresentationVersion = -1 });
+        File.WriteAllText(path, invalidVersion);
+        rejected = false;
+        try { UserSettings.Load(directory); }
+        catch (InvalidDataException) { rejected = true; }
+        assert(rejected && File.ReadAllText(path) == invalidVersion,
+            "SET14 invalid presentation version is rejected without rewriting the original settings");
 
         Type formType = typeof(UserSettings).Assembly.GetType("WorkBookmark.App.UI.SettingsForm")!;
         UserSettings? applied = null;
@@ -87,6 +114,10 @@ internal static class SettingsDisplayChecks
                 "SET09 closing settings discards unapplied display changes");
         }
     }
+
+    private static Task<UserSettings> Upgrade(UserSettings settings, Func<Task> reset, Func<UserSettings, Task> save) =>
+        (Task<UserSettings>)typeof(UserSettings).Assembly.GetType("WorkBookmark.App.StickerPresentationUpgrade")!
+            .GetMethod("ApplyAsync", BindingFlags.Static | BindingFlags.NonPublic)!.Invoke(null, [settings, reset, save])!;
 
     private static T Field<T>(object value, string name) where T : class =>
         (T)value.GetType().GetField(name, Instance)!.GetValue(value)!;

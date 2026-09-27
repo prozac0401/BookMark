@@ -43,7 +43,7 @@ internal static class StickerOperationChecks
         PumpUntil(() => worker.IsBusy && !originResume.Enabled);
         assert(originResume.Text.Contains("처리 중", StringComparison.Ordinal) &&
             (siblingResume.Text, siblingResume.Enabled, siblingResume.Bounds, sibling.Bounds) == before &&
-            Field<Button>(sibling, "_delete").Enabled && Field<RichTextBox>(sibling, "_note").Enabled,
+            Field<Button>(sibling, "_delete").Enabled && Field<Button>(sibling, "_title").Enabled,
             "SO01 resume click changes only the originating sticker; sibling actions and geometry remain unchanged");
         ClickNote(origin, MouseButtons.Left);
         ClickNote(sibling, MouseButtons.Right);
@@ -125,12 +125,17 @@ internal static class StickerOperationChecks
 
     private static T Field<T>(object value, string name) => (T)value.GetType().GetField(name, Private)!.GetValue(value)!;
     private static bool Editing(Form form) => (bool)form.GetType().GetProperty("IsEditingNote")!.GetValue(form)!;
-    private static void ClickNote(Form form, MouseButtons button) => typeof(Control).GetMethod("OnMouseClick", Private)!
-        .Invoke(Field<RichTextBox>(form, "_note"), [new MouseEventArgs(button, 1, 4, 4, 0)]);
+    private static void ClickNote(Form form, MouseButtons button)
+    {
+        var title = Field<Button>(form, "_title");
+        if (button == MouseButtons.Left) title.PerformClick();
+        else typeof(Control).GetMethod("OnMouseClick", Private)!
+            .Invoke(title, [new MouseEventArgs(button, 1, 4, 4, 0)]);
+    }
     private static void FocusSticker(Form form)
     {
         form.Activate();
-        Field<RichTextBox>(form, "_note").Focus();
+        Field<Button>(form, "_title").Focus();
     }
     private static object? Invoke(object value, string name, params object?[] arguments) => value.GetType().GetMethod(name, Private)!.Invoke(value, arguments);
     private static void Pump(Task task) { PumpUntil(() => task.IsCompleted); task.GetAwaiter().GetResult(); }

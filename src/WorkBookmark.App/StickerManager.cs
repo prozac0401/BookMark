@@ -33,6 +33,31 @@ internal sealed class StickerManager : IDisposable
         _saveTimer.Tick += async (_, _) => await SavePendingAsync();
     }
 
+    internal static Size DefaultExpandedSize96
+    {
+        get
+        {
+            // Match StickerForm's non-client styles without constructing a bookmark view
+            // or inheriting the monitor DPI of a temporary window.
+            using var template = new BoundsTemplate();
+            return template.OuterSize96(StickerForm.DefaultClientSize);
+        }
+    }
+
+    internal async Task ResetSavedSizesAsync()
+    {
+        if (_disposed || _enabled) throw new InvalidOperationException("Sticker sizes must be upgraded before displaying them.");
+        Size size = DefaultExpandedSize96;
+        var loaded = await _load();
+        if (_disposed) throw new OperationCanceledException();
+        var resized = loaded.Layouts.Select(layout => layout with { Width = size.Width, Height = size.Height }).ToArray();
+        // GetStickerLayouts includes soft-deleted bookmarks. Their saved sizes change,
+        // but loading a layout never restores or displays a deleted bookmark.
+        if (resized.Length > 0) await Task.Run(() => _save(resized));
+        if (_disposed) throw new OperationCanceledException();
+        foreach (var layout in resized) _layouts[layout.BookmarkId] = layout;
+    }
+
     internal async Task SetEnabledAsync(bool enabled, bool activate = false)
     {
         _enabled = enabled;
@@ -111,7 +136,7 @@ internal sealed class StickerManager : IDisposable
                 Screen screen = Screen.FromPoint(Cursor.Position);
                 form.Location = screen.WorkingArea.Location;
                 _ = form.Handle;
-                form.Bounds = DefaultBounds(screen.WorkingArea, form.Size, _forms.Count - 1);
+                form.Bounds = DefaultBounds(screen.WorkingArea, form.DefaultExpandedSize, _forms.Count - 1);
             }
             form.SetBusy(item.Id == _busyBookmarkId);
             if (!_hidden) form.Show();
@@ -269,6 +294,34 @@ internal sealed class StickerManager : IDisposable
         foreach (var form in _forms.Values) form.Dispose();
         _forms.Clear();
     }
+
+    private sealed class BoundsTemplate : Form
+    {
+        internal BoundsTemplate()
+        {
+            FormBorderStyle = FormBorderStyle.SizableToolWindow;
+            MaximizeBox = false;
+            MinimizeBox = false;
+            ShowInTaskbar = false;
+        }
+
+        internal Size OuterSize96(Size client)
+        {
+            var styles = CreateParams;
+            var rectangle = new NativeRectangle { Right = client.Width, Bottom = client.Height };
+            if (!AdjustWindowRectExForDpi(ref rectangle, (uint)styles.Style, false, (uint)styles.ExStyle, 96))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            return new(rectangle.Right - rectangle.Left, rectangle.Bottom - rectangle.Top);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRectangle { public int Left, Top, Right, Bottom; }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool AdjustWindowRectExForDpi(ref NativeRectangle rectangle, uint style,
+        [MarshalAs(UnmanagedType.Bool)] bool menu, uint extendedStyle, uint dpi);
 
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]

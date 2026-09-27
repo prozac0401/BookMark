@@ -36,10 +36,11 @@ internal static class StickerInlineNoteChecks
             saved = text;
             return Task.CompletedTask;
         };
-        Begin(form, persist);
+        On(form, "NoteRequested", (Action<Bookmark>)(_ => Begin(form, persist)));
+        Field<Button>(form, "_title").PerformClick();
         var editor = Field<TextBox>(form, "_noteEditor");
         assert(Editing(form) && form.Handle == window && form.Bounds == bounds && editor.Parent == form && editor.Visible && editor.Focused,
-            "STN01 note editing uses the originating sticker window and position");
+            "STN01 clicking the title edits the note in the originating sticker window and position");
         assert(editor.Text == sample.Note && !editor.Multiline && editor.MaxLength == 500 &&
             !form.Controls.OfType<Button>().Any(button => button.Text.StartsWith("저장", StringComparison.Ordinal)) &&
             Field<Button>(form, "_cancelNote").Visible && !Field<Button>(form, "_resume").Visible,
@@ -83,13 +84,13 @@ internal static class StickerInlineNoteChecks
         failSave = false;
         Command(form, Keys.Enter);
         assert(saves == 2 && saved == "저장 실패 뒤에도 보존하는 메모" && !Editing(form) && form.Visible &&
-            Field<RichTextBox>(form, "_note").Text == saved && resumes == 0,
+            Field<Button>(form, "_title").Text == saved && resumes == 0,
             "STN09 retry by Enter commits the retained draft without opening the bookmarked target");
 
         Begin(form, persist);
         editor.Text = "취소할 메모";
         Command(form, Keys.Escape);
-        assert(!Editing(form) && form.Visible && saves == 2 && Field<RichTextBox>(form, "_note").Text == saved,
+        assert(!Editing(form) && form.Visible && saves == 2 && Field<Button>(form, "_title").Text == saved,
             "STN10 Escape cancels only the inline draft and keeps the saved note and sticker visible");
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -104,18 +105,20 @@ internal static class StickerInlineNoteChecks
             "STN11 a pending save blocks duplicate writes and cancel until commit completes");
         completion.SetResult();
         Pump(pending);
-        assert(!Editing(form) && Field<RichTextBox>(form, "_note").Text == "진행 중 쓰기",
+        assert(!Editing(form) && Field<Button>(form, "_title").Text == "진행 중 쓰기",
             "STN12 asynchronous note commit restores normal sticker actions");
 
         Begin(form, persist);
         form.Size = form.MinimumSize;
         form.PerformLayout();
         assert(editor.Bottom < Field<Button>(form, "_cancelNote").Top &&
-            Field<Label>(form, "_noteStatus").Bottom < Field<Label>(form, "_noteLabel").Top &&
+            Field<Label>(form, "_noteStatus").Top > editor.Bottom &&
+            Field<Label>(form, "_noteStatus").Bottom < Field<Button>(form, "_cancelNote").Top &&
+            Field<Label>(form, "_noteStatus").Height >= Field<Label>(form, "_noteStatus").Font.Height * 2 &&
             editor.Right <= form.ClientSize.Width && Field<Button>(form, "_cancelNote").Bottom < form.ClientSize.Height,
             "STN13 inline editor and feedback remain inside the minimum sticker bounds");
         var icon = Field<PictureBox>(form, "_typeIcon");
-        assert(icon.Image is not null && icon.Width == (int)Math.Round(24 * form.DeviceDpi / 96F) &&
+        assert(icon.Image is not null && icon.Width == (int)Math.Round(20 * form.DeviceDpi / 96F) &&
             icon.Right < Field<Label>(form, "_kind").Left && Field<Label>(form, "_kind").Right < Field<Button>(form, "_collapse").Left,
             "STN14 the top-left file type icon fits alongside the label and header controls");
 
@@ -129,8 +132,28 @@ internal static class StickerInlineNoteChecks
         laterCommit.SetResult();
         Pump(earlierSave);
         assert(!Editing(form) && ReferenceEquals(StickerType.GetProperty("Bookmark")!.GetValue(form), latest) &&
-            Field<RichTextBox>(form, "_note").Text == latest.Note,
+            Field<Button>(form, "_title").Text == latest.Note,
             "STN15 a delayed save completion cannot overwrite a newer published bookmark note");
+
+        Invoke(form, "UpdateBookmark", sample with { Note = "" });
+        Command(form, Keys.Control | Keys.E);
+        editor.Text = "새로 추가한 메모";
+        Command(form, Keys.Enter);
+        assert(!Editing(form) && Field<Button>(form, "_title").Text == "새로 추가한 메모" &&
+            form.Text.StartsWith("새로 추가한 메모", StringComparison.Ordinal),
+            "STN26 adding a memo by Ctrl+E immediately replaces the file fallback and window title");
+        Begin(form, persist);
+        editor.Text = "   ";
+        Command(form, Keys.Enter);
+        assert(!Editing(form) && Field<Button>(form, "_title").Text == "운영 계획.xlsx" && saved == "   " &&
+            form.Text.StartsWith("운영 계획.xlsx", StringComparison.Ordinal),
+            "STN27 clearing a memo immediately restores its fallback without rewriting the stored draft");
+        Invoke(form, "ApplyPresentation", true, true);
+        Command(form, Keys.Control | Keys.E);
+        assert(Editing(form) && !(bool)StickerType.GetProperty("IsCollapsed")!.GetValue(form)! &&
+            editor.Visible && !Field<Button>(form, "_title").Visible,
+            "STN28 editing a collapsed sticker expands it and shows only the editor");
+        Command(form, Keys.Escape);
 
         RunAutoSave(form, assert);
     }
@@ -159,7 +182,7 @@ internal static class StickerInlineNoteChecks
         FocusOther(other);
         PumpUntil(() => !Editing(form));
         assert(writes == 1 && stored == "다른 창으로 이동하며 자동저장" && other.ContainsFocus &&
-            Field<RichTextBox>(form, "_note").Text == stored,
+            Field<Button>(form, "_title").Text == stored,
             "STN16 moving to an ordinary window automatically saves the note without taking focus back");
         Deactivate(form);
         PumpEvents();
@@ -188,7 +211,7 @@ internal static class StickerInlineNoteChecks
         Command(form, Keys.Escape);
         FocusOther(other);
         PumpEvents();
-        assert(writes == 3 && !Editing(form) && Field<RichTextBox>(form, "_note").Text == stored,
+        assert(writes == 3 && !Editing(form) && Field<Button>(form, "_title").Text == stored,
             "STN20 Escape cancels the draft and any queued automatic save");
 
         Begin(form, persist);
@@ -230,7 +253,7 @@ internal static class StickerInlineNoteChecks
             "STN24 repeated departure events cannot duplicate a pending automatic write");
         completion.SetResult();
         PumpUntil(() => !Editing(form));
-        assert(delayedWrites == 1 && other.ContainsFocus && Field<RichTextBox>(form, "_note").Text == "자동저장 진행 중",
+        assert(delayedWrites == 1 && other.ContainsFocus && Field<Button>(form, "_title").Text == "자동저장 진행 중",
             "STN25 a delayed automatic save completes in the background without reactivating its sticker");
     }
 

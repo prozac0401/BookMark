@@ -14,10 +14,83 @@ internal static class StickerPersistenceChecks
 {
     internal static void Run(Action<bool, string> assert)
     {
+        PresentationUpgradeFailures(assert);
         ChangedDuringWrite(assert);
         FailedWriteThenNewPlacement(assert);
         ShutdownBeforeContinuation(assert, failFirst: false);
         ShutdownBeforeContinuation(assert, failFirst: true);
+    }
+
+    private static void PresentationUpgradeFailures(Action<bool, string> assert)
+    {
+        const BindingFlags privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+        var assembly = typeof(UserSettings).Assembly;
+        var managerType = assembly.GetType("WorkBookmark.App.StickerManager")!;
+        var upgrade = assembly.GetType("WorkBookmark.App.StickerPresentationUpgrade")!
+            .GetMethod("ApplyAsync", BindingFlags.Static | BindingFlags.NonPublic)!;
+        string directory = Path.Combine(Path.GetTempPath(), "WorkBookmark-PresentationQa-" + Guid.NewGuid().ToString("N"));
+        var legacy = UserSettings.Default with { DisplayMode = BookmarkDisplayMode.List, IntroShown = true };
+        legacy.Save(directory);
+        var size = (Size)managerType.GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var stored = new[]
+        {
+            new StickerLayout(Guid.NewGuid(), "synthetic-screen", 20, 30, 440, 400),
+            new StickerLayout(Guid.NewGuid(), "synthetic-screen", 40, 50, 480, 420, true)
+        };
+        int batches = 0, settingsSaves = 0;
+        bool failLayouts = true, failSettings = true;
+        Func<Task<(IReadOnlyList<Bookmark> Items, IReadOnlyList<StickerLayout> Layouts)>> load =
+            () => Task.FromResult<(IReadOnlyList<Bookmark>, IReadOnlyList<StickerLayout>)>(([], stored.ToArray()));
+        Action<IReadOnlyList<StickerLayout>> save = batch =>
+        {
+            Interlocked.Increment(ref batches);
+            stored[0] = batch[0];
+            if (failLayouts) throw new IOException("Injected partial layout save failure");
+            stored[1] = batch[1];
+        };
+        using var manager = (IDisposable)managerType.GetConstructors(privateInstance).Single()
+            .Invoke([load, save, (Action<string>)(_ => { })]);
+        Func<Task> reset = () => (Task)managerType.GetMethod("ResetSavedSizesAsync", privateInstance)!.Invoke(manager, null)!;
+        Func<UserSettings, Task> persist = value =>
+        {
+            settingsSaves++;
+            if (failSettings) return Task.FromException(new IOException("Injected settings save failure"));
+            value.Save(directory);
+            return Task.CompletedTask;
+        };
+        Task<UserSettings> Apply(UserSettings value) => (Task<UserSettings>)upgrade.Invoke(null, [value, reset, persist])!;
+        bool Failed(Task task)
+        {
+            try { Complete(task); return false; }
+            catch (IOException) { return true; }
+        }
+        assert(Failed(Apply(legacy)) && UserSettings.Load(directory) == legacy && settingsSaves == 0,
+            "SP09 a partial layout-save failure cannot write the completion marker or switch the saved mode");
+        failLayouts = false;
+        assert(Failed(Apply(legacy)) && UserSettings.Load(directory) == legacy && settingsSaves == 1 &&
+            stored.All(layout => layout.Width == size.Width && layout.Height == size.Height),
+            "SP10 settings-save failure leaves the old completion marker after all layout saves succeed");
+        failSettings = false;
+        var retry = Apply(UserSettings.Load(directory));
+        Complete(retry);
+        assert(retry.Result.DisplayMode == BookmarkDisplayMode.Stickers &&
+            retry.Result.StickerPresentationVersion == UserSettings.CurrentStickerPresentationVersion &&
+            UserSettings.Load(directory) == retry.Result && batches == 3 && settingsSaves == 2 &&
+            stored[0].Left == 20 && stored[1].Top == 50 && stored[1].IsCollapsed,
+            "SP11 retry safely completes partial layout and settings failures while preserving placement and collapse");
+        var selected = retry.Result with { DisplayMode = BookmarkDisplayMode.List };
+        var again = Apply(selected);
+        Complete(again);
+        assert(again.Result == selected && batches == 3 && settingsSaves == 2,
+            "SP12 completed presentation does not repeat layout writes or reset a later List choice");
+    }
+
+    private static void Complete(Task task)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (!task.IsCompleted && DateTime.UtcNow < deadline) { Application.DoEvents(); Thread.Sleep(1); }
+        if (!task.IsCompleted) throw new TimeoutException("Presentation upgrade did not finish.");
+        task.GetAwaiter().GetResult();
     }
 
     private static void ChangedDuringWrite(Action<bool, string> assert)

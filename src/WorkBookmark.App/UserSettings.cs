@@ -13,15 +13,16 @@ public sealed record Hotkey(uint Modifiers, int VirtualKey)
 
 public enum BookmarkDisplayMode { List = 0, Stickers = 1 }
 
-public sealed record UserSettings(int Version, Hotkey CaptureHotkey, Hotkey RecentHotkey, bool StartWithWindows, bool IntroShown, BookmarkDisplayMode DisplayMode = BookmarkDisplayMode.List)
+public sealed record UserSettings(int Version, Hotkey CaptureHotkey, Hotkey RecentHotkey, bool StartWithWindows, bool IntroShown, BookmarkDisplayMode DisplayMode = BookmarkDisplayMode.Stickers, int StickerPresentationVersion = 0)
 {
+    public const int CurrentStickerPresentationVersion = 1;
     public static UserSettings Default => new(1, Hotkey.CaptureDefault, Hotkey.RecentDefault, false, false);
     public static UserSettings Load(string directory)
     {
         string path = Path.Combine(directory, "settings.json");
         if (!File.Exists(path)) return Default;
         var value = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(path));
-        if (value is null || value.Version != 1 || value.CaptureHotkey is null || value.RecentHotkey is null || !value.CaptureHotkey.IsValid || !value.RecentHotkey.IsValid || value.CaptureHotkey == value.RecentHotkey || !Enum.IsDefined(value.DisplayMode))
+        if (value is null || value.Version != 1 || value.CaptureHotkey is null || value.RecentHotkey is null || !value.CaptureHotkey.IsValid || !value.RecentHotkey.IsValid || value.CaptureHotkey == value.RecentHotkey || !Enum.IsDefined(value.DisplayMode) || value.StickerPresentationVersion < 0)
             throw new InvalidDataException("설정 파일을 읽을 수 없습니다. 원본은 유지됩니다.");
         return value;
     }

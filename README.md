@@ -2,6 +2,8 @@
 
 Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·Chrome 웹페이지를 로컬에 남기는 트레이 도구입니다.
 
+**0.2.5 소스 구현 완료 · 미배포:** 메모 우선 제목, 작은 스티커 크기, 기본 스티커 모드를 구현했습니다. 제품과 관련 검사 코드의 Release 컴파일은 통과했으며 사용자 요청으로 동작 테스트는 보류했습니다. [구현 변경 사항](docs/release-notes-v0.2.5.md)을 참고하세요. 아래 다운로드·검증 안내는 공개된 0.2.3 기준입니다.
+
 **[설치 및 사용 매뉴얼](docs/user-manual.ko.md)** — MSI·포터블 설치, 프로그램별 사용법, 설정, 백업·복원, 업데이트·제거와 문제 해결을 안내합니다. 처음 실행해 보려면 [빠른 시작](docs/quick-start.ko.md)을 참고하세요.
 
 **[WorkBookmark 0.2.3 다운로드](https://github.com/prozac0401/BookMark/releases/tag/v0.2.3)** — 설정에서 목록과 포스트잇 스티커 중 표시 방식을 선택할 수 있습니다. 스티커의 위치·크기를 조절하고, 지운 책갈피는 최근 삭제에서 복원할 수 있습니다. [변경 사항과 업데이트 안내](docs/release-notes-v0.2.3.md) · [MSI 설치 안내](docs/windows-installer.ko.md).

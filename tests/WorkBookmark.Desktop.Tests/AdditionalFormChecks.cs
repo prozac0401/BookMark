@@ -154,7 +154,9 @@ internal static class AdditionalFormChecks
         {
             CaptureHotkey = new Hotkey(7, (int)Keys.F13),
             RecentHotkey = new Hotkey(7, (int)Keys.F14),
-            IntroShown = true
+            IntroShown = true,
+            DisplayMode = BookmarkDisplayMode.List,
+            StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
         }).Save(data);
         using var repository = new UndoRepository(Sample());
         using var worker = new WorkerClient();

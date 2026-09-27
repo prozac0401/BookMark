@@ -37,6 +37,7 @@ internal static class StickerFormChecks
             "STK01 sticker accepts normal activation for accessible controls and keyboard navigation");
         assert((bool)StickerType.GetProperty("ShowWithoutActivation", Instance)!.GetValue(form)! && !form.ShowInTaskbar,
             "STK02 initial sticker display avoids focus stealing and taskbar clutter");
+        var defaultClientSize = form.ClientSize;
         form.Size = new Size(390, 365);
         var fullSize = form.Size;
         Apply(form, true, true);
@@ -53,10 +54,11 @@ internal static class StickerFormChecks
         var minimum = form.MinimumSize;
         form.Size = minimum;
         form.PerformLayout();
-        assert(Field<RichTextBox>(form, "_note").Bottom < Field<Button>(form, "_resume").Top &&
-            Field<RichTextBox>(form, "_note").ClientSize.Height >= Field<RichTextBox>(form, "_note").Font.Height + 4 &&
-            Field<Label>(form, "_location").Bottom < Field<Label>(form, "_noteLabel").Top,
-            "STK06 minimum size preserves non-overlapping note, location and action controls");
+        assert(Field<Button>(form, "_title").Bottom < Field<Button>(form, "_resume").Top &&
+            Field<Button>(form, "_title").Height <= Field<Button>(form, "_title").Font.Height * 2 + Px(form, 2) &&
+            form.ClientSize.Width >= Px(form, 240) && form.ClientSize.Height >= Px(form, 160) &&
+            Field<Button>(form, "_delete").Right < Field<Button>(form, "_resume").Left,
+            "STK06 compact minimum size keeps the two-line title and actions separate");
 
         form.Show();
         Application.DoEvents();
@@ -64,7 +66,7 @@ internal static class StickerFormChecks
         Invoke(form, "UpdateBookmark", updated);
         Field<Button>(form, "_resume").PerformClick();
         Command(form, Keys.Control | Keys.E);
-        assert(resumed == updated && edited == updated && Field<RichTextBox>(form, "_note").Text == updated.Note,
+        assert(resumed == updated && edited == updated && Field<Button>(form, "_title").Text == updated.Note,
             "STK07 resume and note commands always use the current shared bookmark revision");
         Invoke(form, "SetBusy", true);
         Command(form, Keys.Control | Keys.Enter);
@@ -84,8 +86,58 @@ internal static class StickerFormChecks
         assert(!form.IsDisposed && !form.Visible && removed is null,
             "STK11 Escape hides the sticker without deleting or disposing its bookmark");
         Invoke(form, "UpdateBookmark", updated with { LastResumeResult = ResultCode.TargetUnavailable });
-        assert(Field<Label>(form, "_location").Text.Contains("접근할 수 없습니다", StringComparison.Ordinal),
+        assert(Field<Label>(form, "_resumeStatus").Text.Contains("접근할 수 없습니다", StringComparison.Ordinal),
             "STK12 failed resume leaves an actionable message on the originating sticker");
+        form.Show();
+        form.PerformLayout();
+        var status = Field<Label>(form, "_resumeStatus");
+        assert(status.Visible && status.Top >= Field<Button>(form, "_title").Bottom &&
+            status.Bottom < Field<Button>(form, "_resume").Top && status.Height >= status.Font.Height * 2,
+            "STK13 resume feedback remains readable alongside a note title at minimum size");
+        assert(defaultClientSize == new Size(Px(form, 260), Px(form, 170)) &&
+            Math.Abs(form.Font.SizeInPoints - 9F) < .01F &&
+            Math.Abs(Field<Button>(form, "_title").Font.SizeInPoints - 10.5F) < .01F,
+            "STK14 default width, height and type scale are compact");
+
+        var titled = sample with { Note = "  메모만 제목으로 표시합니다  " };
+        Invoke(form, "UpdateBookmark", titled);
+        var title = Field<Button>(form, "_title");
+        assert(title.Text == titled.Note.Trim() && form.Text.StartsWith(title.Text, StringComparison.Ordinal) &&
+            !status.Visible && !form.Controls.OfType<RichTextBox>().Any() &&
+            Field<ToolTip>(form, "_tooltip").GetToolTip(title)?.Contains(sample.Target.Path, StringComparison.Ordinal) == true &&
+            Get<Bookmark>(form, "Bookmark") == titled,
+            "STK15 note titles hide duplicate target details while retaining tooltips and stored data");
+        Apply(form, true, true);
+        assert(Field<Label>(form, "_kind").Text == title.Text && form.Text.StartsWith(title.Text, StringComparison.Ordinal),
+            "STK16 collapsed and native window titles use the same memo-first identity");
+        Apply(form, false, true);
+
+        var fallbackCases = new[]
+        {
+            (Target: sample.Target, DisplayName: "원래 Office 문서 제목", Expected: "2026년 3분기 운영 계획.xlsx", Note: ""),
+            (Target: new CapturedTarget(TargetKind.WebPage, "https://example.test/folder?id=42"), DisplayName: "웹 제목", Expected: "https://example.test/folder?id=42", Note: "   "),
+            (Target: new CapturedTarget(TargetKind.Folder, @"C:\업무\선행연구"), DisplayName: "선행연구", Expected: @"C:\업무\선행연구", Note: ""),
+            (Target: sample.Target with { Path = "https://example.test/운영.xlsx" }, DisplayName: "웹 문서", Expected: "https://example.test/운영.xlsx", Note: "\t "),
+            (Target: new CapturedTarget(TargetKind.NotepadSnapshot, "snapshot-private-id"), DisplayName: "자동 보관한 메모", Expected: "자동 보관한 메모", Note: "")
+        };
+        foreach (var item in fallbackCases)
+        {
+            Invoke(form, "UpdateBookmark", sample with { Target = item.Target, DisplayName = item.DisplayName, Note = item.Note });
+            assert(title.Text == item.Expected && form.Text.StartsWith(item.Expected, StringComparison.Ordinal) && !status.Visible,
+                $"STK17 empty or whitespace memo uses the appropriate {item.Target.Kind} fallback");
+        }
+        string longNote = string.Concat(Enumerable.Repeat("긴 메모에서 전체 내용을 확인하고 다음 작업으로 이어갑니다. ", 20));
+        Invoke(form, "UpdateBookmark", sample with { Note = longNote });
+        assert(title.Text == longNote.Trim() && title.AutoEllipsis && title.TabStop && title.CanSelect &&
+            title.Bottom < Field<Button>(form, "_resume").Top &&
+            Field<ToolTip>(form, "_tooltip").GetToolTip(title)?.Contains(longNote.Trim(), StringComparison.Ordinal) == true,
+            "STK18 long notes remain keyboard reachable with two-line bounds and complete tooltip text");
+        edited = null;
+        title.Focus();
+        Command(form, Keys.Enter);
+        assert(edited?.Note == longNote && resumeCount == 1,
+            "STK19 Enter on the focused title requests note editing without resuming the target");
+
     }
 
     internal static void Render(string directory)
@@ -100,12 +152,17 @@ internal static class StickerFormChecks
         Save("sticker-default.png");
         Invoke(form, "UpdateBookmark", Sample() with { Note = "" });
         Save("sticker-empty-note.png");
+        Invoke(form, "UpdateBookmark", Sample() with { Note = "", Target = new CapturedTarget(TargetKind.WebPage, "https://drive.google.com/drive/folders/example-work-folder") });
+        Save("sticker-url-fallback.png");
+        Invoke(form, "UpdateBookmark", Sample() with { Note = "", Target = new CapturedTarget(TargetKind.Folder, @"D:\02_Research\2026_2학기 수업내용\선행연구") });
+        Save("sticker-folder-fallback.png");
         Invoke(form, "UpdateBookmark", Sample());
         form.Size = form.MinimumSize;
         Save("sticker-minimum.png");
-        form.Size = new Size(460, 400);
         Invoke(form, "UpdateBookmark", Sample() with { Note = string.Concat(Enumerable.Repeat("고객별 변경 내용을 확인하고 다음 회의 전에 최종 수량을 확정합니다. 담당자에게 전달한 뒤 F90 셀을 다시 확인합니다. ", 10))[..500] });
         Save("sticker-long-note.png");
+        Invoke(form, "UpdateBookmark", Sample() with { LastResumeResult = ResultCode.TargetUnavailable });
+        Save("sticker-resume-error.png");
         Apply(form, true, true);
         Save("sticker-collapsed.png");
 
@@ -126,6 +183,7 @@ internal static class StickerFormChecks
         return new(Guid.NewGuid(), target, target.Path, "2026년 3분기 운영 계획.xlsx", "수량 변경 내용을 확인하고 운영팀에 전달하기", now, now, 10, null, null, null, null);
     }
 
+    private static int Px(Form form, int value) => (int)Math.Round(value * form.DeviceDpi / 96F);
     private static Form Create(Bookmark bookmark) => (Form)Activator.CreateInstance(StickerType, bookmark)!;
     private static void On(Form form, string name, Delegate handler) => StickerType.GetEvent(name)!.AddEventHandler(form, handler);
     private static T Get<T>(Form form, string name) => (T)StickerType.GetProperty(name)!.GetValue(form)!;

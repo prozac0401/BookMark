@@ -8,6 +8,9 @@ namespace WorkBookmark.App.UI;
 /// <summary>A bookmark view; all data changes go through the application context.</summary>
 internal sealed class StickerForm : Form
 {
+    public static readonly Size DefaultClientSize = new(260, 170);
+    public static readonly Size MinimumClientSize = new(240, 160);
+
     private static readonly Color Paper = Color.FromArgb(255, 253, 245);
     private static readonly Color Rule = Color.FromArgb(226, 225, 213);
     private static readonly Color Hover = Color.FromArgb(241, 239, 228);
@@ -16,10 +19,8 @@ internal sealed class StickerForm : Form
     private readonly Label _kind = new();
     private readonly Button _collapse = new();
     private readonly Button _options = new();
-    private readonly Label _title = new();
-    private readonly Label _location = new();
-    private readonly Label _noteLabel = new();
-    private readonly RichTextBox _note = new();
+    private readonly TitleButton _title = new();
+    private readonly Label _resumeStatus = new();
     private readonly ImeTextBox _noteEditor = new();
     private readonly Label _noteStatus = new();
     private readonly Button _cancelNote = new();
@@ -52,6 +53,7 @@ internal sealed class StickerForm : Form
     public Bookmark Bookmark { get; private set; }
     public bool IsCollapsed { get; private set; }
     public bool IsEditingNote => _saveNoteCallback is not null;
+    public Size DefaultExpandedSize => SizeFromClientSize(new Size(Px(DefaultClientSize.Width), Px(DefaultClientSize.Height)));
     public Size ExpandedSize => IsCollapsed ? new Size(Width, _expandedSize.Height) : Size;
     public event Action<Bookmark>? ResumeRequested;
     public event Action<Bookmark>? NoteRequested;
@@ -71,11 +73,11 @@ internal sealed class StickerForm : Form
     {
         Bookmark = bookmark;
         SuspendLayout();
-        _bodyFont = new Font("맑은 고딕", 10F);
+        _bodyFont = new Font("맑은 고딕", 9F);
         Font = _bodyFont;
-        _titleFont = new Font(Font.FontFamily, 12F, FontStyle.Bold);
-        _smallFont = new Font(Font.FontFamily, 9F);
-        _noteFont = new Font(Font.FontFamily, 10.5F);
+        _titleFont = new Font(Font.FontFamily, 10.5F, FontStyle.Bold);
+        _smallFont = new Font(Font.FontFamily, 8.5F);
+        _noteFont = new Font(Font.FontFamily, 9.5F);
         ForeColor = UiStyle.Ink;
         BackColor = Paper;
         AutoScaleDimensions = new SizeF(96F, 96F);
@@ -89,7 +91,7 @@ internal sealed class StickerForm : Form
         DoubleBuffered = true;
         _ownedIcon = Branding.CreateApplicationIcon();
         Icon = _ownedIcon;
-        ClientSize = new Size(336, 302);
+        ClientSize = DefaultClientSize;
 
         _header.BackColor = Paper;
         _header.TabIndex = 4;
@@ -116,31 +118,19 @@ internal sealed class StickerForm : Form
         _tooltip.SetToolTip(_header, "드래그하여 이동 · 창 가장자리를 드래그하여 크기 조절");
         _tooltip.SetToolTip(_kind, "드래그하여 이동 · 창 가장자리를 드래그하여 크기 조절");
 
+        ConfigureButton(_title, "", "책갈피 제목 · 메모 편집", 1);
         _title.Font = _titleFont;
+        _title.ForeColor = UiStyle.Ink;
         _title.AutoEllipsis = true;
-        _title.UseMnemonic = false;
-        _title.AccessibleName = "책갈피 이름";
-        _location.Font = _smallFont;
-        _location.ForeColor = UiStyle.Muted;
-        _location.AutoEllipsis = true;
-        _location.UseMnemonic = false;
-        _location.AccessibleName = "저장한 작업 위치";
-        _noteLabel.Text = "다음에 할 일";
-        _noteLabel.Font = _smallFont;
-        _noteLabel.ForeColor = UiStyle.Muted;
-        _note.Font = _noteFont;
-        _note.BorderStyle = BorderStyle.None;
-        _note.BackColor = Paper;
-        _note.ReadOnly = true;
-        _note.DetectUrls = false;
-        _note.ScrollBars = RichTextBoxScrollBars.Vertical;
-        _note.WordWrap = true;
-        _note.TabStop = true;
-        _note.TabIndex = 1;
-        _note.Cursor = Cursors.IBeam;
-        _note.AccessibleName = "책갈피 메모";
-        _tooltip.SetToolTip(_note, "클릭하여 메모 편집 (Ctrl+E)");
-        _note.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) RequestNoteEdit(); };
+        _title.TextAlign = ContentAlignment.TopLeft;
+        _title.Padding = Padding.Empty;
+        _title.Cursor = Cursors.IBeam;
+        _title.Click += (_, _) => RequestNoteEdit();
+        _resumeStatus.Font = _smallFont;
+        _resumeStatus.ForeColor = Color.FromArgb(138, 80, 43);
+        _resumeStatus.AutoEllipsis = true;
+        _resumeStatus.UseMnemonic = false;
+        _resumeStatus.AccessibleName = "이어가기 상태";
 
         _noteEditor.Font = _noteFont;
         _noteEditor.BackColor = Paper;
@@ -196,7 +186,7 @@ internal sealed class StickerForm : Form
         _collapse.Click += (_, _) => ToggleCollapsed();
         _delete.Click += (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); };
         _resume.Click += (_, _) => { if (!_busy && !IsEditingNote) ResumeRequested?.Invoke(Bookmark); };
-        Controls.AddRange([_header, _title, _location, _noteLabel, _note, _noteEditor, _noteStatus, _cancelNote, _delete, _resume]);
+        Controls.AddRange([_header, _title, _resumeStatus, _noteEditor, _noteStatus, _cancelNote, _delete, _resume]);
         _layoutReady = true;
         UpdateBookmark(bookmark);
         ApplyPresentation(false, false);
@@ -209,11 +199,12 @@ internal sealed class StickerForm : Form
     public void UpdateBookmark(Bookmark value)
     {
         Bookmark = value;
-        Text = $"{value.DisplayName} · 업무 책갈피";
-        AccessibleName = $"책갈피 스티커: {value.DisplayName}";
-        _kind.Text = KindLabel(value.Target.Kind);
+        string title = PresentationTitle(value);
+        Text = $"{title} · 업무 책갈피";
+        AccessibleName = $"책갈피 스티커: {title}";
+        _kind.Text = IsCollapsed ? title : KindLabel(value.Target.Kind);
         UpdateTypeIcon();
-        _title.Text = value.DisplayName;
+        _title.Text = title;
         string? issue = value.LastResumeResult switch
         {
             ResultCode.TargetUnavailable => "대상에 접근할 수 없습니다. 다시 확인해 주세요.",
@@ -222,20 +213,18 @@ internal sealed class StickerForm : Form
             ResultCode.AppBusy => "편집이나 대화상자를 마친 뒤 다시 시도해 주세요.",
             _ => null
         };
-        _location.Text = issue ?? ShortLocation(value.Target);
-        _location.ForeColor = issue is null ? UiStyle.Muted : Color.FromArgb(138, 80, 43);
+        _resumeStatus.Text = issue ?? "";
         bool empty = string.IsNullOrWhiteSpace(value.Note);
-        _note.Text = empty ? "여기를 눌러 메모를 입력하세요." : value.Note;
-        _note.ForeColor = empty ? UiStyle.Muted : UiStyle.Ink;
-        string details = UiStyle.Location(value) + $"\n저장: {value.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm}";
+        string details = title + "\n" + value.DisplayName + "\n" + UiStyle.Location(value) + $"\n저장: {value.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm}";
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
             details += CanRelink(value) ? "\n더 보기에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
-        _tooltip.SetToolTip(_title, details);
-        _tooltip.SetToolTip(_location, details);
-        _title.AccessibleDescription = details;
-        _location.AccessibleDescription = details;
-        _note.AccessibleDescription = empty ? "메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다." : "저장된 메모입니다. 클릭하거나 Ctrl+E로 편집할 수 있습니다.";
+        _tooltip.SetToolTip(_title, details + "\n클릭하여 메모 편집 (Ctrl+E)");
+        _tooltip.SetToolTip(_kind, details + "\n드래그하여 이동");
+        _tooltip.SetToolTip(_resumeStatus, issue is null ? "" : issue + "\n" + details);
+        _title.AccessibleDescription = details + (empty ? "\n메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다." : "\n클릭하거나 Ctrl+E로 메모를 편집할 수 있습니다.");
+        _resumeStatus.AccessibleDescription = issue;
+        RefreshActionState();
         // A refresh updates the saved bookmark, never the editor's in-progress draft.
     }
 
@@ -261,7 +250,7 @@ internal sealed class StickerForm : Form
             _noteAutoSavePending = false;
             _noteEditor.Text = Bookmark.Note;
             _noteEditor.SelectionStart = _noteEditor.TextLength;
-            _noteStatus.Text = "다른 창으로 이동하면 자동저장\n한 줄, 최대 500자 · Enter 저장 · Esc 취소";
+            _noteStatus.Text = "다른 창으로 이동하면 자동저장\nEnter 저장 · Esc 취소";
             _noteStatus.ForeColor = UiStyle.Muted;
             RefreshActionState();
             PerformLayout();
@@ -343,7 +332,7 @@ internal sealed class StickerForm : Form
             {
                 RefreshActionState();
                 if (IsEditingNote && ContainsFocus) _noteEditor.Focus();
-                else if (!IsEditingNote && ContainsFocus) _note.Focus();
+                else if (!IsEditingNote && ContainsFocus) _title.Focus();
             }
         }
     }
@@ -355,7 +344,7 @@ internal sealed class StickerForm : Form
         _saveNoteCallback = null;
         _noteEditor.Clear();
         RefreshActionState();
-        _note.Focus();
+        _title.Focus();
     }
 
     private void RefreshActionState()
@@ -368,10 +357,8 @@ internal sealed class StickerForm : Form
         _cancelNote.Enabled = !_noteSaving;
         _noteEditor.ReadOnly = _noteSaving;
         AcceptButton = editing ? null : _resume;
-        _title.Visible = expanded;
-        _noteLabel.Visible = expanded;
-        _noteLabel.Text = editing ? "메모 편집" : "다음에 할 일";
-        foreach (Control control in new Control[] { _location, _note, _delete, _resume })
+        _resumeStatus.Visible = expanded && !editing && _resumeStatus.Text.Length > 0;
+        foreach (Control control in new Control[] { _title, _delete, _resume })
             control.Visible = expanded && !editing;
         foreach (Control control in new Control[] { _noteEditor, _noteStatus, _cancelNote })
             control.Visible = expanded && editing;
@@ -403,6 +390,7 @@ internal sealed class StickerForm : Form
                     ? new Size(Width, CollapsedHeight)
                     : new Size(Width, Math.Max(_expandedSize.Height, MinimumSize.Height));
             }
+            _kind.Text = collapsed ? PresentationTitle(Bookmark) : KindLabel(Bookmark.Target.Kind);
             _collapse.Text = collapsed ? "펼치기" : "접기";
             _collapse.AccessibleName = collapsed ? "스티커 펼치기" : "스티커 접기";
             _tooltip.SetToolTip(_collapse, collapsed ? "스티커 펼치기 (Ctrl+Space)" : "스티커 접기 (Ctrl+Space)");
@@ -427,7 +415,7 @@ internal sealed class StickerForm : Form
     private void SetMinimumSize()
     {
         MaximumSize = Size.Empty;
-        MinimumSize = new Size(Px(280), IsCollapsed ? CollapsedHeight : Px(280) + Height - ClientSize.Height);
+        MinimumSize = SizeFromClientSize(new Size(Px(MinimumClientSize.Width), IsCollapsed ? Px(36) : Px(MinimumClientSize.Height)));
         // A zero width with a nonzero maximum height is a real width limit in
         // WinForms; it would also shrink MinimumSize and collapse the note to 42px.
         MaximumSize = IsCollapsed
@@ -435,29 +423,31 @@ internal sealed class StickerForm : Form
             : Size.Empty;
     }
 
-    private int CollapsedHeight => Px(44) + Height - ClientSize.Height;
+    private int CollapsedHeight => SizeFromClientSize(new Size(Px(MinimumClientSize.Width), Px(36))).Height;
     private int Px(int value) => (int)Math.Round(value * DeviceDpi / 96F);
 
     protected override void OnLayout(LayoutEventArgs e)
     {
         base.OnLayout(e);
         if (!_layoutReady) return;
-        int gap = Px(16), width = ClientSize.Width;
-        _header.SetBounds(0, 0, width, Px(44));
-        _options.SetBounds(width - gap - Px(30), Px(6), Px(30), Px(30));
-        _collapse.SetBounds(_options.Left - Px(58), Px(6), Px(56), Px(30));
-        _typeIcon.SetBounds(gap, Px(10), Px(24), Px(24));
-        _kind.SetBounds(_typeIcon.Right + Px(8), Px(6), Math.Max(Px(50), _collapse.Left - _typeIcon.Right - Px(12)), Px(30));
-        _title.SetBounds(gap, Px(53), width - gap * 2, Px(48));
-        _location.SetBounds(gap, Px(105), width - gap * 2, Px(37));
-        _noteStatus.Bounds = _location.Bounds;
-        _noteLabel.SetBounds(gap, Px(154), width - gap * 2, Px(22));
-        int bottom = ClientSize.Height - Px(15);
-        _resume.SetBounds(width - gap - Px(104), bottom - Px(36), Px(104), Px(36));
-        _delete.SetBounds(gap - Px(7), bottom - Px(36), Px(62), Px(36));
+        int gap = Px(12), width = ClientSize.Width;
+        _header.SetBounds(0, 0, width, Px(36));
+        _options.SetBounds(width - gap - Px(28), Px(3), Px(28), Px(30));
+        _collapse.SetBounds(_options.Left - Px(48), Px(3), Px(46), Px(30));
+        _typeIcon.SetBounds(gap, Px(8), Px(20), Px(20));
+        _kind.SetBounds(_typeIcon.Right + Px(6), Px(3), Math.Max(0, _collapse.Left - _typeIcon.Right - Px(10)), Px(30));
+        int bottom = ClientSize.Height - gap;
+        _resume.SetBounds(width - gap - Px(84), bottom - Px(30), Px(84), Px(30));
+        _delete.SetBounds(gap - Px(7), bottom - Px(30), Px(60), Px(30));
         _cancelNote.Bounds = _delete.Bounds;
-        _note.SetBounds(gap, Px(179), width - gap * 2, Math.Max(Px(18), _resume.Top - Px(18) - Px(179)));
-        _noteEditor.SetBounds(gap, Px(179), width - gap * 2, _noteEditor.PreferredHeight);
+        // A fixed two-line title keeps long notes and fallback URLs from growing
+        // the card. The tooltip and inline editor retain the complete contents.
+        _title.SetBounds(gap - Px(3), Px(40), width - gap * 2 + Px(6), _title.Font.Height * 2 + Px(2));
+        int statusTop = _title.Bottom + Px(2);
+        _resumeStatus.SetBounds(gap, statusTop, width - gap * 2, Math.Max(0, _resume.Top - Px(3) - statusTop));
+        _noteEditor.SetBounds(gap, Px(44), width - gap * 2, _noteEditor.PreferredHeight);
+        int noteStatusTop = _noteEditor.Bottom + Px(6);
+        _noteStatus.SetBounds(gap, noteStatusTop, width - gap * 2, Math.Max(0, _cancelNote.Top - Px(4) - noteStatusTop));
         Invalidate();
     }
 
@@ -465,9 +455,7 @@ internal sealed class StickerForm : Form
     {
         base.OnPaint(e);
         using var pen = new Pen(Rule);
-        e.Graphics.DrawLine(pen, Px(16), Px(43), ClientSize.Width - Px(16), Px(43));
-        if (!IsCollapsed)
-            e.Graphics.DrawLine(pen, Px(16), _resume.Top - Px(10), ClientSize.Width - Px(16), _resume.Top - Px(10));
+        e.Graphics.DrawLine(pen, Px(12), Px(35), ClientSize.Width - Px(12), Px(35));
     }
 
     protected override void OnResizeEnd(EventArgs e)
@@ -523,6 +511,7 @@ internal sealed class StickerForm : Form
             // is active; these keys must never delete or restore a bookmark.
             return base.ProcessCmdKey(ref message, keyData);
         }
+        if (_title.Focused && (keyData == Keys.Enter || keyData == Keys.Space)) { RequestNoteEdit(); return true; }
         if (keyData == Keys.Escape) { Hide(); return true; }
         if (keyData == (Keys.Control | Keys.Space)) { ToggleCollapsed(); return true; }
         if (keyData == (Keys.Control | Keys.Z)) { UndoRequested?.Invoke(); return true; }
@@ -545,7 +534,7 @@ internal sealed class StickerForm : Form
     private void UpdateTypeIcon()
     {
         string identity = BookmarkTypeIcon.GetIdentity(Bookmark.Target);
-        int size = Px(24);
+        int size = Px(20);
         if (_iconIdentity == identity && _iconSize == size) return;
         _iconIdentity = identity;
         _iconSize = size;
@@ -554,7 +543,7 @@ internal sealed class StickerForm : Form
         Image? previous = _typeIcon.Image;
         _typeIcon.Image = BookmarkTypeIcon.Create(Bookmark.Target, size);
         previous?.Dispose();
-        _typeIcon.AccessibleDescription = _kind.Text;
+        _typeIcon.AccessibleDescription = KindLabel(Bookmark.Target.Kind);
         if (IsHandleCreated)
         {
             _iconLookupStarted = true;
@@ -618,12 +607,14 @@ internal sealed class StickerForm : Form
         _ => "파일"
     };
 
-    private static string ShortLocation(CapturedTarget target)
+    private static string PresentationTitle(Bookmark bookmark)
     {
-        if (target.Kind == TargetKind.NotepadSnapshot)
-            return UiStyle.PositionLabel(target).Trim(' ', '·') + " · 자동 보관됨";
-        string position = UiStyle.PositionLabel(target).Trim(' ', '·');
-        return position.Length == 0 ? target.Path : position + "\n" + target.Path;
+        if (!string.IsNullOrWhiteSpace(bookmark.Note)) return bookmark.Note.Trim();
+        CapturedTarget target = bookmark.Target;
+        if (target.Kind == TargetKind.NotepadSnapshot) return bookmark.DisplayName;
+        if (target.Kind is TargetKind.WebPage or TargetKind.Folder || OfficeLocation.IsWebTarget(target)) return target.Path;
+        string name = Path.GetFileName(target.Path);
+        return string.IsNullOrWhiteSpace(name) ? bookmark.DisplayName : name;
     }
 
     private static bool CanRelink(Bookmark bookmark) => bookmark.LastResumeResult == ResultCode.TargetUnavailable &&
@@ -663,6 +654,22 @@ internal sealed class StickerForm : Form
             _smallFont.Dispose();
             _noteFont.Dispose();
             _bodyFont.Dispose();
+        }
+    }
+
+    // Button semantics keep the title reachable by Tab, Enter/Space and assistive
+    // technology, while explicit text drawing limits the visible title to two lines.
+    private sealed class TitleButton : Button
+    {
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(BackColor);
+            int padding = (int)Math.Round(3 * DeviceDpi / 96F);
+            var textBounds = new Rectangle(padding, 0, Math.Max(0, Width - padding * 2), Font.Height * 2);
+            TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, ForeColor,
+                TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
+            if (Focused && ShowFocusCues)
+                ControlPaint.DrawFocusRectangle(e.Graphics, ClientRectangle, ForeColor, BackColor);
         }
     }
 

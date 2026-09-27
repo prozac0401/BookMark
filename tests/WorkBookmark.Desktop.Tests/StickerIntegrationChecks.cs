@@ -12,7 +12,12 @@ internal static class StickerIntegrationChecks
     internal static void Run(string directory, Action<bool, string> assert)
     {
         Directory.CreateDirectory(directory);
-        var settings = UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F15), RecentHotkey = new Hotkey(7, (int)Keys.F16), IntroShown = true };
+        var settings = UserSettings.Default with
+        {
+            CaptureHotkey = new Hotkey(7, (int)Keys.F15), RecentHotkey = new Hotkey(7, (int)Keys.F16), IntroShown = true,
+            DisplayMode = BookmarkDisplayMode.List,
+            StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
+        };
         settings.Save(directory);
         bool failDelete = false;
         using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"), operation =>

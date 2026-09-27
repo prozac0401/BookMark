@@ -103,9 +103,45 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         UpdateDisplayMenus();
         _dispatcher.BeginInvoke((Action)(async () =>
         {
-            await _stickers.SetEnabledAsync(_settings.DisplayMode == BookmarkDisplayMode.Stickers);
+            await InitializeDisplayAsync();
             if (!_exiting) await ShowIntroductionAsync();
         }));
+    }
+
+    private async Task InitializeDisplayAsync()
+    {
+        await _settingsGate.WaitAsync();
+        try
+        {
+            if (_exiting) return;
+            // Invalid settings are never rewritten by an automatic startup upgrade.
+            if (!_settingsInvalid)
+            {
+                try
+                {
+                    _settings = await StickerPresentationUpgrade.ApplyAsync(_settings,
+                        _stickers.ResetSavedSizesAsync, updated =>
+                        {
+                            if (_exiting) throw new OperationCanceledException();
+                            return Task.Run(() => updated.Save(_dataDirectory));
+                        });
+                }
+                catch
+                {
+                    // Keep the saved mode usable for this session, but leave the marker
+                    // incomplete so a later startup retries every saved layout.
+                    if (!_exiting) Notify("스티커 표시 설정을 적용하지 못했습니다. 저장된 책갈피는 유지되며 다음 실행 때 다시 시도합니다.");
+                }
+            }
+            if (_exiting) return;
+            UpdateDisplayMenus();
+            await _stickers.SetEnabledAsync(_settings.DisplayMode == BookmarkDisplayMode.Stickers);
+        }
+        catch
+        {
+            if (!_exiting) Notify("스티커 표시 설정을 적용하지 못했습니다. 저장된 책갈피는 유지되며 다음 실행 때 다시 시도합니다.");
+        }
+        finally { _settingsGate.Release(); }
     }
 
     private Task<T> ReadAsync<T>(Func<T> action) => Task.Run(() => { lock (_repositoryLock) return action(); });
@@ -599,7 +635,12 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private async Task<string?> ApplySettingsAsync(UserSettings requested)
     {
         await _settingsGate.WaitAsync();
-        try { return await ApplySettingsCoreAsync(requested); }
+        try
+        {
+            // A settings window opened while startup was saving may hold an older marker.
+            requested = requested with { StickerPresentationVersion = _settings.StickerPresentationVersion };
+            return await ApplySettingsCoreAsync(requested);
+        }
         finally { _settingsGate.Release(); }
     }
     private async Task<string?> ApplySettingsCoreAsync(UserSettings requested)

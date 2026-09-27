@@ -1,0 +1,94 @@
+PASS: SET01 old settings without display mode retain other values and await the sticker presentation upgrade
+PASS: SET10 new settings default to stickers and apply presentation once at startup
+PASS: SET11 an explicit legacy List choice is loaded without marking the startup upgrade complete
+PASS: SET12 the one-time upgrade changes legacy List to Stickers while preserving hotkeys and startup preferences
+PASS: SET13 a List choice made after the upgrade is retained without another reset
+PASS: SET02 sticker display choice survives saving and reloading
+PASS: SET03 unknown display mode is rejected without rewriting settings
+PASS: SET14 invalid presentation version is rejected without rewriting the original settings
+PASS: SET04 settings shows the saved List choice
+PASS: SET05 display choices remain mutually exclusive
+PASS: SET06 failed apply retains selected mode and existing settings for retry
+PASS: SET07 successful apply closes settings and includes the selected mode
+PASS: SET08 settings shows the saved Stickers choice
+PASS: SET09 closing settings discards unapplied display changes
+PASS: STK01 sticker accepts normal activation for accessible controls and keyboard navigation
+PASS: STK02 initial sticker display avoids focus stealing and taskbar clutter
+PASS: STK03 collapse preserves expanded dimensions and applies always-on-top
+PASS: STK04 restoring a legacy unpinned presentation keeps the sticker above ordinary windows and returns its full size
+PASS: STK05 resizing a collapsed sticker retains its new width and original expanded height
+PASS: STK06 compact minimum size keeps the two-line title and actions separate
+PASS: STK07 resume and note commands always use the current shared bookmark revision
+PASS: STK08 busy state prevents duplicate resume and deletion commands
+PASS: STK09 explicit delete routes the bookmark identity to shared storage
+PASS: STK10 undo is routed centrally while native close only hides the sticker
+PASS: STK11 Escape hides the sticker without deleting or disposing its bookmark
+PASS: STK12 failed resume leaves an actionable message on the originating sticker
+PASS: STK13 resume feedback remains readable alongside a note title at minimum size
+PASS: STK14 default width, height and type scale are compact
+PASS: STK15 note titles hide duplicate target details while retaining tooltips and stored data
+PASS: STK16 collapsed and native window titles use the same memo-first identity
+PASS: STK17 empty or whitespace memo uses the appropriate ExcelCell fallback
+PASS: STK17 empty or whitespace memo uses the appropriate WebPage fallback
+PASS: STK17 empty or whitespace memo uses the appropriate Folder fallback
+PASS: STK17 empty or whitespace memo uses the appropriate ExcelCell fallback
+PASS: STK17 empty or whitespace memo uses the appropriate NotepadSnapshot fallback
+PASS: STK18 long notes remain keyboard reachable with two-line bounds and complete tooltip text
+PASS: STK19 Enter on the focused title requests note editing without resuming the target
+PASS: STN01 clicking the title edits the note in the originating sticker window and position
+PASS: STN02 inline editing has a one-line limit and cancel control without a save button
+PASS: STN03 background refresh, repeated editing and focus within the sticker retain the draft without writing
+PASS: STN04 collapse requests cannot hide an active memo draft and saved unpinned layouts remain topmost
+PASS: STN05 editor deletion and undo shortcuts cannot delete or restore bookmarks
+PASS: STN06 synthetic IME composition Enter/Escape cannot submit, resume or cancel the note
+PASS: STN07 IME commit Enter retains the suppression interval
+PASS: STN08 injected persistence failure retains editable text and inline retry feedback
+PASS: STN09 retry by Enter commits the retained draft without opening the bookmarked target
+PASS: STN10 Escape cancels only the inline draft and keeps the saved note and sticker visible
+PASS: STN11 a pending save blocks duplicate writes and cancel until commit completes
+PASS: STN12 asynchronous note commit restores normal sticker actions
+PASS: STN13 inline editor and feedback remain inside the minimum sticker bounds
+PASS: STN14 the top-left file type icon fits alongside the label and header controls
+PASS: STN15 a delayed save completion cannot overwrite a newer published bookmark note
+PASS: STN26 adding a memo by Ctrl+E immediately replaces the file fallback and window title
+PASS: STN27 clearing a memo immediately restores its fallback without rewriting the stored draft
+PASS: STN28 editing a collapsed sticker expands it and shows only the editor
+PASS: STN16 moving to an ordinary window automatically saves the note without taking focus back
+PASS: STN17 repeated deactivation of a completed editor does not write again
+PASS: STN18 automatic save failure retains an editable draft and feedback without stealing focus
+PASS: STN19 returning to a failed draft and leaving again retries and commits it automatically
+PASS: STN20 Escape cancels the draft and any queued automatic save
+PASS: STN21 leaving during synthetic IME composition defers automatic persistence
+PASS: STN22 deferred automatic save waits for the committed IME text and keeps the destination focused
+PASS: STN23 returning before IME completion cancels the pending automatic save and keeps editing
+PASS: STN24 repeated departure events cannot duplicate a pending automatic write
+PASS: STN25 a delayed automatic save completes in the background without reactivating its sticker
+PASS: SS01 a legacy List installation automatically starts active stickers on the UI thread before any view hotkey
+PASS: SS02 startup restores legacy unpinned stickers as native always-on-top windows
+PASS: SS03 startup retains collapsed presentation and saved sticker mode without opening the list
+PASS: SS08 startup resizes active, collapsed and deleted layouts before recording completion while retaining their placement
+PASS: SS09 the migrated outer size matches the default client size including the DPI-scaled window frame
+PASS: SS04 a newly committed bookmark appears immediately above ordinary windows in sticker mode
+PASS: SS10 newly captured bookmarks use the same compact default outer size
+PASS: SS05 explicit hide-all remains effective for existing updates and new captures without deleting bookmarks
+PASS: SS06 explicit reveal restores every sticker above ordinary windows with its position and collapsed size intact
+PASS: SS07 startup, capture and reveal never request resume or open a bookmarked target
+PASS: SS11 the next startup retains the user's later List choice and custom size without repeating migration
+PASS: SS12 later user-sized stickers restore at restart without returning to the compact default
+PASS: SS13 a new empty installation defaults to stickers without inventing a window or opening a target
+PASS: SS14 startup does not overwrite corrupt settings with a presentation completion marker
+PASS: SS15 a failed startup upgrade leaves its marker incomplete while the previously selected sticker mode remains usable
+PASS: SS16 the next startup retries and completes a previously failed presentation upgrade
+PASS: SP09 a partial layout-save failure cannot write the completion marker or switch the saved mode
+PASS: SP10 settings-save failure leaves the old completion marker after all layout saves succeed
+PASS: SP11 retry safely completes partial layout and settings failures while preserving placement and collapse
+PASS: SP12 completed presentation does not repeat layout writes or reset a later List choice
+PASS: SP01 moving during a pending layout write does not start a competing storage write
+PASS: SP02 a placement changed during the first batch is persisted by the next batch without reverting
+PASS: SP03 failed layout persistence reports once and does not claim a successful save
+PASS: SP04 movement after a failed write retries the newest placement rather than the failed snapshot
+PASS: SP06 shutdown flushes newer movement after storage completes but before its UI continuation runs
+PASS: SP08 a delayed successful-write continuation cannot overwrite the final shutdown placement
+PASS: SP05 shutdown flushes the latest layout when a failed write has not yet reached its UI continuation
+PASS: SP07 a delayed failed-write continuation cannot notify or rewrite after manager disposal
+RESULT: 93 sticker display, note, settings, startup and layout checks passed. Native input and rendered UI require separate verification.

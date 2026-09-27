@@ -17,7 +17,9 @@ internal static class BookmarkRefreshChecks
         {
             CaptureHotkey = new Hotkey(7, (int)Keys.F15),
             RecentHotkey = new Hotkey(7, (int)Keys.F16),
-            IntroShown = true
+            IntroShown = true,
+            DisplayMode = BookmarkDisplayMode.List,
+            StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
         }).Save(directory);
         using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"));
         var target = new CapturedTarget(TargetKind.File, Path.Combine(directory, "새로 고침 순서 검증.txt"));
