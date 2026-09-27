@@ -132,8 +132,70 @@ internal static class StickerStartupChecks
             }
             finally { next.ExitThread(); }
         }
+        VersionOneCompactStartup(Path.Combine(directory, "version-one"), assert);
         EmptyAndInvalidStartup(Path.Combine(directory, "fresh"), assert);
         FailedUpgradeStartup(Path.Combine(directory, "failed-upgrade"), assert);
+    }
+
+    private static void VersionOneCompactStartup(string directory, Action<bool, string> assert)
+    {
+        Directory.CreateDirectory(directory);
+        var settings = UserSettings.Default with
+        {
+            CaptureHotkey = new Hotkey(7, (int)Keys.F23), RecentHotkey = new Hotkey(7, (int)Keys.F24),
+            IntroShown = true, DisplayMode = BookmarkDisplayMode.List, StickerPresentationVersion = 1
+        };
+        settings.Save(directory);
+        using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"));
+        Bookmark Capture(string name) => repository.UpsertCapture(new CapturedTarget(TargetKind.File, Path.Combine(directory, name + ".txt"))).Bookmark;
+        var first = Capture("old-default");
+        var custom = Capture("custom-size");
+        var deleted = Capture("deleted-default");
+        repository.SoftDelete(deleted.Id);
+        Type managerType = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.StickerManager")!;
+        var legacySize = (Size)managerType.GetProperty("LegacyDefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var compactSize = (Size)managerType.GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var screen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+        var customLayout = new StickerLayout(custom.Id, screen.DeviceName, 72, 82, legacySize.Width + 100, legacySize.Height + 70, AlwaysOnTop: true);
+        repository.SaveStickerLayout(new(first.Id, screen.DeviceName, 32, 42, legacySize.Width, legacySize.Height));
+        repository.SaveStickerLayout(customLayout);
+        repository.SaveStickerLayout(new(deleted.Id, screen.DeviceName, 112, 122, legacySize.Width, legacySize.Height, true));
+        using (var worker = new WorkerClient())
+        using (var context = new BookmarkApplicationContext(repository, worker, directory))
+        {
+            try
+            {
+                PumpUntil(() => Field<UserSettings>(context, "_settings").StickerPresentationVersion == UserSettings.CurrentStickerPresentationVersion);
+                var manager = Field<object>(context, "_stickers");
+                var layouts = repository.GetStickerLayouts().ToDictionary(layout => layout.BookmarkId);
+                assert(UserSettings.Load(directory).DisplayMode == BookmarkDisplayMode.List &&
+                    !((System.Collections.IEnumerable)managerType.GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().Any() &&
+                    layouts[first.Id].Width == compactSize.Width && layouts[first.Id].Height == compactSize.Height &&
+                    layouts[custom.Id] == customLayout && layouts[deleted.Id].Width == compactSize.Width &&
+                    layouts[deleted.Id].Height == compactSize.Height && layouts[deleted.Id].IsCollapsed && repository.Get(deleted.Id)!.DeletedAtUtc is not null,
+                    "SS17 version-one startup compacts only old defaults, keeps custom outer bounds and the List choice, and leaves deleted bookmarks deleted");
+            }
+            finally { context.ExitThread(); }
+        }
+        (UserSettings.Load(directory) with { DisplayMode = BookmarkDisplayMode.Stickers }).Save(directory);
+        using (var worker = new WorkerClient())
+        using (var context = new BookmarkApplicationContext(repository, worker, directory))
+        {
+            try
+            {
+                var manager = Field<object>(context, "_stickers");
+                Form[] Forms() => ((System.Collections.IEnumerable)managerType.GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
+                PumpUntil(() => Forms().Length == 2 && Forms().All(form => form.Visible));
+                var compact = Forms().Single(form => BookmarkFor(form).Id == first.Id);
+                var restored = Forms().Single(form => BookmarkFor(form).Id == custom.Id);
+                var expected = (Rectangle)managerType.GetMethod("RestoreBounds", BindingFlags.Static | BindingFlags.NonPublic)!
+                    .Invoke(null, [customLayout, screen.WorkingArea, restored.DeviceDpi, restored.MinimumSize])!;
+                assert(compact.ClientSize == new Size((int)Math.Round(260 * compact.DeviceDpi / 96F), (int)Math.Round(88 * compact.DeviceDpi / 96F)) &&
+                    restored.Bounds == expected && repository.GetStickerLayouts().Single(layout => layout.BookmarkId == custom.Id) == customLayout,
+                    "SS18 reopening version-two stickers restores the compact default and the user's unchanged larger window");
+            }
+            finally { context.ExitThread(); }
+        }
     }
 
     private static void EmptyAndInvalidStartup(string directory, Action<bool, string> assert)

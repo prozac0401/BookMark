@@ -57,8 +57,7 @@ internal static class StickerFormChecks
         assert(Field<Button>(form, "_title").Bottom < Field<Button>(form, "_resume").Top &&
             Field<Button>(form, "_title").Height >= TextHeight(Field<Button>(form, "_title"), "가Ag\n가Ag") &&
             Field<Button>(form, "_title").Height < TextHeight(Field<Button>(form, "_title"), "가Ag\n가Ag\n가Ag") &&
-            form.ClientSize.Width >= Px(form, 240) && form.ClientSize.Height >= Px(form, 160) &&
-            Field<Button>(form, "_delete").Right < Field<Button>(form, "_resume").Left,
+            form.ClientSize == new Size(Px(form, 240), Px(form, 88)),
             "STK06 compact minimum size keeps the two-line title and actions separate");
 
         form.Show();
@@ -93,12 +92,13 @@ internal static class StickerFormChecks
         form.PerformLayout();
         var status = Field<Label>(form, "_resumeStatus");
         assert(status.Visible && status.Top >= Field<Button>(form, "_title").Bottom &&
-            status.Bottom < Field<Button>(form, "_resume").Top && status.Height >= status.Font.Height * 2,
-            "STK13 resume feedback remains readable alongside a note title at minimum size");
-        assert(defaultClientSize == new Size(Px(form, 260), Px(form, 170)) &&
+            status.Bottom < Field<Button>(form, "_resume").Top && status.Height >= TextHeight(status, "가Ag") &&
+            form.Size == minimum && Field<ToolTip>(form, "_tooltip").GetToolTip(status)?.Contains("접근할 수 없습니다", StringComparison.Ordinal) == true,
+            "STK13 failed resume retains a one-line status and full tooltip without enlarging the compact sticker");
+        assert(defaultClientSize == new Size(Px(form, 260), Px(form, 88)) &&
             Math.Abs(form.Font.SizeInPoints - 9F) < .01F &&
             Math.Abs(Field<Button>(form, "_title").Font.SizeInPoints - 10.5F) < .01F,
-            "STK14 default width, height and type scale are compact");
+            $"STK14 default width, height and type scale are compact (initialClient={defaultClientSize}, dpi={form.DeviceDpi}, font={form.Font.SizeInPoints}, titleFont={Field<Button>(form, "_title").Font.SizeInPoints})");
 
         var titled = sample with { Note = "  메모만 제목으로 표시합니다  " };
         Invoke(form, "UpdateBookmark", titled);
@@ -108,9 +108,20 @@ internal static class StickerFormChecks
             Field<ToolTip>(form, "_tooltip").GetToolTip(title)?.Contains(sample.Target.Path, StringComparison.Ordinal) == true &&
             Get<Bookmark>(form, "Bookmark") == titled,
             "STK15 note titles hide duplicate target details while retaining tooltips and stored data");
+        assert(form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([title, Field<Button>(form, "_resume")]) &&
+            (GetWindowLong(form.Handle, -16) & 0x00C00000) == 0 && form.ContextMenuStrip is not null,
+            "STK20 normal compact stickers show only title and resume, with caption removed and a context menu available");
+        var menu = Field<ContextMenuStrip>(form, "_menu");
+        var deleteItem = menu.Items.OfType<ToolStripMenuItem>().Single(item => item.Text == "책갈피 지우기");
+        removed = null;
+        deleteItem.PerformClick();
+        assert(removed == titled && Get<Rectangle>(form, "PlacementBounds").Size == Get<Size>(form, "ExpandedSize"),
+            "STK21 the context menu deletes the same bookmark while persisted placement remains the normal size");
         Apply(form, true, true);
-        assert(Field<Label>(form, "_kind").Text == title.Text && form.Text.StartsWith(title.Text, StringComparison.Ordinal),
-            "STK16 collapsed and native window titles use the same memo-first identity");
+        assert(title.Visible && title.Text == titled.Note.Trim() && !Field<Button>(form, "_resume").Visible &&
+            form.Controls.Cast<Control>().Where(control => control.Visible).SequenceEqual([title]) &&
+            Get<bool>(form, "PlacementIsCollapsed"),
+            "STK16 collapsed stickers show only their memo-first title and retain the collapsed placement");
         Apply(form, false, true);
 
         var fallbackCases = new[]

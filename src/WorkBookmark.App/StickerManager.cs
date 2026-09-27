@@ -39,18 +39,39 @@ internal sealed class StickerManager : IDisposable
         {
             // Match StickerForm's non-client styles without constructing a bookmark view
             // or inheriting the monitor DPI of a temporary window.
-            using var template = new BoundsTemplate();
+            using var template = new BoundsTemplate(includeCaption: false);
             return template.OuterSize96(StickerForm.DefaultClientSize);
         }
     }
 
-    internal async Task ResetSavedSizesAsync()
+    internal static Size LegacyDefaultExpandedSize96
+    {
+        get
+        {
+            using var template = new BoundsTemplate(includeCaption: true);
+            return template.OuterSize96(new Size(260, 170));
+        }
+    }
+
+    internal async Task ResetSavedSizesAsync(int previousVersion = 0)
     {
         if (_disposed || _enabled) throw new InvalidOperationException("Sticker sizes must be upgraded before displaying them.");
         Size size = DefaultExpandedSize96;
+        Size legacyDefault = LegacyDefaultExpandedSize96;
         var loaded = await _load();
         if (_disposed) throw new OperationCanceledException();
-        var resized = loaded.Layouts.Select(layout => layout with { Width = size.Width, Height = size.Height }).ToArray();
+        var resized = loaded.Layouts.Select(layout =>
+        {
+            Size preferred = size;
+            if (previousVersion == 1 && (layout.Width != legacyDefault.Width || layout.Height != legacyDefault.Height))
+            {
+                // Preserve custom outer dimensions exactly. A failed settings save
+                // may repeat this migration, so frame subtraction would shrink a
+                // previously converted custom size again on every retry.
+                preferred = new Size(layout.Width, layout.Height);
+            }
+            return layout with { Width = preferred.Width, Height = preferred.Height };
+        }).ToArray();
         // GetStickerLayouts includes soft-deleted bookmarks. Their saved sizes change,
         // but loading a layout never restores or displays a deleted bookmark.
         if (resized.Length > 0) await Task.Run(() => _save(resized));
@@ -136,7 +157,7 @@ internal sealed class StickerManager : IDisposable
                 Screen screen = Screen.FromPoint(Cursor.Position);
                 form.Location = screen.WorkingArea.Location;
                 _ = form.Handle;
-                form.Bounds = DefaultBounds(screen.WorkingArea, form.DefaultExpandedSize, _forms.Count - 1);
+                form.Bounds = DefaultBounds(screen.WorkingArea, form.DefaultExpandedSize, _forms.Count - 1, form.MinimumSize);
             }
             form.SetBusy(item.Id == _busyBookmarkId);
             if (!_hidden) form.Show();
@@ -190,7 +211,7 @@ internal sealed class StickerManager : IDisposable
         int index = 0;
         foreach (var form in _forms.Values.OrderByDescending(value => value.Bookmark.CaptureSequence))
         {
-            form.Bounds = DefaultBounds(screen.WorkingArea, form.Size, index++);
+            form.Bounds = DefaultBounds(screen.WorkingArea, form.Size, index++, form.MinimumSize);
             Remember(form);
         }
     }
@@ -205,14 +226,16 @@ internal sealed class StickerManager : IDisposable
     private void Remember(StickerForm form)
     {
         if (_disposed || _applying || form.IsDisposed) return;
-        var screen = Screen.FromRectangle(form.Bounds);
+        // Editing can temporarily enlarge and move a window to fit the screen.
+        // Persist the normal placement even when shutdown happens during editing.
+        Rectangle bounds = form.PlacementBounds;
+        var screen = Screen.FromRectangle(form.PlacementScreenBounds);
         float scale = 96F / Math.Max(96, form.DeviceDpi);
-        var size = form.ExpandedSize;
         var layout = new StickerLayout(form.Bookmark.Id, screen.DeviceName,
-            (int)Math.Round((form.Left - screen.WorkingArea.Left) * scale),
-            (int)Math.Round((form.Top - screen.WorkingArea.Top) * scale),
-            Math.Max(1, (int)Math.Round(size.Width * scale)), Math.Max(1, (int)Math.Round(size.Height * scale)),
-            form.IsCollapsed, form.TopMost);
+            (int)Math.Round((bounds.Left - screen.WorkingArea.Left) * scale),
+            (int)Math.Round((bounds.Top - screen.WorkingArea.Top) * scale),
+            Math.Max(1, (int)Math.Round(bounds.Width * scale)), Math.Max(1, (int)Math.Round(bounds.Height * scale)),
+            form.PlacementIsCollapsed, form.TopMost);
         if (_layouts.TryGetValue(layout.BookmarkId, out var old) && old == layout) return;
         _layouts[layout.BookmarkId] = layout; _pending[layout.BookmarkId] = layout;
         _unsaved.Add(layout.BookmarkId);
@@ -267,14 +290,14 @@ internal sealed class StickerManager : IDisposable
         return new(Math.Clamp(bounds.X, area.Left, area.Right - width), Math.Clamp(bounds.Y, area.Top, area.Bottom - height), width, height);
     }
 
-    private static Rectangle DefaultBounds(Rectangle area, Size size, int index)
+    private static Rectangle DefaultBounds(Rectangle area, Size size, int index, Size minimum)
     {
         int columns = Math.Max(1, (area.Width - 32) / (size.Width + 16));
         int rows = Math.Max(1, (area.Height - 32) / (size.Height + 16));
         int page = index / (columns * rows), slot = index % (columns * rows);
         int left = area.Right - 16 - size.Width - (slot % columns) * (size.Width + 16) - (page % 6) * 20;
         int top = area.Top + 16 + (slot / columns) * (size.Height + 16) + (page % 6) * 20;
-        return ClampBounds(new(left, top, size.Width, size.Height), area, new(240, 150));
+        return ClampBounds(new(left, top, size.Width, size.Height), area, minimum);
     }
 
     public void Dispose()
@@ -297,12 +320,25 @@ internal sealed class StickerManager : IDisposable
 
     private sealed class BoundsTemplate : Form
     {
-        internal BoundsTemplate()
+        private readonly bool _includeCaption;
+
+        internal BoundsTemplate(bool includeCaption)
         {
+            _includeCaption = includeCaption;
             FormBorderStyle = FormBorderStyle.SizableToolWindow;
             MaximizeBox = false;
             MinimizeBox = false;
             ShowInTaskbar = false;
+        }
+
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                var parameters = base.CreateParams;
+                if (!_includeCaption) parameters.Style &= ~0x00C00000; // WS_CAPTION, matching StickerForm.
+                return parameters;
+            }
         }
 
         internal Size OuterSize96(Size client)

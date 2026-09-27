@@ -39,8 +39,11 @@ internal static class StickerInlineNoteChecks
         On(form, "NoteRequested", (Action<Bookmark>)(_ => Begin(form, persist)));
         Field<Button>(form, "_title").PerformClick();
         var editor = Field<TextBox>(form, "_noteEditor");
-        assert(Editing(form) && form.Handle == window && form.Bounds == bounds && editor.Parent == form && editor.Visible && editor.Focused,
-            "STN01 clicking the title edits the note in the originating sticker window and position");
+        var editingBounds = form.Bounds;
+        assert(Editing(form) && form.Handle == window && form.Location == bounds.Location && form.Width == bounds.Width &&
+            form.ClientSize.Height == Px(form, 170) && Placement(form) == bounds && !PlacementCollapsed(form) &&
+            editor.Parent == form && editor.Visible && editor.Focused,
+            "STN01 clicking the compact title temporarily enlarges only its height in the same window and preserves placement");
         assert(editor.Text == sample.Note && !editor.Multiline && editor.MaxLength == 500 &&
             !form.Controls.OfType<Button>().Any(button => button.Text.StartsWith("저장", StringComparison.Ordinal)) &&
             Field<Button>(form, "_cancelNote").Visible && !Field<Button>(form, "_resume").Visible,
@@ -79,18 +82,18 @@ internal static class StickerInlineNoteChecks
         Pump(Save(form));
         assert(saves == 1 && Editing(form) && !editor.ReadOnly && editor.Text == "저장 실패 뒤에도 보존하는 메모" &&
             Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal) &&
-            Field<Label>(form, "_noteStatus").Text.Contains("Enter", StringComparison.Ordinal),
+            Field<Label>(form, "_noteStatus").Text.Contains("Enter", StringComparison.Ordinal) && form.Bounds == editingBounds && Placement(form) == bounds,
             "STN08 injected persistence failure retains editable text and inline retry feedback");
         failSave = false;
         Command(form, Keys.Enter);
         assert(saves == 2 && saved == "저장 실패 뒤에도 보존하는 메모" && !Editing(form) && form.Visible &&
-            Field<Button>(form, "_title").Text == saved && resumes == 0,
+            Field<Button>(form, "_title").Text == saved && resumes == 0 && form.Bounds == bounds,
             "STN09 retry by Enter commits the retained draft without opening the bookmarked target");
 
         Begin(form, persist);
         editor.Text = "취소할 메모";
         Command(form, Keys.Escape);
-        assert(!Editing(form) && form.Visible && saves == 2 && Field<Button>(form, "_title").Text == saved,
+        assert(!Editing(form) && form.Visible && saves == 2 && Field<Button>(form, "_title").Text == saved && form.Bounds == bounds,
             "STN10 Escape cancels only the inline draft and keeps the saved note and sticker visible");
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -101,11 +104,11 @@ internal static class StickerInlineNoteChecks
         Task duplicate = Save(form);
         Command(form, Keys.Escape);
         assert(delayedSaves == 1 && !pending.IsCompleted && duplicate.IsCompleted && Editing(form) && editor.ReadOnly &&
-            !Field<Button>(form, "_cancelNote").Enabled,
+            !Field<Button>(form, "_cancelNote").Enabled && form.Bounds == editingBounds && Placement(form) == bounds,
             "STN11 a pending save blocks duplicate writes and cancel until commit completes");
         completion.SetResult();
         Pump(pending);
-        assert(!Editing(form) && Field<Button>(form, "_title").Text == "진행 중 쓰기",
+        assert(!Editing(form) && Field<Button>(form, "_title").Text == "진행 중 쓰기" && form.Bounds == bounds,
             "STN12 asynchronous note commit restores normal sticker actions");
 
         Begin(form, persist);
@@ -117,10 +120,9 @@ internal static class StickerInlineNoteChecks
             Field<Label>(form, "_noteStatus").Height >= Field<Label>(form, "_noteStatus").Font.Height * 2 &&
             editor.Right <= form.ClientSize.Width && Field<Button>(form, "_cancelNote").Bottom < form.ClientSize.Height,
             "STN13 inline editor and feedback remain inside the minimum sticker bounds");
-        var icon = Field<PictureBox>(form, "_typeIcon");
-        assert(icon.Image is not null && icon.Width == (int)Math.Round(20 * form.DeviceDpi / 96F) &&
-            icon.Right < Field<Label>(form, "_kind").Left && Field<Label>(form, "_kind").Right < Field<Button>(form, "_collapse").Left,
-            "STN14 the top-left file type icon fits alongside the label and header controls");
+        assert(form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals(
+            [editor, Field<Label>(form, "_noteStatus"), Field<Button>(form, "_cancelNote")]) && Placement(form) == bounds,
+            "STN14 temporary editing shows only editor, feedback and cancel without replacing the normal placement");
 
         Command(form, Keys.Escape);
         var laterCommit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -132,7 +134,7 @@ internal static class StickerInlineNoteChecks
         laterCommit.SetResult();
         Pump(earlierSave);
         assert(!Editing(form) && ReferenceEquals(StickerType.GetProperty("Bookmark")!.GetValue(form), latest) &&
-            Field<Button>(form, "_title").Text == latest.Note,
+            Field<Button>(form, "_title").Text == latest.Note && form.Bounds == bounds,
             "STN15 a delayed save completion cannot overwrite a newer published bookmark note");
 
         Invoke(form, "UpdateBookmark", sample with { Note = "" });
@@ -149,13 +151,19 @@ internal static class StickerInlineNoteChecks
             form.Text.StartsWith("운영 계획.xlsx", StringComparison.Ordinal),
             "STN27 clearing a memo immediately restores its fallback without rewriting the stored draft");
         Invoke(form, "ApplyPresentation", true, true);
+        var collapsedBounds = form.Bounds;
+        var collapsedPlacement = Placement(form);
         Command(form, Keys.Control | Keys.E);
         assert(Editing(form) && !(bool)StickerType.GetProperty("IsCollapsed")!.GetValue(form)! &&
-            editor.Visible && !Field<Button>(form, "_title").Visible,
-            "STN28 editing a collapsed sticker expands it and shows only the editor");
+            editor.Visible && !Field<Button>(form, "_title").Visible && PlacementCollapsed(form) && Placement(form) == collapsedPlacement,
+            "STN28 editing a collapsed sticker temporarily reveals its editor while retaining collapsed placement");
         Command(form, Keys.Escape);
+        assert(form.Bounds == collapsedBounds && PlacementCollapsed(form) && Field<Button>(form, "_title").Visible,
+            "STN29 cancelling an edit restores the original collapsed size and presentation");
+        Invoke(form, "ApplyPresentation", false, true);
 
         RunAutoSave(form, assert);
+        EditingGeometry(assert);
     }
 
     private static void RunAutoSave(Form form, Action<bool, string> assert)
@@ -166,6 +174,7 @@ internal static class StickerInlineNoteChecks
         other.Controls.Add(new TextBox { Text = "Other window", Dock = DockStyle.Top });
         other.Show();
         var editor = Field<TextBox>(form, "_noteEditor");
+        var normalBounds = form.Bounds;
         int writes = 0;
         string? stored = null;
         bool rejectWrite = false;
@@ -182,7 +191,7 @@ internal static class StickerInlineNoteChecks
         FocusOther(other);
         PumpUntil(() => !Editing(form));
         assert(writes == 1 && stored == "다른 창으로 이동하며 자동저장" && other.ContainsFocus &&
-            Field<Button>(form, "_title").Text == stored,
+            Field<Button>(form, "_title").Text == stored && form.Bounds == normalBounds,
             "STN16 moving to an ordinary window automatically saves the note without taking focus back");
         Deactivate(form);
         PumpEvents();
@@ -194,14 +203,15 @@ internal static class StickerInlineNoteChecks
         FocusOther(other);
         PumpUntil(() => writes == 2 && !Field<bool>(form, "_noteSaving"));
         assert(Editing(form) && !editor.ReadOnly && editor.Text == "자동저장 실패 후 재시도할 초안" &&
-            Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal) && other.ContainsFocus,
+            Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal) && other.ContainsFocus &&
+            form.ClientSize.Height == Px(form, 170) && Placement(form) == normalBounds,
             "STN18 automatic save failure retains an editable draft and feedback without stealing focus");
         rejectWrite = false;
         form.Activate();
         editor.Focus();
         FocusOther(other);
         PumpUntil(() => !Editing(form));
-        assert(writes == 3 && stored == "자동저장 실패 후 재시도할 초안" && other.ContainsFocus,
+        assert(writes == 3 && stored == "자동저장 실패 후 재시도할 초안" && other.ContainsFocus && form.Bounds == normalBounds,
             "STN19 returning to a failed draft and leaving again retries and commits it automatically");
 
         Begin(form, persist);
@@ -224,7 +234,7 @@ internal static class StickerInlineNoteChecks
         SendMessage(editor.Handle, 0x010E, nint.Zero, nint.Zero);
         editor.Text = "조합이 확정된 최종 메모";
         PumpUntil(() => !Editing(form));
-        assert(writes == 4 && stored == "조합이 확정된 최종 메모" && other.ContainsFocus,
+        assert(writes == 4 && stored == "조합이 확정된 최종 메모" && other.ContainsFocus && form.Bounds == normalBounds,
             "STN22 deferred automatic save waits for the committed IME text and keeps the destination focused");
 
         Begin(form, persist);
@@ -253,8 +263,48 @@ internal static class StickerInlineNoteChecks
             "STN24 repeated departure events cannot duplicate a pending automatic write");
         completion.SetResult();
         PumpUntil(() => !Editing(form));
-        assert(delayedWrites == 1 && other.ContainsFocus && Field<Button>(form, "_title").Text == "자동저장 진행 중",
+        assert(delayedWrites == 1 && other.ContainsFocus && Field<Button>(form, "_title").Text == "자동저장 진행 중" && form.Bounds == normalBounds,
             "STN25 a delayed automatic save completes in the background without reactivating its sticker");
+    }
+
+    private static void EditingGeometry(Action<bool, string> assert)
+    {
+        using var form = Create(Sample());
+        var screen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
+        form.Location = new Point(screen.WorkingArea.Left + 60, screen.WorkingArea.Top + 60);
+        form.Show();
+        foreach (var client in new[] { new Size(420, 210), new Size(240, 160) })
+        {
+            form.ClientSize = new Size(Px(form, client.Width), Px(form, client.Height));
+            var original = form.Bounds;
+            Begin(form, _ => Task.CompletedTask);
+            assert(form.Bounds == original && Placement(form) == original,
+                $"STN30 editing a {client.Width}x{client.Height} custom client never resizes an already sufficient window");
+            Pump(Save(form));
+            assert(form.Bounds == original, "STN31 saving preserves the full custom window size and position");
+        }
+        form.ClientSize = new Size(Px(form, 240), Px(form, 88));
+        var narrow = form.Bounds;
+        Begin(form, _ => Task.CompletedTask);
+        assert(form.Width == narrow.Width && form.ClientSize.Height == Px(form, 170) && Placement(form) == narrow,
+            "STN32 a narrow compact sticker keeps its chosen width while only its editing height expands");
+        form.Size += new Size(Px(form, 30), Px(form, 20));
+        StickerType.GetMethod("OnResizeEnd", Instance)!.Invoke(form, [EventArgs.Empty]);
+        assert(Placement(form) == narrow, "STN33 resizing while editing changes only the temporary editor geometry");
+        Command(form, Keys.Escape);
+        assert(form.Bounds == narrow, "STN34 cancelling restores the original narrow size after a temporary resize");
+        form.ClientSize = new Size(Px(form, 260), Px(form, 88));
+        form.Location = new Point(screen.WorkingArea.Left + 60, screen.WorkingArea.Bottom - form.Height - 2);
+        var bottom = form.Bounds;
+        Begin(form, _ => Task.FromException(new IOException("Injected bottom-edge save failure")));
+        var expanded = form.Bounds;
+        assert(screen.WorkingArea.Contains(expanded) && expanded.Top < bottom.Top && Placement(form) == bottom,
+            "STN35 editing at the work-area bottom moves the temporary editor into view while preserving the original anchor");
+        Pump(Save(form));
+        assert(Editing(form) && form.Bounds == expanded && Placement(form) == bottom,
+            "STN36 a bottom-edge save failure retains the visible enlarged draft and its original persisted placement");
+        Command(form, Keys.Escape);
+        assert(form.Bounds == bottom, "STN37 cancelling a bottom-edge edit restores both its compact size and original position");
     }
 
     internal static void Render(string directory)
@@ -289,6 +339,9 @@ internal static class StickerInlineNoteChecks
         return new(Guid.NewGuid(), target, target.Path, "운영 계획.xlsx", "변경 수량 확인하기", now, now, 10, null, null, null, null);
     }
 
+    private static int Px(Form form, int value) => (int)Math.Round(value * form.DeviceDpi / 96F);
+    private static Rectangle Placement(Form form) => (Rectangle)StickerType.GetProperty("PlacementBounds")!.GetValue(form)!;
+    private static bool PlacementCollapsed(Form form) => (bool)StickerType.GetProperty("PlacementIsCollapsed")!.GetValue(form)!;
     private static Form Create(Bookmark bookmark) => (Form)Activator.CreateInstance(StickerType, bookmark)!;
     private static void On(Form form, string name, Delegate handler) => StickerType.GetEvent(name)!.AddEventHandler(form, handler);
     private static bool Editing(Form form) => (bool)StickerType.GetProperty("IsEditingNote")!.GetValue(form)!;

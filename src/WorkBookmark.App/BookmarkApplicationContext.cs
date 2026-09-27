@@ -120,7 +120,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
                 try
                 {
                     _settings = await StickerPresentationUpgrade.ApplyAsync(_settings,
-                        _stickers.ResetSavedSizesAsync, updated =>
+                        () => _stickers.ResetSavedSizesAsync(_settings.StickerPresentationVersion), updated =>
                         {
                             if (_exiting) throw new OperationCanceledException();
                             return Task.Run(() => updated.Save(_dataDirectory));

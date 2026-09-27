@@ -46,6 +46,14 @@ internal static class SettingsDisplayChecks
         assert(retained == chosenList,
             "SET13 a List choice made after the upgrade is retained without another reset");
 
+        int versionOneResets = 0, versionOneSaves = 0;
+        var versionOneList = previous with { StickerPresentationVersion = 1 };
+        var versionTwoList = Upgrade(versionOneList, () => { versionOneResets++; return Task.CompletedTask; },
+            value => { versionOneSaves++; value.Save(directory); return Task.CompletedTask; }).GetAwaiter().GetResult();
+        assert(versionTwoList == previous && versionOneResets == 1 && versionOneSaves == 1 &&
+            UserSettings.Load(directory).DisplayMode == BookmarkDisplayMode.List,
+            "SET15 compact presentation upgrades version one without resetting the user's List choice");
+
         var stickers = previous with { DisplayMode = BookmarkDisplayMode.Stickers };
         stickers.Save(directory);
         assert(UserSettings.Load(directory) == stickers,

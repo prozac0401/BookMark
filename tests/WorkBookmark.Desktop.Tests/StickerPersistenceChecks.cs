@@ -15,6 +15,8 @@ internal static class StickerPersistenceChecks
     internal static void Run(Action<bool, string> assert)
     {
         PresentationUpgradeFailures(assert);
+        VersionOneUpgradeRetries(assert);
+        EditingWhilePlacementWriteCompletes(assert);
         ChangedDuringWrite(assert);
         FailedWriteThenNewPlacement(assert);
         ShutdownBeforeContinuation(assert, failFirst: false);
@@ -50,7 +52,7 @@ internal static class StickerPersistenceChecks
         };
         using var manager = (IDisposable)managerType.GetConstructors(privateInstance).Single()
             .Invoke([load, save, (Action<string>)(_ => { })]);
-        Func<Task> reset = () => (Task)managerType.GetMethod("ResetSavedSizesAsync", privateInstance)!.Invoke(manager, null)!;
+        Func<Task> reset = () => (Task)managerType.GetMethod("ResetSavedSizesAsync", privateInstance)!.Invoke(manager, [0])!;
         Func<UserSettings, Task> persist = value =>
         {
             settingsSaves++;
@@ -83,6 +85,71 @@ internal static class StickerPersistenceChecks
         Complete(again);
         assert(again.Result == selected && batches == 3 && settingsSaves == 2,
             "SP12 completed presentation does not repeat layout writes or reset a later List choice");
+    }
+
+    private static void VersionOneUpgradeRetries(Action<bool, string> assert)
+    {
+        const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
+        var assembly = typeof(UserSettings).Assembly;
+        var managerType = assembly.GetType("WorkBookmark.App.StickerManager")!;
+        var upgrade = assembly.GetType("WorkBookmark.App.StickerPresentationUpgrade")!.GetMethod("ApplyAsync", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var oldDefault = (Size)managerType.GetProperty("LegacyDefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var newDefault = (Size)managerType.GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        string directory = Path.Combine(Path.GetTempPath(), "WorkBookmark-CompactRetry-" + Guid.NewGuid().ToString("N"));
+        var settings = UserSettings.Default with { DisplayMode = BookmarkDisplayMode.List, IntroShown = true, StickerPresentationVersion = 1 };
+        settings.Save(directory);
+        var custom = new StickerLayout(Guid.NewGuid(), "synthetic-screen", 40, 50, oldDefault.Width + 110, oldDefault.Height + 70, true);
+        var stored = new[] { new StickerLayout(Guid.NewGuid(), "synthetic-screen", 20, 30, oldDefault.Width, oldDefault.Height), custom };
+        bool failLayouts = true, failSettings = true;
+        int settingsSaves = 0;
+        Func<Task<(IReadOnlyList<Bookmark> Items, IReadOnlyList<StickerLayout> Layouts)>> load =
+            () => Task.FromResult<(IReadOnlyList<Bookmark>, IReadOnlyList<StickerLayout>)>(([], stored.ToArray()));
+        Action<IReadOnlyList<StickerLayout>> save = batch =>
+        {
+            stored[0] = batch[0];
+            if (failLayouts) throw new IOException("Injected version-one partial layout failure");
+            stored[1] = batch[1];
+        };
+        using var manager = (IDisposable)managerType.GetConstructors(instance).Single().Invoke([load, save, (Action<string>)(_ => { })]);
+        Func<Task> reset = () => (Task)managerType.GetMethod("ResetSavedSizesAsync", instance)!.Invoke(manager, [1])!;
+        Func<UserSettings, Task> persist = value =>
+        {
+            settingsSaves++;
+            if (failSettings) return Task.FromException(new IOException("Injected version-one settings failure"));
+            value.Save(directory);
+            return Task.CompletedTask;
+        };
+        Task<UserSettings> Apply() => (Task<UserSettings>)upgrade.Invoke(null, [UserSettings.Load(directory), reset, persist])!;
+        bool Failed(Task task) { try { Complete(task); return false; } catch (IOException) { return true; } }
+        assert(Failed(Apply()) && UserSettings.Load(directory) == settings && settingsSaves == 0 && stored[1] == custom,
+            "SP13 a partial version-one upgrade leaves the marker and custom outer bounds unchanged");
+        failLayouts = false;
+        assert(Failed(Apply()) && UserSettings.Load(directory) == settings && stored[1] == custom &&
+            stored[0].Width == newDefault.Width && stored[0].Height == newDefault.Height,
+            "SP14 settings failure after the compact resize preserves the custom window and remains retryable");
+        failSettings = false;
+        Task<UserSettings> retry = Apply();
+        Complete(retry);
+        assert(retry.Result.DisplayMode == BookmarkDisplayMode.List &&
+            retry.Result.StickerPresentationVersion == UserSettings.CurrentStickerPresentationVersion && settingsSaves == 2 &&
+            stored[0].Width == newDefault.Width && stored[0].Height == newDefault.Height && stored[0].Left == 20 && stored[0].Top == 30 && stored[1] == custom,
+            "SP15 retrying version one never shrinks a custom window twice or resets the later List choice");
+    }
+
+    private static void EditingWhilePlacementWriteCompletes(Action<bool, string> assert)
+    {
+        using var fixture = new Fixture();
+        var original = fixture.PlaceCompact(collapsed: true);
+        Task first = fixture.Save();
+        fixture.WaitForFirstWrite();
+        fixture.EnlargeTemporaryEditor();
+        fixture.ReleaseFirstWrite(first);
+        fixture.DisposeManager();
+        assert(fixture.Saved == original && fixture.Saved is { IsCollapsed: true } && fixture.SaveAttempts == 1,
+            "SP16 shutdown during a temporarily resized editor persists the original collapsed placement after a pending layout write");
+        fixture.Dispatch(first);
+        assert(fixture.Saved == original && fixture.SaveAttempts == 1,
+            "SP17 a delayed placement continuation cannot replace normal bounds with disposed editor geometry");
     }
 
     private static void Complete(Task task)
@@ -182,6 +249,7 @@ internal static class StickerPersistenceChecks
                 () => Task.FromResult<(IReadOnlyList<Bookmark>, IReadOnlyList<StickerLayout>)>(([], []));
             var constructor = AppAssembly.GetType("WorkBookmark.App.StickerManager")!.GetConstructors(Private).Single();
             _manager = constructor.Invoke([load, (Action<IReadOnlyList<StickerLayout>>)SaveBatch, (Action<string>)(_ => Notifications++)]);
+            ((System.Collections.IDictionary)_manager.GetType().GetField("_forms", Private)!.GetValue(_manager)!).Add(_id, _form);
         }
 
         internal StickerLayout Place(int width)
@@ -192,6 +260,23 @@ internal static class StickerPersistenceChecks
             // This suite covers ordering and durability; coordinate conversion is
             // verified separately in StickerIntegrationChecks.
             return Field<Dictionary<Guid, StickerLayout>>("_layouts")[_id];
+        }
+
+        internal StickerLayout PlaceCompact(bool collapsed)
+        {
+            float scale = _form.DeviceDpi / 96F;
+            _form.ClientSize = new Size((int)Math.Round(260 * scale), (int)Math.Round(88 * scale));
+            _form.Location = new Point(80, 80);
+            _form.GetType().GetMethod("ApplyPresentation")!.Invoke(_form, [collapsed, true]);
+            Invoke("Remember", _form);
+            return Field<Dictionary<Guid, StickerLayout>>("_layouts")[_id];
+        }
+
+        internal void EnlargeTemporaryEditor()
+        {
+            _form.GetType().GetMethod("BeginNoteEdit")!.Invoke(_form, [(Func<string, Task>)(_ => Task.CompletedTask)]);
+            _form.Size += new Size(40, 30);
+            Invoke("Remember", _form);
         }
 
         internal Task Save() => (Task)Invoke("SavePendingAsync")!;

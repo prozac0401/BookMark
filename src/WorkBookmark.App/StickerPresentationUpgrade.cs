@@ -11,7 +11,9 @@ internal static class StickerPresentationUpgrade
         await resetLayouts();
         var updated = settings with
         {
-            DisplayMode = BookmarkDisplayMode.Stickers,
+            // The first presentation upgrade selects stickers. Later visual upgrades
+            // preserve the display mode explicitly chosen since that first startup.
+            DisplayMode = settings.StickerPresentationVersion == 0 ? BookmarkDisplayMode.Stickers : settings.DisplayMode,
             StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
         };
         await saveSettings(updated);

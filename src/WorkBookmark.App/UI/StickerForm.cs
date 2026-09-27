@@ -9,8 +9,8 @@ namespace WorkBookmark.App.UI;
 /// <summary>A bookmark view; all data changes go through the application context.</summary>
 internal sealed class StickerForm : Form
 {
-    public static readonly Size DefaultClientSize = new(260, 170);
-    public static readonly Size MinimumClientSize = new(240, 160);
+    public static readonly Size DefaultClientSize = new(260, 88);
+    public static readonly Size MinimumClientSize = new(240, 88);
 
     private static readonly Color Paper = Color.FromArgb(255, 253, 245);
     private static readonly Color Rule = Color.FromArgb(226, 225, 213);
@@ -32,6 +32,7 @@ internal sealed class StickerForm : Form
     private readonly ToolStripMenuItem _relinkMenu;
     private readonly ToolStripMenuItem _copyMenu;
     private readonly ToolStripMenuItem _undoMenu;
+    private readonly ToolStripMenuItem _deleteMenu;
     private readonly ToolTip _tooltip = new() { AutoPopDelay = 12000, InitialDelay = 500, ReshowDelay = 100 };
     private readonly Icon _ownedIcon;
     private readonly Font _bodyFont;
@@ -39,6 +40,10 @@ internal sealed class StickerForm : Form
     private readonly Font _smallFont;
     private readonly Font _noteFont;
     private Size _expandedSize;
+    private Rectangle? _noteRestoreBounds;
+    private Size _noteRestoreExpandedSize;
+    private bool _noteRestoreCollapsed;
+    private Point _noteEditAnchor;
     private bool _presentationChanging;
     private bool _busy;
     private bool _layoutReady;
@@ -55,7 +60,20 @@ internal sealed class StickerForm : Form
     public bool IsCollapsed { get; private set; }
     public bool IsEditingNote => _saveNoteCallback is not null;
     public Size DefaultExpandedSize => SizeFromClientSize(new Size(Px(DefaultClientSize.Width), Px(DefaultClientSize.Height)));
-    public Size ExpandedSize => IsCollapsed ? new Size(Width, _expandedSize.Height) : Size;
+    public Size ExpandedSize => _noteRestoreBounds.HasValue ? _noteRestoreExpandedSize
+        : IsCollapsed ? new Size(Width, _expandedSize.Height) : Size;
+    public bool PlacementIsCollapsed => _noteRestoreBounds.HasValue ? _noteRestoreCollapsed : IsCollapsed;
+    public Rectangle PlacementScreenBounds => new(PlacementBounds.Location, _noteRestoreBounds?.Size ?? Size);
+    public Rectangle PlacementBounds
+    {
+        get
+        {
+            Point location = _noteRestoreBounds is { } saved
+                ? new Point(saved.Left + Left - _noteEditAnchor.X, saved.Top + Top - _noteEditAnchor.Y)
+                : Location;
+            return new Rectangle(location, ExpandedSize);
+        }
+    }
     public event Action<Bookmark>? ResumeRequested;
     public event Action<Bookmark>? NoteRequested;
     public event Action<Bookmark>? DeleteRequested;
@@ -69,6 +87,16 @@ internal sealed class StickerForm : Form
     // Only the act of showing is non-activating. A real click still activates the window,
     // so its buttons, keyboard navigation and native window move/size commands work.
     protected override bool ShowWithoutActivation => true;
+
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            var parameters = base.CreateParams;
+            parameters.Style &= ~0x00C00000; // WS_CAPTION: retain the native resize frame without a duplicate title bar.
+            return parameters;
+        }
+    }
 
     public StickerForm(Bookmark bookmark)
     {
@@ -88,13 +116,13 @@ internal sealed class StickerForm : Form
         MaximizeBox = false;
         MinimizeBox = false;
         ShowInTaskbar = false;
-        SizeGripStyle = SizeGripStyle.Show;
+        SizeGripStyle = SizeGripStyle.Hide;
         DoubleBuffered = true;
         _ownedIcon = Branding.CreateApplicationIcon();
         Icon = _ownedIcon;
-        ClientSize = DefaultClientSize;
 
         _header.BackColor = Paper;
+        _header.Visible = false;
         _header.TabIndex = 4;
         _header.AccessibleName = "스티커 이동 영역";
         _header.Cursor = Cursors.SizeAll;
@@ -128,6 +156,7 @@ internal sealed class StickerForm : Form
         _title.Cursor = Cursors.IBeam;
         _title.Click += (_, _) => RequestNoteEdit();
         _resumeStatus.Font = _smallFont;
+        _resumeStatus.UseCompatibleTextRendering = false; // Match the GDI line height used by OnLayout.
         _resumeStatus.ForeColor = Color.FromArgb(138, 80, 43);
         _resumeStatus.AutoEllipsis = true;
         _resumeStatus.UseMnemonic = false;
@@ -166,8 +195,12 @@ internal sealed class StickerForm : Form
         _copyMenu = new ToolStripMenuItem("전체 경로/URL 복사", null, (_, _) => CopyLocation());
         _relinkMenu = new ToolStripMenuItem("위치 다시 지정", null, (_, _) => { if (!_busy && !IsEditingNote) RelinkRequested?.Invoke(Bookmark); });
         _undoMenu = new ToolStripMenuItem("지우기 되돌리기", null, (_, _) => { if (!IsEditingNote) UndoRequested?.Invoke(); }) { ShortcutKeyDisplayString = "Ctrl+Z" };
+        _deleteMenu = new ToolStripMenuItem("책갈피 지우기", null, (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); }) { ShortcutKeyDisplayString = "Ctrl+Delete" };
         _menu.Items.AddRange([
+            new ToolStripMenuItem("메모 편집", null, (_, _) => RequestNoteEdit()) { ShortcutKeyDisplayString = "Ctrl+E" },
             _collapseMenu,
+            new ToolStripMenuItem("스티커 이동", null, (_, _) => BeginWindowMove()),
+            new ToolStripMenuItem("이 스티커 숨기기", null, (_, _) => Hide()) { ShortcutKeyDisplayString = "Esc" },
             new ToolStripSeparator(),
             new ToolStripMenuItem("목록으로 찾기", null, (_, _) => ShowListRequested?.Invoke()),
             new ToolStripMenuItem("설정…", null, (_, _) => SettingsRequested?.Invoke()),
@@ -175,11 +208,18 @@ internal sealed class StickerForm : Form
             new ToolStripSeparator(),
             _copyMenu,
             _relinkMenu,
+            _deleteMenu,
             _undoMenu
         ]);
         _menu.Font = Font;
         _menu.Opening += (_, _) => UpdateMenu();
         _menu.Closed += (_, _) => QueueNoteAutoSave();
+        ContextMenuStrip = _menu;
+        _title.ContextMenuStrip = _menu;
+        _resume.ContextMenuStrip = _menu;
+        _resumeStatus.ContextMenuStrip = _menu;
+        MouseDown += DragHeader;
+        _tooltip.SetToolTip(this, "빈 여백을 드래그하여 이동 · 우클릭하여 메뉴 열기");
         _header.ContextMenuStrip = _menu;
         _typeIcon.ContextMenuStrip = _menu;
         _kind.ContextMenuStrip = _menu;
@@ -192,6 +232,9 @@ internal sealed class StickerForm : Form
         UpdateBookmark(bookmark);
         ApplyPresentation(false, false);
         SetMinimumSize();
+        // Use outer bounds so Form does not reapply captioned ClientSize during
+        // native handle creation after our CreateParams removes that caption.
+        Size = DefaultExpandedSize;
         _expandedSize = Size;
         ResumeLayout(false);
         PerformLayout();
@@ -214,18 +257,26 @@ internal sealed class StickerForm : Form
             ResultCode.AppBusy => "편집이나 대화상자를 마친 뒤 다시 시도해 주세요.",
             _ => null
         };
-        _resumeStatus.Text = issue ?? "";
+        _resumeStatus.Text = value.LastResumeResult switch
+        {
+            ResultCode.TargetUnavailable => "대상에 접근할 수 없습니다.",
+            ResultCode.OpenedPositionFailed => "작업 위치로 이동하지 못했습니다.",
+            ResultCode.ResumeOutcomeUnknown => "대상 앱에서 결과를 확인해 주세요.",
+            ResultCode.AppBusy => "대상 앱에서 편집을 마쳐 주세요.",
+            _ => ""
+        };
         bool empty = string.IsNullOrWhiteSpace(value.Note);
         string details = title + "\n" + value.DisplayName + "\n" + UiStyle.Location(value) + $"\n저장: {value.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm}";
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
-            details += CanRelink(value) ? "\n더 보기에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
+            details += CanRelink(value) ? "\n우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
         _tooltip.SetToolTip(_title, details + "\n클릭하여 메모 편집 (Ctrl+E)");
         _tooltip.SetToolTip(_kind, details + "\n드래그하여 이동");
         _tooltip.SetToolTip(_resumeStatus, issue is null ? "" : issue + "\n" + details);
         _title.AccessibleDescription = details + (empty ? "\n메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다." : "\n클릭하거나 Ctrl+E로 메모를 편집할 수 있습니다.");
         _resumeStatus.AccessibleDescription = issue;
         RefreshActionState();
+        PerformLayout();
         // A refresh updates the saved bookmark, never the editor's in-progress draft.
     }
 
@@ -242,19 +293,44 @@ internal sealed class StickerForm : Form
         if (IsDisposed || _busy) return;
         if (!IsEditingNote)
         {
-            if (IsCollapsed)
-            {
-                ApplyPresentation(false, true);
-                PlacementChanged?.Invoke(this);
-            }
+            Rectangle restingBounds = Bounds;
+            Size restingExpandedSize = ExpandedSize;
+            bool restingCollapsed = IsCollapsed;
+            bool needsSpace = ClientSize.Height < Px(160);
+            _noteRestoreBounds = restingBounds;
+            _noteRestoreExpandedSize = restingExpandedSize;
+            _noteRestoreCollapsed = restingCollapsed;
+            _noteEditAnchor = Location;
             _saveNoteCallback = saveNote;
             _noteAutoSavePending = false;
             _noteEditor.Text = Bookmark.Note;
             _noteEditor.SelectionStart = _noteEditor.TextLength;
             _noteStatus.Text = "다른 창으로 이동하면 자동저장\nEnter 저장 · Esc 취소";
             _noteStatus.ForeColor = UiStyle.Muted;
-            RefreshActionState();
-            PerformLayout();
+            bool changing = _presentationChanging;
+            _presentationChanging = true;
+            SuspendLayout();
+            try
+            {
+                IsCollapsed = false;
+                SetMinimumSize();
+                if (needsSpace)
+                {
+                    Height = Math.Max(Height, SizeFromClientSize(new Size(ClientSize.Width, Px(170))).Height);
+                    // This automatic correction is not a user move. Only movement
+                    // after the final anchor contributes to the persisted placement.
+                    Rectangle area = Screen.FromRectangle(restingBounds).WorkingArea;
+                    Location = new Point(Math.Clamp(Left, area.Left, Math.Max(area.Left, area.Right - Width)),
+                        Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - Height)));
+                }
+                _noteEditAnchor = Location;
+                RefreshActionState();
+            }
+            finally
+            {
+                ResumeLayout(true);
+                _presentationChanging = changing;
+            }
         }
         if (!Visible) Show();
         Activate();
@@ -317,7 +393,7 @@ internal sealed class StickerForm : Form
             // save is awaiting completion. Never replace that row with an older
             // draft; simple callbacks that do not publish still update locally.
             if (ReferenceEquals(Bookmark, revisionBeforeSave)) Bookmark = Bookmark with { Note = text };
-            _saveNoteCallback = null;
+            RestoreNotePresentation();
             UpdateBookmark(Bookmark);
         }
         catch
@@ -342,33 +418,63 @@ internal sealed class StickerForm : Form
     {
         if (!IsEditingNote || _noteSaving) return;
         _noteAutoSavePending = false;
-        _saveNoteCallback = null;
+        RestoreNotePresentation();
         _noteEditor.Clear();
-        RefreshActionState();
         _title.Focus();
+    }
+
+    private void RestoreNotePresentation()
+    {
+        Rectangle? resting = _noteRestoreBounds;
+        Rectangle placement = PlacementBounds;
+        bool collapsed = _noteRestoreCollapsed;
+        Size expanded = _noteRestoreExpandedSize;
+        _saveNoteCallback = null;
+        if (resting is null) { RefreshActionState(); return; }
+
+        bool changing = _presentationChanging;
+        _presentationChanging = true;
+        SuspendLayout();
+        try
+        {
+            _noteRestoreBounds = null;
+            IsCollapsed = collapsed;
+            _expandedSize = expanded;
+            SetMinimumSize();
+            // User resizing during editing is temporary, just like the automatic
+            // expansion. User movement is retained, excluding the initial clamp.
+            Bounds = new Rectangle(placement.Location, resting.Value.Size);
+            RefreshActionState();
+        }
+        finally
+        {
+            ResumeLayout(true);
+            _presentationChanging = changing;
+        }
     }
 
     private void RefreshActionState()
     {
         bool editing = IsEditingNote;
-        bool expanded = !IsCollapsed;
         _resume.Enabled = !_busy && !editing;
         _delete.Enabled = !_busy && !editing;
         _collapse.Enabled = !editing;
         _cancelNote.Enabled = !_noteSaving;
         _noteEditor.ReadOnly = _noteSaving;
-        AcceptButton = editing ? null : _resume;
-        _resumeStatus.Visible = expanded && !editing && _resumeStatus.Text.Length > 0;
-        foreach (Control control in new Control[] { _title, _delete, _resume })
-            control.Visible = expanded && !editing;
+        AcceptButton = editing || IsCollapsed ? null : _resume;
+        _header.Visible = false;
+        _delete.Visible = false;
+        _title.Visible = !editing;
+        _resume.Visible = !IsCollapsed && !editing;
+        _resumeStatus.Visible = !IsCollapsed && !editing && _resumeStatus.Text.Length > 0;
         foreach (Control control in new Control[] { _noteEditor, _noteStatus, _cancelNote })
-            control.Visible = expanded && editing;
+            control.Visible = editing;
     }
 
     public void FocusResume()
     {
         if (IsEditingNote) _noteEditor.Focus();
-        else if (IsCollapsed) _collapse.Focus();
+        else if (IsCollapsed) _title.Focus();
         else _resume.Focus();
     }
 
@@ -396,7 +502,7 @@ internal sealed class StickerForm : Form
             _collapse.AccessibleName = collapsed ? "스티커 펼치기" : "스티커 접기";
             _tooltip.SetToolTip(_collapse, collapsed ? "스티커 펼치기 (Ctrl+Space)" : "스티커 접기 (Ctrl+Space)");
             RefreshActionState();
-            SizeGripStyle = collapsed ? SizeGripStyle.Hide : SizeGripStyle.Show;
+            SizeGripStyle = SizeGripStyle.Hide;
         }
         finally
         {
@@ -416,7 +522,8 @@ internal sealed class StickerForm : Form
     private void SetMinimumSize()
     {
         MaximumSize = Size.Empty;
-        MinimumSize = SizeFromClientSize(new Size(Px(MinimumClientSize.Width), IsCollapsed ? Px(36) : Px(MinimumClientSize.Height)));
+        MinimumSize = SizeFromClientSize(new Size(Px(MinimumClientSize.Width),
+            IsCollapsed ? Px(36) : IsEditingNote ? Px(160) : Px(MinimumClientSize.Height)));
         // A zero width with a nonzero maximum height is a real width limit in
         // WinForms; it would also shrink MinimumSize and collapse the note to 42px.
         MaximumSize = IsCollapsed
@@ -431,32 +538,22 @@ internal sealed class StickerForm : Form
     {
         base.OnLayout(e);
         if (!_layoutReady) return;
-        int gap = Px(12), width = ClientSize.Width;
-        _header.SetBounds(0, 0, width, Px(36));
-        _options.SetBounds(width - gap - Px(28), Px(3), Px(28), Px(30));
-        _collapse.SetBounds(_options.Left - Px(48), Px(3), Px(46), Px(30));
-        _typeIcon.SetBounds(gap, Px(8), Px(20), Px(20));
-        _kind.SetBounds(_typeIcon.Right + Px(6), Px(3), Math.Max(0, _collapse.Left - _typeIcon.Right - Px(10)), Px(30));
+        int gap = Px(8), width = ClientSize.Width;
         int bottom = ClientSize.Height - gap;
-        _resume.SetBounds(width - gap - Px(84), bottom - Px(30), Px(84), Px(30));
-        _delete.SetBounds(gap - Px(7), bottom - Px(30), Px(60), Px(30));
+        _resume.SetBounds(width - gap - Px(84), bottom - Px(28), Px(84), Px(28));
+        _delete.SetBounds(gap - Px(4), bottom - Px(28), Px(60), Px(28));
         _cancelNote.Bounds = _delete.Bounds;
-        // A fixed two-line title keeps long notes and fallback URLs from growing
-        // the card. The tooltip and inline editor retain the complete contents.
-        _title.SetBounds(gap - Px(3), Px(40), width - gap * 2 + Px(6), _title.TwoLineHeight + Px(2));
+        bool singleLine = IsCollapsed || _resumeStatus.Text.Length > 0;
+        int titleHeight = (singleLine ? _title.OneLineHeight : _title.TwoLineHeight) + Px(2);
+        _title.SetBounds(gap - Px(3), IsCollapsed ? Px(6) : gap, width - gap * 2 + Px(6), titleHeight);
         int statusTop = _title.Bottom + Px(2);
-        _resumeStatus.SetBounds(gap, statusTop, width - gap * 2, Math.Max(0, _resume.Top - Px(3) - statusTop));
-        _noteEditor.SetBounds(gap, Px(44), width - gap * 2, _noteEditor.PreferredHeight);
+        int statusHeight = TextRenderer.MeasureText("가Ag", _resumeStatus.Font, new Size(int.MaxValue, int.MaxValue),
+            TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding).Height;
+        _resumeStatus.SetBounds(gap, statusTop, width - gap * 2, Math.Max(0, Math.Min(statusHeight, _resume.Top - Px(2) - statusTop)));
+        _noteEditor.SetBounds(gap, Px(12), width - gap * 2, _noteEditor.PreferredHeight);
         int noteStatusTop = _noteEditor.Bottom + Px(6);
-        _noteStatus.SetBounds(gap, noteStatusTop, width - gap * 2, Math.Max(0, _cancelNote.Top - Px(4) - noteStatusTop));
+        _noteStatus.SetBounds(gap, noteStatusTop, width - gap * 2, Math.Max(0, _cancelNote.Top - Px(8) - noteStatusTop));
         Invalidate();
-    }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        base.OnPaint(e);
-        using var pen = new Pen(Rule);
-        e.Graphics.DrawLine(pen, Px(12), Px(35), ClientSize.Width - Px(12), Px(35));
     }
 
     protected override void OnResizeEnd(EventArgs e)
@@ -464,20 +561,37 @@ internal sealed class StickerForm : Form
         base.OnResizeEnd(e);
         if (!_presentationChanging)
         {
-            if (!IsCollapsed) _expandedSize = Size;
+            if (!IsCollapsed && !IsEditingNote) _expandedSize = Size;
             PlacementChanged?.Invoke(this);
         }
     }
 
     protected override void OnDpiChanged(DpiChangedEventArgs e)
     {
-        if (IsCollapsed)
-            _expandedSize = new Size((int)Math.Round(_expandedSize.Width * (double)e.DeviceDpiNew / e.DeviceDpiOld),
-                (int)Math.Round(_expandedSize.Height * (double)e.DeviceDpiNew / e.DeviceDpiOld));
-        base.OnDpiChanged(e);
-        SetMinimumSize();
-        UpdateTypeIcon();
-        PerformLayout();
+        double scale = (double)e.DeviceDpiNew / e.DeviceDpiOld;
+        Size ScaleSize(Size value) => new((int)Math.Round(value.Width * scale), (int)Math.Round(value.Height * scale));
+        Rectangle? resting = _noteRestoreBounds;
+        Point restoreOffset = resting.HasValue
+            ? new Point(PlacementBounds.Left - Left, PlacementBounds.Top - Top) : Point.Empty;
+        if (IsCollapsed) _expandedSize = ScaleSize(_expandedSize);
+        bool changing = _presentationChanging;
+        _presentationChanging = true;
+        try
+        {
+            base.OnDpiChanged(e);
+            SetMinimumSize();
+            if (resting is { } saved)
+            {
+                _noteRestoreBounds = new Rectangle(
+                    new Point(Left + (int)Math.Round(restoreOffset.X * scale), Top + (int)Math.Round(restoreOffset.Y * scale)),
+                    ScaleSize(saved.Size));
+                _noteRestoreExpandedSize = ScaleSize(_noteRestoreExpandedSize);
+                _noteEditAnchor = Location;
+            }
+            UpdateTypeIcon();
+            PerformLayout();
+        }
+        finally { _presentationChanging = changing; }
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
@@ -530,6 +644,7 @@ internal sealed class StickerForm : Form
         _relinkMenu.Visible = CanRelink(Bookmark);
         _relinkMenu.Enabled = !_busy && !IsEditingNote;
         _undoMenu.Enabled = !IsEditingNote;
+        _deleteMenu.Enabled = !_busy && !IsEditingNote;
     }
 
     private void UpdateTypeIcon()
@@ -591,9 +706,16 @@ internal sealed class StickerForm : Form
     private void DragHeader(object? sender, MouseEventArgs e)
     {
         if (e.Button != MouseButtons.Left) return;
-        if (e.Clicks == 2) { ToggleCollapsed(); return; }
+
         ReleaseCapture();
         SendMessage(Handle, 0x00A1, (nint)2, nint.Zero); // WM_NCLBUTTONDOWN / HTCAPTION
+    }
+
+    private void BeginWindowMove()
+    {
+        if (IsDisposed) return;
+        ReleaseCapture();
+        SendMessage(Handle, 0x0112, (nint)0xF010, nint.Zero); // WM_SYSCOMMAND / SC_MOVE
     }
 
     private static string KindLabel(TargetKind kind) => kind switch
@@ -664,22 +786,22 @@ internal sealed class StickerForm : Form
     {
         private const TextFormatFlags TitleTextFlags = TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
 
-        public int TwoLineHeight
+        public int OneLineHeight => MeasureTitleHeight(1);
+        public int TwoLineHeight => MeasureTitleHeight(2);
+
+        private int MeasureTitleHeight(int lines)
         {
-            get
-            {
-                // Constructor layout must not force native handle creation.
-                if (!IsHandleCreated) return MeasureTwoLineHeight(null);
-                using Graphics graphics = CreateGraphics();
-                return MeasureTwoLineHeight(graphics);
-            }
+            // Constructor layout must not force native handle creation.
+            if (!IsHandleCreated) return MeasureTitleHeight(null, lines);
+            using Graphics graphics = CreateGraphics();
+            return MeasureTitleHeight(graphics, lines);
         }
 
-        private int MeasureTwoLineHeight(IDeviceContext? context)
+        private int MeasureTitleHeight(IDeviceContext? context, int count)
         {
             // Font.Height uses GDI+ metrics, which can be shorter than the GDI
             // lines drawn by TextRenderer at fractional display scaling.
-            const string lines = "가Ag\n가Ag";
+            string lines = count == 1 ? "가Ag" : "가Ag\n가Ag";
             var size = new Size(int.MaxValue, int.MaxValue);
             return (context is null
                 ? TextRenderer.MeasureText(lines, Font, size, TitleTextFlags)
@@ -690,7 +812,7 @@ internal sealed class StickerForm : Form
         {
             e.Graphics.Clear(BackColor);
             int padding = (int)Math.Round(3 * DeviceDpi / 96F);
-            var textBounds = new Rectangle(padding, 0, Math.Max(0, Width - padding * 2), MeasureTwoLineHeight(e.Graphics));
+            var textBounds = new Rectangle(padding, 0, Math.Max(0, ClientSize.Width - padding * 2), ClientSize.Height);
             TextRenderer.DrawText(e.Graphics, FitTitle(e.Graphics, textBounds.Size), Font, textBounds, ForeColor, TitleTextFlags);
             if (Focused && ShowFocusCues)
                 ControlPaint.DrawFocusRectangle(e.Graphics, ClientRectangle, ForeColor, BackColor);

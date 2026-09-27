@@ -1,0 +1,1711 @@
+{
+  "scope": "Synthetic 144-DPI WinForms client layout on a native 96-DPI monitor only",
+  "nativeMonitorDpiRequired": 96,
+  "syntheticDpi": 144,
+  "scalePercent": 150,
+  "bitmapResampling": false,
+  "nativeNonClientDpiVerified": false,
+  "realMonitorTransitionVerified": false,
+  "limitation": "Windows continues to own a 96-DPI native resize frame. Fixture-only frame compensation is applied separately before editing, after expansion/collapse, and after restoration when needed; raw bounds and constraints are recorded. This does not verify native 150-percent window frames, track-size enforcement, or monitor switching.",
+  "utc": "2026-09-27T04:50:41.2112705+00:00",
+  "passed": true,
+  "error": null,
+  "cases": [
+    {
+      "Name": "default",
+      "Passed": true,
+      "Checks": {
+        "nativeDpiRemains96": true,
+        "formAndChildrenDeviceDpi144": true,
+        "requestedClientSize": true,
+        "explicitFontsScaled": true,
+        "nativeCaptionRemoved": true,
+        "nativeResizeFrameRetained": true,
+        "visibleControlsInsideParents": true,
+        "onlyExpectedControlsVisible": true,
+        "titleDoesNotOverlapActions": true,
+        "twoGdiTitleLinesFitDrawingBounds": true,
+        "collapsedTitleFitsOneLine": true,
+        "defaultTitleDoesNotLoseSecondLine": true,
+        "overflowHasVisibleEllipsis": true,
+        "editorDoesNotOverlapActions": true,
+        "editFailureMessageFits": true,
+        "expectedPresentation": true,
+        "editorRequested170LogicalHeight": true,
+        "editorWidthOnlyHitSyntheticFrameMinimum": true,
+        "editingPreservesNormalPlacement": true,
+        "inlineFailureRetainsDraft": true
+      },
+      "Metrics": {
+        "image": "ui-150/default.png",
+        "nativeWindowDpi": 96,
+        "deviceDpi": 144,
+        "desiredClient": {
+          "width": 390,
+          "height": 132
+        },
+        "actualClient": {
+          "width": 390,
+          "height": 132
+        },
+        "actualOuter": {
+          "width": 410,
+          "height": 152
+        },
+        "suggestedCompactOuterAt144": {
+          "width": 410,
+          "height": 152
+        },
+        "frameCompensation": {
+          "compact": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 396,
+                "height": 138
+              },
+              "outer": {
+                "width": 410,
+                "height": 152
+              },
+              "minimum": {
+                "width": 380,
+                "height": 152
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            },
+            "After": {
+              "client": {
+                "width": 390,
+                "height": 132
+              },
+              "outer": {
+                "width": 410,
+                "height": 152
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          },
+          "presentation": null,
+          "restored": null
+        },
+        "editTransition": null,
+        "restoreTransition": null,
+        "fonts": [
+          {
+            "name": "title",
+            "beforeHeight": 19,
+            "afterHeight": 28,
+            "sizeInPoints": 15.75
+          },
+          {
+            "name": "status",
+            "beforeHeight": 16,
+            "afterHeight": 23,
+            "sizeInPoints": 12.75
+          },
+          {
+            "name": "resume",
+            "beforeHeight": 16,
+            "afterHeight": 24,
+            "sizeInPoints": 13.5
+          },
+          {
+            "name": "editor",
+            "beforeHeight": 17,
+            "afterHeight": 26,
+            "sizeInPoints": 14.25
+          }
+        ],
+        "titleText": {
+          "gdiSingleLine": {
+            "width": 49,
+            "height": 30
+          },
+          "gdiTwoLines": {
+            "width": 49,
+            "height": 60
+          },
+          "fontHeight": 28,
+          "controlClientHeight": 63,
+          "drawingBounds": {
+            "width": 367,
+            "height": 63
+          },
+          "drawingHeightSource": "TitleButton.ClientSize.Height",
+          "fullTitleMeasured": {
+            "width": 350,
+            "height": 60
+          },
+          "originalTitle": "\uC218\uB7C9 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uC6B4\uC601\uD300\uC5D0 \uC804\uB2EC\uD558\uAE30",
+          "fittedTitle": "\uC218\uB7C9 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uC6B4\uC601\uD300\uC5D0 \uC804\uB2EC\uD558\uAE30"
+        },
+        "noteStatusRequired": {
+          "width": 0,
+          "height": 0
+        },
+        "controls": [
+          {
+            "type": "Panel",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC774\uB3D9 \uC601\uC5ED",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 300,
+              "height": 150
+            }
+          },
+          {
+            "type": "PictureBox",
+            "accessibleName": "\uCC45\uAC08\uD53C \uD30C\uC77C \uC885\uB958 \uC544\uC774\uCF58",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 75
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": null,
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC811\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uB354 \uBCF4\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "TitleButton",
+            "accessibleName": "\uCC45\uAC08\uD53C \uC81C\uBAA9 \u00B7 \uBA54\uBAA8 \uD3B8\uC9D1",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 28,
+            "bounds": {
+              "x": 8,
+              "y": 12,
+              "width": 375,
+              "height": 63
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uC774\uC5B4\uAC00\uAE30 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 78,
+              "width": 366,
+              "height": 0
+            }
+          },
+          {
+            "type": "ImeTextBox",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uC785\uB825",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 26,
+            "bounds": {
+              "x": 12,
+              "y": 18,
+              "width": 366,
+              "height": 33
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uBA54\uBAA8 \uC800\uC7A5 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 60,
+              "width": 366,
+              "height": 6
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uD3B8\uC9D1 \uCDE8\uC18C",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 78,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4\uC640 \uBAA9\uB85D\uC5D0\uC11C \uCC45\uAC08\uD53C \uC9C0\uC6B0\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 78,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC800\uC7A5\uD55C \uC791\uC5C5 \uC704\uCE58\uB85C \uC774\uC5B4\uAC00\uAE30",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 252,
+              "y": 78,
+              "width": 126,
+              "height": 42
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Name": "minimum-long-note",
+      "Passed": true,
+      "Checks": {
+        "nativeDpiRemains96": true,
+        "formAndChildrenDeviceDpi144": true,
+        "requestedClientSize": true,
+        "explicitFontsScaled": true,
+        "nativeCaptionRemoved": true,
+        "nativeResizeFrameRetained": true,
+        "visibleControlsInsideParents": true,
+        "onlyExpectedControlsVisible": true,
+        "titleDoesNotOverlapActions": true,
+        "twoGdiTitleLinesFitDrawingBounds": true,
+        "collapsedTitleFitsOneLine": true,
+        "defaultTitleDoesNotLoseSecondLine": true,
+        "overflowHasVisibleEllipsis": true,
+        "editorDoesNotOverlapActions": true,
+        "editFailureMessageFits": true,
+        "expectedPresentation": true,
+        "editorRequested170LogicalHeight": true,
+        "editorWidthOnlyHitSyntheticFrameMinimum": true,
+        "editingPreservesNormalPlacement": true,
+        "inlineFailureRetainsDraft": true
+      },
+      "Metrics": {
+        "image": "ui-150/minimum-long-note.png",
+        "nativeWindowDpi": 96,
+        "deviceDpi": 144,
+        "desiredClient": {
+          "width": 360,
+          "height": 132
+        },
+        "actualClient": {
+          "width": 360,
+          "height": 132
+        },
+        "actualOuter": {
+          "width": 380,
+          "height": 152
+        },
+        "suggestedCompactOuterAt144": {
+          "width": 380,
+          "height": 152
+        },
+        "frameCompensation": {
+          "compact": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 366,
+                "height": 138
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 380,
+                "height": 152
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            },
+            "After": {
+              "client": {
+                "width": 360,
+                "height": 132
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          },
+          "presentation": null,
+          "restored": null
+        },
+        "editTransition": null,
+        "restoreTransition": null,
+        "fonts": [
+          {
+            "name": "title",
+            "beforeHeight": 19,
+            "afterHeight": 28,
+            "sizeInPoints": 15.75
+          },
+          {
+            "name": "status",
+            "beforeHeight": 16,
+            "afterHeight": 23,
+            "sizeInPoints": 12.75
+          },
+          {
+            "name": "resume",
+            "beforeHeight": 16,
+            "afterHeight": 24,
+            "sizeInPoints": 13.5
+          },
+          {
+            "name": "editor",
+            "beforeHeight": 17,
+            "afterHeight": 26,
+            "sizeInPoints": 14.25
+          }
+        ],
+        "titleText": {
+          "gdiSingleLine": {
+            "width": 49,
+            "height": 30
+          },
+          "gdiTwoLines": {
+            "width": 49,
+            "height": 60
+          },
+          "fontHeight": 28,
+          "controlClientHeight": 63,
+          "drawingBounds": {
+            "width": 337,
+            "height": 63
+          },
+          "drawingHeightSource": "TitleButton.ClientSize.Height",
+          "fullTitleMeasured": {
+            "width": 336,
+            "height": 780
+          },
+          "originalTitle": "\uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569",
+          "fittedTitle": "\uACE0\uAC1D\uBCC4 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uB2E4\uC74C \uD68C\uC758 \uC804\uC5D0 \uC218\uB7C9\uC744 \uD655\uC815\uD569\uB2C8\uB2E4. \uACE0\u2026"
+        },
+        "noteStatusRequired": {
+          "width": 0,
+          "height": 0
+        },
+        "controls": [
+          {
+            "type": "Panel",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC774\uB3D9 \uC601\uC5ED",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 300,
+              "height": 150
+            }
+          },
+          {
+            "type": "PictureBox",
+            "accessibleName": "\uCC45\uAC08\uD53C \uD30C\uC77C \uC885\uB958 \uC544\uC774\uCF58",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 75
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": null,
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC811\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uB354 \uBCF4\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "TitleButton",
+            "accessibleName": "\uCC45\uAC08\uD53C \uC81C\uBAA9 \u00B7 \uBA54\uBAA8 \uD3B8\uC9D1",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 28,
+            "bounds": {
+              "x": 8,
+              "y": 12,
+              "width": 345,
+              "height": 63
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uC774\uC5B4\uAC00\uAE30 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 78,
+              "width": 336,
+              "height": 0
+            }
+          },
+          {
+            "type": "ImeTextBox",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uC785\uB825",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 26,
+            "bounds": {
+              "x": 12,
+              "y": 18,
+              "width": 336,
+              "height": 33
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uBA54\uBAA8 \uC800\uC7A5 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 60,
+              "width": 336,
+              "height": 6
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uD3B8\uC9D1 \uCDE8\uC18C",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 78,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4\uC640 \uBAA9\uB85D\uC5D0\uC11C \uCC45\uAC08\uD53C \uC9C0\uC6B0\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 78,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC800\uC7A5\uD55C \uC791\uC5C5 \uC704\uCE58\uB85C \uC774\uC5B4\uAC00\uAE30",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 222,
+              "y": 78,
+              "width": 126,
+              "height": 42
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Name": "minimum-url",
+      "Passed": true,
+      "Checks": {
+        "nativeDpiRemains96": true,
+        "formAndChildrenDeviceDpi144": true,
+        "requestedClientSize": true,
+        "explicitFontsScaled": true,
+        "nativeCaptionRemoved": true,
+        "nativeResizeFrameRetained": true,
+        "visibleControlsInsideParents": true,
+        "onlyExpectedControlsVisible": true,
+        "titleDoesNotOverlapActions": true,
+        "twoGdiTitleLinesFitDrawingBounds": true,
+        "collapsedTitleFitsOneLine": true,
+        "defaultTitleDoesNotLoseSecondLine": true,
+        "overflowHasVisibleEllipsis": true,
+        "editorDoesNotOverlapActions": true,
+        "editFailureMessageFits": true,
+        "expectedPresentation": true,
+        "editorRequested170LogicalHeight": true,
+        "editorWidthOnlyHitSyntheticFrameMinimum": true,
+        "editingPreservesNormalPlacement": true,
+        "inlineFailureRetainsDraft": true
+      },
+      "Metrics": {
+        "image": "ui-150/minimum-url.png",
+        "nativeWindowDpi": 96,
+        "deviceDpi": 144,
+        "desiredClient": {
+          "width": 360,
+          "height": 132
+        },
+        "actualClient": {
+          "width": 360,
+          "height": 132
+        },
+        "actualOuter": {
+          "width": 380,
+          "height": 152
+        },
+        "suggestedCompactOuterAt144": {
+          "width": 380,
+          "height": 152
+        },
+        "frameCompensation": {
+          "compact": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 366,
+                "height": 138
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 380,
+                "height": 152
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            },
+            "After": {
+              "client": {
+                "width": 360,
+                "height": 132
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          },
+          "presentation": null,
+          "restored": null
+        },
+        "editTransition": null,
+        "restoreTransition": null,
+        "fonts": [
+          {
+            "name": "title",
+            "beforeHeight": 19,
+            "afterHeight": 28,
+            "sizeInPoints": 15.75
+          },
+          {
+            "name": "status",
+            "beforeHeight": 16,
+            "afterHeight": 23,
+            "sizeInPoints": 12.75
+          },
+          {
+            "name": "resume",
+            "beforeHeight": 16,
+            "afterHeight": 24,
+            "sizeInPoints": 13.5
+          },
+          {
+            "name": "editor",
+            "beforeHeight": 17,
+            "afterHeight": 26,
+            "sizeInPoints": 14.25
+          }
+        ],
+        "titleText": {
+          "gdiSingleLine": {
+            "width": 49,
+            "height": 30
+          },
+          "gdiTwoLines": {
+            "width": 49,
+            "height": 60
+          },
+          "fontHeight": 28,
+          "controlClientHeight": 63,
+          "drawingBounds": {
+            "width": 337,
+            "height": 63
+          },
+          "drawingHeightSource": "TitleButton.ClientSize.Height",
+          "fullTitleMeasured": {
+            "width": 1024,
+            "height": 30
+          },
+          "originalTitle": "https://drive.google.com/drive/folders/synthetic-long-bookmark-folder?review=150-percent#position",
+          "fittedTitle": "https://drive.google.com/drive/fo\u2026"
+        },
+        "noteStatusRequired": {
+          "width": 0,
+          "height": 0
+        },
+        "controls": [
+          {
+            "type": "Panel",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC774\uB3D9 \uC601\uC5ED",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 300,
+              "height": 150
+            }
+          },
+          {
+            "type": "PictureBox",
+            "accessibleName": "\uCC45\uAC08\uD53C \uD30C\uC77C \uC885\uB958 \uC544\uC774\uCF58",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 75
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": null,
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC811\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uB354 \uBCF4\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "TitleButton",
+            "accessibleName": "\uCC45\uAC08\uD53C \uC81C\uBAA9 \u00B7 \uBA54\uBAA8 \uD3B8\uC9D1",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 28,
+            "bounds": {
+              "x": 8,
+              "y": 12,
+              "width": 345,
+              "height": 63
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uC774\uC5B4\uAC00\uAE30 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 78,
+              "width": 336,
+              "height": 0
+            }
+          },
+          {
+            "type": "ImeTextBox",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uC785\uB825",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 26,
+            "bounds": {
+              "x": 12,
+              "y": 18,
+              "width": 336,
+              "height": 33
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uBA54\uBAA8 \uC800\uC7A5 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 60,
+              "width": 336,
+              "height": 6
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uD3B8\uC9D1 \uCDE8\uC18C",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 78,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4\uC640 \uBAA9\uB85D\uC5D0\uC11C \uCC45\uAC08\uD53C \uC9C0\uC6B0\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 78,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC800\uC7A5\uD55C \uC791\uC5C5 \uC704\uCE58\uB85C \uC774\uC5B4\uAC00\uAE30",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 222,
+              "y": 78,
+              "width": 126,
+              "height": 42
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Name": "minimum-edit-error",
+      "Passed": true,
+      "Checks": {
+        "nativeDpiRemains96": true,
+        "formAndChildrenDeviceDpi144": true,
+        "requestedClientSize": true,
+        "explicitFontsScaled": true,
+        "nativeCaptionRemoved": true,
+        "nativeResizeFrameRetained": true,
+        "visibleControlsInsideParents": true,
+        "onlyExpectedControlsVisible": true,
+        "titleDoesNotOverlapActions": true,
+        "twoGdiTitleLinesFitDrawingBounds": true,
+        "collapsedTitleFitsOneLine": true,
+        "defaultTitleDoesNotLoseSecondLine": true,
+        "overflowHasVisibleEllipsis": true,
+        "editorDoesNotOverlapActions": true,
+        "editFailureMessageFits": true,
+        "expectedPresentation": true,
+        "editorRequested170LogicalHeight": true,
+        "editorWidthOnlyHitSyntheticFrameMinimum": true,
+        "editingPreservesNormalPlacement": true,
+        "inlineFailureRetainsDraft": true,
+        "restoreOnlyHitSyntheticFrameMinimum": true,
+        "cancelRestoresCompactAfterFrameCompensation": true
+      },
+      "Metrics": {
+        "image": "ui-150/minimum-edit-error.png",
+        "nativeWindowDpi": 96,
+        "deviceDpi": 144,
+        "desiredClient": {
+          "width": 360,
+          "height": 255
+        },
+        "actualClient": {
+          "width": 360,
+          "height": 255
+        },
+        "actualOuter": {
+          "width": 380,
+          "height": 275
+        },
+        "suggestedCompactOuterAt144": {
+          "width": 380,
+          "height": 152
+        },
+        "frameCompensation": {
+          "compact": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 366,
+                "height": 138
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 380,
+                "height": 152
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            },
+            "After": {
+              "client": {
+                "width": 360,
+                "height": 132
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          },
+          "presentation": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 366,
+                "height": 261
+              },
+              "outer": {
+                "width": 380,
+                "height": 275
+              },
+              "minimum": {
+                "width": 380,
+                "height": 260
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            },
+            "After": {
+              "client": {
+                "width": 360,
+                "height": 255
+              },
+              "outer": {
+                "width": 380,
+                "height": 275
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          },
+          "restored": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 366,
+                "height": 138
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 380,
+                "height": 152
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            },
+            "After": {
+              "client": {
+                "width": 360,
+                "height": 132
+              },
+              "outer": {
+                "width": 380,
+                "height": 152
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          }
+        },
+        "editTransition": {
+          "baseline": {
+            "x": 30,
+            "y": 30,
+            "width": 380,
+            "height": 152
+          },
+          "baselinePlacement": {
+            "x": 30,
+            "y": 30,
+            "width": 380,
+            "height": 152
+          },
+          "requestedEditorClient": {
+            "width": 360,
+            "height": 255
+          },
+          "expectedEditorOuterAt144": {
+            "width": 380,
+            "height": 275
+          },
+          "rawEditorBounds": {
+            "x": 30,
+            "y": 30,
+            "width": 380,
+            "height": 275
+          },
+          "rawEditorClient": {
+            "width": 366,
+            "height": 261
+          },
+          "rawEditorMinimum": {
+            "width": 380,
+            "height": 260
+          },
+          "placement": {
+            "x": 30,
+            "y": 30,
+            "width": 380,
+            "height": 152
+          }
+        },
+        "restoreTransition": {
+          "rawBounds": {
+            "x": 30,
+            "y": 30,
+            "width": 380,
+            "height": 152
+          },
+          "rawMinimum": {
+            "width": 380,
+            "height": 152
+          },
+          "restoredBoundsAfterFrameCompensation": {
+            "x": 30,
+            "y": 30,
+            "width": 380,
+            "height": 152
+          },
+          "restoredPlacementAfterFrameCompensation": {
+            "x": 30,
+            "y": 30,
+            "width": 380,
+            "height": 152
+          },
+          "limitation": "Raw restoration may be enlarged only by 144-DPI managed minimum constraints on a native 96-DPI frame; exact baseline comparison follows the recorded fixture-only frame compensation."
+        },
+        "fonts": [
+          {
+            "name": "title",
+            "beforeHeight": 19,
+            "afterHeight": 28,
+            "sizeInPoints": 15.75
+          },
+          {
+            "name": "status",
+            "beforeHeight": 16,
+            "afterHeight": 23,
+            "sizeInPoints": 12.75
+          },
+          {
+            "name": "resume",
+            "beforeHeight": 16,
+            "afterHeight": 24,
+            "sizeInPoints": 13.5
+          },
+          {
+            "name": "editor",
+            "beforeHeight": 17,
+            "afterHeight": 26,
+            "sizeInPoints": 14.25
+          }
+        ],
+        "titleText": {
+          "gdiSingleLine": {
+            "width": 49,
+            "height": 30
+          },
+          "gdiTwoLines": {
+            "width": 49,
+            "height": 60
+          },
+          "fontHeight": 28,
+          "controlClientHeight": 63,
+          "drawingBounds": {
+            "width": 337,
+            "height": 63
+          },
+          "drawingHeightSource": "TitleButton.ClientSize.Height",
+          "fullTitleMeasured": {
+            "width": 182,
+            "height": 30
+          },
+          "originalTitle": "\uBCC0\uACBD \uC218\uB7C9 \uD655\uC778\uD558\uAE30",
+          "fittedTitle": "\uBCC0\uACBD \uC218\uB7C9 \uD655\uC778\uD558\uAE30"
+        },
+        "noteStatusRequired": {
+          "width": 276,
+          "height": 46
+        },
+        "controls": [
+          {
+            "type": "Panel",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC774\uB3D9 \uC601\uC5ED",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 300,
+              "height": 150
+            }
+          },
+          {
+            "type": "PictureBox",
+            "accessibleName": "\uCC45\uAC08\uD53C \uD30C\uC77C \uC885\uB958 \uC544\uC774\uCF58",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 75
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": null,
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC811\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uB354 \uBCF4\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "TitleButton",
+            "accessibleName": "\uCC45\uAC08\uD53C \uC81C\uBAA9 \u00B7 \uBA54\uBAA8 \uD3B8\uC9D1",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 28,
+            "bounds": {
+              "x": 8,
+              "y": 12,
+              "width": 345,
+              "height": 63
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uC774\uC5B4\uAC00\uAE30 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 78,
+              "width": 336,
+              "height": 23
+            }
+          },
+          {
+            "type": "ImeTextBox",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uC785\uB825",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 26,
+            "bounds": {
+              "x": 12,
+              "y": 18,
+              "width": 336,
+              "height": 33
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uBA54\uBAA8 \uC800\uC7A5 \uC0C1\uD0DC",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 60,
+              "width": 336,
+              "height": 129
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uD3B8\uC9D1 \uCDE8\uC18C",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 201,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4\uC640 \uBAA9\uB85D\uC5D0\uC11C \uCC45\uAC08\uD53C \uC9C0\uC6B0\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 201,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC800\uC7A5\uD55C \uC791\uC5C5 \uC704\uCE58\uB85C \uC774\uC5B4\uAC00\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 222,
+              "y": 201,
+              "width": 126,
+              "height": 42
+            }
+          }
+        ]
+      }
+    },
+    {
+      "Name": "collapsed",
+      "Passed": true,
+      "Checks": {
+        "nativeDpiRemains96": true,
+        "formAndChildrenDeviceDpi144": true,
+        "requestedClientSize": true,
+        "explicitFontsScaled": true,
+        "nativeCaptionRemoved": true,
+        "nativeResizeFrameRetained": true,
+        "visibleControlsInsideParents": true,
+        "onlyExpectedControlsVisible": true,
+        "titleDoesNotOverlapActions": true,
+        "twoGdiTitleLinesFitDrawingBounds": true,
+        "collapsedTitleFitsOneLine": true,
+        "defaultTitleDoesNotLoseSecondLine": true,
+        "overflowHasVisibleEllipsis": true,
+        "editorDoesNotOverlapActions": true,
+        "editFailureMessageFits": true,
+        "expectedPresentation": true,
+        "editorRequested170LogicalHeight": true,
+        "editorWidthOnlyHitSyntheticFrameMinimum": true,
+        "editingPreservesNormalPlacement": true,
+        "inlineFailureRetainsDraft": true
+      },
+      "Metrics": {
+        "image": "ui-150/collapsed.png",
+        "nativeWindowDpi": 96,
+        "deviceDpi": 144,
+        "desiredClient": {
+          "width": 390,
+          "height": 54
+        },
+        "actualClient": {
+          "width": 390,
+          "height": 54
+        },
+        "actualOuter": {
+          "width": 410,
+          "height": 74
+        },
+        "suggestedCompactOuterAt144": {
+          "width": 410,
+          "height": 152
+        },
+        "frameCompensation": {
+          "compact": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 396,
+                "height": 138
+              },
+              "outer": {
+                "width": 410,
+                "height": 152
+              },
+              "minimum": {
+                "width": 380,
+                "height": 152
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            },
+            "After": {
+              "client": {
+                "width": 390,
+                "height": 132
+              },
+              "outer": {
+                "width": 410,
+                "height": 152
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          },
+          "presentation": {
+            "Applied": true,
+            "Before": {
+              "client": {
+                "width": 396,
+                "height": 60
+              },
+              "outer": {
+                "width": 410,
+                "height": 74
+              },
+              "minimum": {
+                "width": 380,
+                "height": 74
+              },
+              "maximum": {
+                "width": 3306,
+                "height": 74
+              }
+            },
+            "After": {
+              "client": {
+                "width": 390,
+                "height": 54
+              },
+              "outer": {
+                "width": 410,
+                "height": 74
+              },
+              "minimum": {
+                "width": 0,
+                "height": 0
+              },
+              "maximum": {
+                "width": 0,
+                "height": 0
+              }
+            }
+          },
+          "restored": null
+        },
+        "editTransition": null,
+        "restoreTransition": null,
+        "fonts": [
+          {
+            "name": "title",
+            "beforeHeight": 19,
+            "afterHeight": 28,
+            "sizeInPoints": 15.75
+          },
+          {
+            "name": "status",
+            "beforeHeight": 16,
+            "afterHeight": 23,
+            "sizeInPoints": 12.75
+          },
+          {
+            "name": "resume",
+            "beforeHeight": 16,
+            "afterHeight": 24,
+            "sizeInPoints": 13.5
+          },
+          {
+            "name": "editor",
+            "beforeHeight": 17,
+            "afterHeight": 26,
+            "sizeInPoints": 14.25
+          }
+        ],
+        "titleText": {
+          "gdiSingleLine": {
+            "width": 49,
+            "height": 30
+          },
+          "gdiTwoLines": {
+            "width": 49,
+            "height": 60
+          },
+          "fontHeight": 28,
+          "controlClientHeight": 33,
+          "drawingBounds": {
+            "width": 367,
+            "height": 33
+          },
+          "drawingHeightSource": "TitleButton.ClientSize.Height",
+          "fullTitleMeasured": {
+            "width": 350,
+            "height": 60
+          },
+          "originalTitle": "\uC218\uB7C9 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uC6B4\uC601\uD300\uC5D0 \uC804\uB2EC\uD558\uAE30",
+          "fittedTitle": "\uC218\uB7C9 \uBCC0\uACBD \uB0B4\uC6A9\uC744 \uD655\uC778\uD558\uACE0 \uC6B4\uC601\uD300\uC5D0\u2026"
+        },
+        "noteStatusRequired": {
+          "width": 0,
+          "height": 0
+        },
+        "controls": [
+          {
+            "type": "Panel",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uC774\uB3D9 \uC601\uC5ED",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 300,
+              "height": 150
+            }
+          },
+          {
+            "type": "PictureBox",
+            "accessibleName": "\uCC45\uAC08\uD53C \uD30C\uC77C \uC885\uB958 \uC544\uC774\uCF58",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 75
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": null,
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 150,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uD3BC\uCE58\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uB354 \uBCF4\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 0,
+              "y": 0,
+              "width": 112,
+              "height": 34
+            }
+          },
+          {
+            "type": "TitleButton",
+            "accessibleName": "\uCC45\uAC08\uD53C \uC81C\uBAA9 \u00B7 \uBA54\uBAA8 \uD3B8\uC9D1",
+            "visible": true,
+            "deviceDpi": 144,
+            "fontHeight": 28,
+            "bounds": {
+              "x": 8,
+              "y": 9,
+              "width": 375,
+              "height": 33
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uC774\uC5B4\uAC00\uAE30 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 45,
+              "width": 366,
+              "height": 0
+            }
+          },
+          {
+            "type": "ImeTextBox",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uC785\uB825",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 26,
+            "bounds": {
+              "x": 12,
+              "y": 18,
+              "width": 366,
+              "height": 33
+            }
+          },
+          {
+            "type": "Label",
+            "accessibleName": "\uBA54\uBAA8 \uC800\uC7A5 \uC0C1\uD0DC",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 23,
+            "bounds": {
+              "x": 12,
+              "y": 60,
+              "width": 366,
+              "height": 0
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4 \uBA54\uBAA8 \uD3B8\uC9D1 \uCDE8\uC18C",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 0,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC2A4\uD2F0\uCEE4\uC640 \uBAA9\uB85D\uC5D0\uC11C \uCC45\uAC08\uD53C \uC9C0\uC6B0\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 6,
+              "y": 0,
+              "width": 90,
+              "height": 42
+            }
+          },
+          {
+            "type": "Button",
+            "accessibleName": "\uC800\uC7A5\uD55C \uC791\uC5C5 \uC704\uCE58\uB85C \uC774\uC5B4\uAC00\uAE30",
+            "visible": false,
+            "deviceDpi": 144,
+            "fontHeight": 24,
+            "bounds": {
+              "x": 252,
+              "y": 0,
+              "width": 126,
+              "height": 42
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
