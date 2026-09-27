@@ -692,7 +692,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             Notify("다른 앱과 단축키가 충돌했거나 등록할 수 없습니다.\n" + unavailable, "단축키 설정", ShowSettings, 10000);
         }
         else if (!_settings.IntroShown)
-            Notify($"업무 책갈피\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 책갈피 보기\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome: 확장 없이 저장 · 트레이에서 URL 입력 가능", "설정", ShowSettings, 10000);
+            Notify($"업무 책갈피\n{_settings.CaptureHotkey} 저장 · {_settings.RecentHotkey} 책갈피 보기\n탐색기 · Excel · Word · PowerPoint · 메모장\nEdge·Chrome·웨일: 확장 없이 저장 · 트레이에서 URL 입력 가능", "설정", ShowSettings, 10000);
         if (!_settings.IntroShown)
         {
             await _settingsGate.WaitAsync();

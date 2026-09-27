@@ -17,6 +17,11 @@ internal static class BrowserAdapterChecks
             try { action(); return false; }
             catch (BookmarkException error) when (error.Code == expected) { return true; }
         }
+        Assert(Array.TrueForAll(new[] { "msedge", "chrome", "whale", "WhAlE" }, BrowserAdapter.IsSupportedProcessName),
+            "only supported browser process names are accepted, ignoring case");
+        Assert(Array.TrueForAll(new[] { "whalenotify", "whale_update", "unknownchromium", "whale.exe", "msedge.exe", "chrome.exe", " whale", "whale ", "" },
+            name => !BrowserAdapter.IsSupportedProcessName(name)),
+            "browser helpers, unrelated Chromium names, executable suffixes and altered names are refused");
         var snapshot = new TargetSnapshot(101, 202, 303, 404);
         RequestContext Context(double seconds = 5) => new(new(1, Guid.NewGuid(), Operation.Capture,
             DateTimeOffset.UtcNow.AddSeconds(seconds), snapshot));
@@ -44,7 +49,7 @@ internal static class BrowserAdapterChecks
                 "different, elided or unsafe address refused: fixture " + (i + 1));
         Assert(Refused(() => BrowserAdapter.ValidateObservation(observed with { AddressFocused = true }), ResultCode.BrowserAddressUnavailable),
             "editing the omnibox cannot capture a typed but unvisited URL");
-        foreach (var url in new[] { "edge://settings", "chrome://newtab", "file:///C:/private.txt", "javascript:alert(1)", "https://user:secret@example.invalid/" })
+        foreach (var url in new[] { "edge://settings", "chrome://newtab", "whale://settings", "whale://newtab", "file:///C:/private.txt", "javascript:alert(1)", "https://user:secret@example.invalid/" })
             Assert(Refused(() => BrowserAdapter.ValidateObservation(observed with { DocumentUrl = url }), ResultCode.BrowserAddressUnavailable),
                 "browser-internal, local and credential-bearing URLs require no capture");
         Assert(Refused(() => BrowserAdapter.ValidateObservation(observed with { AddressIdentity = "" }), ResultCode.BrowserAddressUnavailable),
@@ -61,7 +66,7 @@ internal static class BrowserAdapterChecks
             "expired captures do not read browser metadata");
         Assert(BrowserAdapter.NormalizeTitle(new string('a', 255) + "😀\n") == new string('a', 255) &&
             BrowserAdapter.NormalizeTitle("Title\r\nMore") == "Title  More", "title cap preserves surrogate pairs and strips controls");
-        Console.WriteLine($"RESULT: {passed} browser adapter checks passed. Native Edge/Chrome acceptance remains manual.");
+        Console.WriteLine($"RESULT: {passed} browser adapter checks passed. Native Edge/Chrome/Whale browser acceptance is a separate manual check.");
         return 0;
     }
 

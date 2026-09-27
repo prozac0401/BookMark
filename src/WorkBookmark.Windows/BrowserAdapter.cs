@@ -7,6 +7,11 @@ namespace WorkBookmark.Windows;
 /// <summary>Read-only metadata from browser chrome and its top-level document; never enters page content.</summary>
 internal static class BrowserAdapter
 {
+    internal static bool IsSupportedProcessName(string processName) =>
+        string.Equals(processName, "msedge", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(processName, "chrome", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(processName, "whale", StringComparison.OrdinalIgnoreCase);
+
     internal static CapturedTarget Capture(TargetSnapshot snapshot, RequestContext context,
         IBrowserCaptureSource? source = null, Action<TargetSnapshot>? verify = null)
     {

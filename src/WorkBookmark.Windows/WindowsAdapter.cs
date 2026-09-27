@@ -82,8 +82,7 @@ public static class WindowsAdapter
     private static bool IsSupportedBrowser(uint processId)
     {
         using var process = System.Diagnostics.Process.GetProcessById(checked((int)processId));
-        return process.ProcessName.Equals("msedge", StringComparison.OrdinalIgnoreCase) ||
-            process.ProcessName.Equals("chrome", StringComparison.OrdinalIgnoreCase);
+        return BrowserAdapter.IsSupportedProcessName(process.ProcessName);
     }
     internal static void CheckExists(CapturedTarget target)
     {
