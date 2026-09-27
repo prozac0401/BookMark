@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using WorkBookmark.Core;
@@ -442,7 +443,7 @@ internal sealed class StickerForm : Form
         _cancelNote.Bounds = _delete.Bounds;
         // A fixed two-line title keeps long notes and fallback URLs from growing
         // the card. The tooltip and inline editor retain the complete contents.
-        _title.SetBounds(gap - Px(3), Px(40), width - gap * 2 + Px(6), _title.Font.Height * 2 + Px(2));
+        _title.SetBounds(gap - Px(3), Px(40), width - gap * 2 + Px(6), _title.TwoLineHeight + Px(2));
         int statusTop = _title.Bottom + Px(2);
         _resumeStatus.SetBounds(gap, statusTop, width - gap * 2, Math.Max(0, _resume.Top - Px(3) - statusTop));
         _noteEditor.SetBounds(gap, Px(44), width - gap * 2, _noteEditor.PreferredHeight);
@@ -661,15 +662,69 @@ internal sealed class StickerForm : Form
     // technology, while explicit text drawing limits the visible title to two lines.
     private sealed class TitleButton : Button
     {
+        private const TextFormatFlags TitleTextFlags = TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
+
+        public int TwoLineHeight
+        {
+            get
+            {
+                // Constructor layout must not force native handle creation.
+                if (!IsHandleCreated) return MeasureTwoLineHeight(null);
+                using Graphics graphics = CreateGraphics();
+                return MeasureTwoLineHeight(graphics);
+            }
+        }
+
+        private int MeasureTwoLineHeight(IDeviceContext? context)
+        {
+            // Font.Height uses GDI+ metrics, which can be shorter than the GDI
+            // lines drawn by TextRenderer at fractional display scaling.
+            const string lines = "가Ag\n가Ag";
+            var size = new Size(int.MaxValue, int.MaxValue);
+            return (context is null
+                ? TextRenderer.MeasureText(lines, Font, size, TitleTextFlags)
+                : TextRenderer.MeasureText(context, lines, Font, size, TitleTextFlags)).Height;
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             e.Graphics.Clear(BackColor);
             int padding = (int)Math.Round(3 * DeviceDpi / 96F);
-            var textBounds = new Rectangle(padding, 0, Math.Max(0, Width - padding * 2), Font.Height * 2);
-            TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, ForeColor,
-                TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding);
+            var textBounds = new Rectangle(padding, 0, Math.Max(0, Width - padding * 2), MeasureTwoLineHeight(e.Graphics));
+            TextRenderer.DrawText(e.Graphics, FitTitle(e.Graphics, textBounds.Size), Font, textBounds, ForeColor, TitleTextFlags);
             if (Focused && ShowFocusCues)
                 ControlPaint.DrawFocusRectangle(e.Graphics, ClientRectangle, ForeColor, BackColor);
+        }
+
+        private string FitTitle(IDeviceContext context, Size bounds)
+        {
+            if (bounds.Width <= 0 || bounds.Height <= 0) return "";
+            bool Fits(string value)
+            {
+                Size measured = TextRenderer.MeasureText(context, value, Font, new Size(bounds.Width, int.MaxValue), TitleTextFlags);
+                return measured.Width <= bounds.Width && measured.Height <= bounds.Height;
+            }
+            if (Fits(Text)) return Text;
+
+            // DrawText's EndEllipsis does not reliably mark vertical overflow.
+            // Fit the actual prefix plus ellipsis using the same wrapping flags,
+            // without splitting a surrogate pair or a combining text element.
+            int[] elements = StringInfo.ParseCombiningCharacters(Text);
+            int low = 0, high = elements.Length;
+            string visible = "…";
+            while (low <= high)
+            {
+                int count = low + (high - low) / 2;
+                int end = count == elements.Length ? Text.Length : elements[count];
+                string candidate = Text[..end].TrimEnd() + "…";
+                if (Fits(candidate))
+                {
+                    visible = candidate;
+                    low = count + 1;
+                }
+                else high = count - 1;
+            }
+            return visible;
         }
     }
 

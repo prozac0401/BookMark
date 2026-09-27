@@ -55,7 +55,8 @@ internal static class StickerFormChecks
         form.Size = minimum;
         form.PerformLayout();
         assert(Field<Button>(form, "_title").Bottom < Field<Button>(form, "_resume").Top &&
-            Field<Button>(form, "_title").Height <= Field<Button>(form, "_title").Font.Height * 2 + Px(form, 2) &&
+            Field<Button>(form, "_title").Height >= TextHeight(Field<Button>(form, "_title"), "가Ag\n가Ag") &&
+            Field<Button>(form, "_title").Height < TextHeight(Field<Button>(form, "_title"), "가Ag\n가Ag\n가Ag") &&
             form.ClientSize.Width >= Px(form, 240) && form.ClientSize.Height >= Px(form, 160) &&
             Field<Button>(form, "_delete").Right < Field<Button>(form, "_resume").Left,
             "STK06 compact minimum size keeps the two-line title and actions separate");
@@ -181,6 +182,13 @@ internal static class StickerFormChecks
         var now = DateTimeOffset.UtcNow;
         var target = new CapturedTarget(TargetKind.ExcelCell, @"C:\업무\2026년 3분기 운영 계획.xlsx", "실행 계획", "$F$42");
         return new(Guid.NewGuid(), target, target.Path, "2026년 3분기 운영 계획.xlsx", "수량 변경 내용을 확인하고 운영팀에 전달하기", now, now, 10, null, null, null, null);
+    }
+
+    private static int TextHeight(Control control, string text)
+    {
+        using Graphics graphics = control.CreateGraphics();
+        return TextRenderer.MeasureText(graphics, text, control.Font, new Size(int.MaxValue, int.MaxValue),
+            TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding).Height;
     }
 
     private static int Px(Form form, int value) => (int)Math.Round(value * form.DeviceDpi / 96F);

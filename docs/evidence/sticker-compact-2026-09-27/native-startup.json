@@ -1,0 +1,27 @@
+{
+  "scope": "Isolated application-context startup and orderly shutdown, before the final 150% title-height correction. No native sticker input was performed because the desktop tool did not enumerate the SizableToolWindow stickers.",
+  "sourceUnchanged": true,
+  "exitCode": 0,
+  "previousOuterSize": {
+    "width": 370,
+    "height": 360
+  },
+  "savedOuterSizes": [
+    {
+      "left": 120,
+      "top": 130,
+      "width": 276,
+      "height": 209,
+      "collapsed": false
+    },
+    {
+      "left": 560,
+      "top": 130,
+      "width": 276,
+      "height": 209,
+      "collapsed": false
+    }
+  ],
+  "displayMode": "Stickers",
+  "presentationVersion": 1
+}

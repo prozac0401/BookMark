@@ -1,0 +1,6 @@
+default: native=96, managed=144, client={Width=390, Height=255}, frameCompensation=True
+minimum-long-note: native=96, managed=144, client={Width=360, Height=240}, frameCompensation=True
+minimum-url: native=96, managed=144, client={Width=360, Height=240}, frameCompensation=True
+minimum-edit-error: native=96, managed=144, client={Width=360, Height=240}, frameCompensation=True
+collapsed: native=96, managed=144, client={Width=390, Height=54}, frameCompensation=True
+SYNTHETIC CLIENT DPI REVIEW: PASS (5/5 cases). Native window chrome and monitor transitions are not covered.
