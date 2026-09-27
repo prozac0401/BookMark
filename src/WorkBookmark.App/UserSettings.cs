@@ -15,7 +15,7 @@ public enum BookmarkDisplayMode { List = 0, Stickers = 1 }
 
 public sealed record UserSettings(int Version, Hotkey CaptureHotkey, Hotkey RecentHotkey, bool StartWithWindows, bool IntroShown, BookmarkDisplayMode DisplayMode = BookmarkDisplayMode.Stickers, int StickerPresentationVersion = 0)
 {
-    public const int CurrentStickerPresentationVersion = 2;
+    public const int CurrentStickerPresentationVersion = 3;
     public static UserSettings Default => new(1, Hotkey.CaptureDefault, Hotkey.RecentDefault, false, false);
     public static UserSettings Load(string directory)
     {

@@ -53,30 +53,64 @@ internal sealed class StickerManager : IDisposable
         }
     }
 
+    internal static Size CompactDefaultExpandedSize96
+    {
+        get
+        {
+            using var template = new BoundsTemplate(includeCaption: false);
+            return template.OuterSize96(new Size(260, 88));
+        }
+    }
+
     internal async Task ResetSavedSizesAsync(int previousVersion = 0)
     {
         if (_disposed || _enabled) throw new InvalidOperationException("Sticker sizes must be upgraded before displaying them.");
         Size size = DefaultExpandedSize96;
-        Size legacyDefault = LegacyDefaultExpandedSize96;
+        HashSet<Size> previousDefaults = PreviousDefaultSavedSizes(previousVersion);
         var loaded = await _load();
         if (_disposed) throw new OperationCanceledException();
         var resized = loaded.Layouts.Select(layout =>
         {
-            Size preferred = size;
-            if (previousVersion == 1 && (layout.Width != legacyDefault.Width || layout.Height != legacyDefault.Height))
-            {
-                // Preserve custom outer dimensions exactly. A failed settings save
-                // may repeat this migration, so frame subtraction would shrink a
-                // previously converted custom size again on every retry.
-                preferred = new Size(layout.Width, layout.Height);
-            }
-            return layout with { Width = preferred.Width, Height = preferred.Height };
+            Size saved = new(layout.Width, layout.Height);
+            // Compare only with defaults of the recorded presentation version:
+            // a v1 custom size may happen to equal the later v2 default. Keeping
+            // all other outer sizes unchanged also makes partial-save retries
+            // safe after another row has already adopted the newest default.
+            bool reset = previousVersion == 0 || previousDefaults.Contains(saved);
+            return reset ? layout with { Width = size.Width, Height = size.Height } : layout;
         }).ToArray();
         // GetStickerLayouts includes soft-deleted bookmarks. Their saved sizes change,
         // but loading a layout never restores or displays a deleted bookmark.
         if (resized.Length > 0) await Task.Run(() => _save(resized));
         if (_disposed) throw new OperationCanceledException();
         foreach (var layout in resized) _layouts[layout.BookmarkId] = layout;
+    }
+
+    private static HashSet<Size> PreviousDefaultSavedSizes(int previousVersion)
+    {
+        Size client = previousVersion switch
+        {
+            1 => new Size(260, 170),
+            2 => new Size(260, 88),
+            _ => Size.Empty
+        };
+        HashSet<Size> sizes = [];
+        if (client.IsEmpty) return sizes;
+
+        using var template = new BoundsTemplate(includeCaption: previousVersion == 1);
+        // Native frame rounding is not linear across DPI. Include the saved
+        // defaults for standard and custom Windows scales from 100% to 500%,
+        // using exactly the same normalization as Remember.
+        for (int dpi = 96; dpi <= 480; ++dpi)
+        {
+            var scaledClient = new Size((int)Math.Round(client.Width * dpi / 96F),
+                (int)Math.Round(client.Height * dpi / 96F));
+            Size outer = template.OuterSize(scaledClient, dpi);
+            float scale = 96F / Math.Max(96, dpi);
+            sizes.Add(new Size(Math.Max(1, (int)Math.Round(outer.Width * scale)),
+                Math.Max(1, (int)Math.Round(outer.Height * scale))));
+        }
+        return sizes;
     }
 
     internal async Task SetEnabledAsync(bool enabled, bool activate = false)
@@ -341,11 +375,13 @@ internal sealed class StickerManager : IDisposable
             }
         }
 
-        internal Size OuterSize96(Size client)
+        internal Size OuterSize96(Size client) => OuterSize(client, 96);
+
+        internal Size OuterSize(Size client, int dpi)
         {
             var styles = CreateParams;
             var rectangle = new NativeRectangle { Right = client.Width, Bottom = client.Height };
-            if (!AdjustWindowRectExForDpi(ref rectangle, (uint)styles.Style, false, (uint)styles.ExStyle, 96))
+            if (!AdjustWindowRectExForDpi(ref rectangle, (uint)styles.Style, false, (uint)styles.ExStyle, (uint)dpi))
                 throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
             return new(rectangle.Right - rectangle.Left, rectangle.Bottom - rectangle.Top);
         }

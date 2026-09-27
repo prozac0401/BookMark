@@ -15,7 +15,7 @@ internal static class StickerPersistenceChecks
     internal static void Run(Action<bool, string> assert)
     {
         PresentationUpgradeFailures(assert);
-        VersionOneUpgradeRetries(assert);
+        foreach (int version in new[] { 1, 2 }) LegacyUpgradeRetries(version, assert);
         EditingWhilePlacementWriteCompletes(assert);
         ChangedDuringWrite(assert);
         FailedWriteThenNewPlacement(assert);
@@ -87,19 +87,30 @@ internal static class StickerPersistenceChecks
             "SP12 completed presentation does not repeat layout writes or reset a later List choice");
     }
 
-    private static void VersionOneUpgradeRetries(Action<bool, string> assert)
+    private static void LegacyUpgradeRetries(int previousVersion, Action<bool, string> assert)
     {
         const BindingFlags instance = BindingFlags.Instance | BindingFlags.NonPublic;
         var assembly = typeof(UserSettings).Assembly;
         var managerType = assembly.GetType("WorkBookmark.App.StickerManager")!;
         var upgrade = assembly.GetType("WorkBookmark.App.StickerPresentationUpgrade")!.GetMethod("ApplyAsync", BindingFlags.Static | BindingFlags.NonPublic)!;
-        var oldDefault = (Size)managerType.GetProperty("LegacyDefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var oldDefault = (Size)managerType.GetProperty(previousVersion == 1 ? "LegacyDefaultExpandedSize96" : "CompactDefaultExpandedSize96",
+            BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
         var newDefault = (Size)managerType.GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
         string directory = Path.Combine(Path.GetTempPath(), "WorkBookmark-CompactRetry-" + Guid.NewGuid().ToString("N"));
-        var settings = UserSettings.Default with { DisplayMode = BookmarkDisplayMode.List, IntroShown = true, StickerPresentationVersion = 1 };
+        var settings = UserSettings.Default with { DisplayMode = BookmarkDisplayMode.List, IntroShown = true, StickerPresentationVersion = previousVersion };
         settings.Save(directory);
-        var custom = new StickerLayout(Guid.NewGuid(), "synthetic-screen", 40, 50, oldDefault.Width + 110, oldDefault.Height + 70, true);
-        var stored = new[] { new StickerLayout(Guid.NewGuid(), "synthetic-screen", 20, 30, oldDefault.Width, oldDefault.Height), custom };
+        // A version-one custom window can happen to match the later version-two default.
+        // It must remain custom when that older installation upgrades directly.
+        var customSize = previousVersion == 1
+            ? (Size)managerType.GetProperty("CompactDefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!
+            : new Size(oldDefault.Width + 110, oldDefault.Height + 70);
+        var custom = new StickerLayout(Guid.NewGuid(), "synthetic-screen", 40, 50, customSize.Width, customSize.Height, true);
+        // Native 144 v2 outer 410x152 was recorded as 273x101. Verify migration of
+        // that saved data independently of the monitor running this test.
+        var recordedDpi = new StickerLayout(Guid.NewGuid(), "synthetic-screen", 60, 70, 273, 101);
+        var expectedRecordedDpi = previousVersion == 2
+            ? recordedDpi with { Width = newDefault.Width, Height = newDefault.Height } : recordedDpi;
+        var stored = new[] { new StickerLayout(Guid.NewGuid(), "synthetic-screen", 20, 30, oldDefault.Width, oldDefault.Height), custom, recordedDpi };
         bool failLayouts = true, failSettings = true;
         int settingsSaves = 0;
         Func<Task<(IReadOnlyList<Bookmark> Items, IReadOnlyList<StickerLayout> Layouts)>> load =
@@ -107,33 +118,34 @@ internal static class StickerPersistenceChecks
         Action<IReadOnlyList<StickerLayout>> save = batch =>
         {
             stored[0] = batch[0];
-            if (failLayouts) throw new IOException("Injected version-one partial layout failure");
+            if (failLayouts) throw new IOException($"Injected version-{previousVersion} partial layout failure");
             stored[1] = batch[1];
+            stored[2] = batch[2];
         };
         using var manager = (IDisposable)managerType.GetConstructors(instance).Single().Invoke([load, save, (Action<string>)(_ => { })]);
-        Func<Task> reset = () => (Task)managerType.GetMethod("ResetSavedSizesAsync", instance)!.Invoke(manager, [1])!;
+        Func<Task> reset = () => (Task)managerType.GetMethod("ResetSavedSizesAsync", instance)!.Invoke(manager, [previousVersion])!;
         Func<UserSettings, Task> persist = value =>
         {
             settingsSaves++;
-            if (failSettings) return Task.FromException(new IOException("Injected version-one settings failure"));
+            if (failSettings) return Task.FromException(new IOException($"Injected version-{previousVersion} settings failure"));
             value.Save(directory);
             return Task.CompletedTask;
         };
         Task<UserSettings> Apply() => (Task<UserSettings>)upgrade.Invoke(null, [UserSettings.Load(directory), reset, persist])!;
         bool Failed(Task task) { try { Complete(task); return false; } catch (IOException) { return true; } }
-        assert(Failed(Apply()) && UserSettings.Load(directory) == settings && settingsSaves == 0 && stored[1] == custom,
-            "SP13 a partial version-one upgrade leaves the marker and custom outer bounds unchanged");
+        assert(Failed(Apply()) && UserSettings.Load(directory) == settings && settingsSaves == 0 && stored[1] == custom && stored[2] == recordedDpi,
+            $"SP13 a partial version-{previousVersion} upgrade leaves the marker and custom outer bounds unchanged");
         failLayouts = false;
         assert(Failed(Apply()) && UserSettings.Load(directory) == settings && stored[1] == custom &&
-            stored[0].Width == newDefault.Width && stored[0].Height == newDefault.Height,
-            "SP14 settings failure after the compact resize preserves the custom window and remains retryable");
+            stored[0].Width == newDefault.Width && stored[0].Height == newDefault.Height && stored[2] == expectedRecordedDpi,
+            $"SP14 version-{previousVersion} settings failure after resizing recorded defaults preserves custom bounds and remains retryable");
         failSettings = false;
         Task<UserSettings> retry = Apply();
         Complete(retry);
         assert(retry.Result.DisplayMode == BookmarkDisplayMode.List &&
             retry.Result.StickerPresentationVersion == UserSettings.CurrentStickerPresentationVersion && settingsSaves == 2 &&
-            stored[0].Width == newDefault.Width && stored[0].Height == newDefault.Height && stored[0].Left == 20 && stored[0].Top == 30 && stored[1] == custom,
-            "SP15 retrying version one never shrinks a custom window twice or resets the later List choice");
+            stored[0].Width == newDefault.Width && stored[0].Height == newDefault.Height && stored[0].Left == 20 && stored[0].Top == 30 && stored[1] == custom && stored[2] == expectedRecordedDpi,
+            $"SP15 retrying version {previousVersion} preserves migrated stored 150% defaults and custom bounds without resetting the List choice");
     }
 
     private static void EditingWhilePlacementWriteCompletes(Action<bool, string> assert)
@@ -265,7 +277,7 @@ internal static class StickerPersistenceChecks
         internal StickerLayout PlaceCompact(bool collapsed)
         {
             float scale = _form.DeviceDpi / 96F;
-            _form.ClientSize = new Size((int)Math.Round(260 * scale), (int)Math.Round(88 * scale));
+            _form.ClientSize = new Size((int)Math.Round(260 * scale), (int)Math.Round(36 * scale));
             _form.Location = new Point(80, 80);
             _form.GetType().GetMethod("ApplyPresentation")!.Invoke(_form, [collapsed, true]);
             Invoke("Remember", _form);

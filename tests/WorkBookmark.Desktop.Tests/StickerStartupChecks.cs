@@ -132,18 +132,19 @@ internal static class StickerStartupChecks
             }
             finally { next.ExitThread(); }
         }
-        VersionOneCompactStartup(Path.Combine(directory, "version-one"), assert);
+        foreach (int version in new[] { 1, 2 })
+            LegacyCompactStartup(Path.Combine(directory, $"version-{version}"), version, assert);
         EmptyAndInvalidStartup(Path.Combine(directory, "fresh"), assert);
         FailedUpgradeStartup(Path.Combine(directory, "failed-upgrade"), assert);
     }
 
-    private static void VersionOneCompactStartup(string directory, Action<bool, string> assert)
+    private static void LegacyCompactStartup(string directory, int previousVersion, Action<bool, string> assert)
     {
         Directory.CreateDirectory(directory);
         var settings = UserSettings.Default with
         {
             CaptureHotkey = new Hotkey(7, (int)Keys.F23), RecentHotkey = new Hotkey(7, (int)Keys.F24),
-            IntroShown = true, DisplayMode = BookmarkDisplayMode.List, StickerPresentationVersion = 1
+            IntroShown = true, DisplayMode = BookmarkDisplayMode.List, StickerPresentationVersion = previousVersion
         };
         settings.Save(directory);
         using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"));
@@ -151,15 +152,23 @@ internal static class StickerStartupChecks
         var first = Capture("old-default");
         var custom = Capture("custom-size");
         var deleted = Capture("deleted-default");
+        var recordedDpi = Capture("recorded-v2-150-percent-size");
         repository.SoftDelete(deleted.Id);
         Type managerType = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.StickerManager")!;
-        var legacySize = (Size)managerType.GetProperty("LegacyDefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
+        var legacySize = (Size)managerType.GetProperty(previousVersion == 1 ? "LegacyDefaultExpandedSize96" : "CompactDefaultExpandedSize96",
+            BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
         var compactSize = (Size)managerType.GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
         var screen = Screen.PrimaryScreen ?? Screen.AllScreens[0];
         var customLayout = new StickerLayout(custom.Id, screen.DeviceName, 72, 82, legacySize.Width + 100, legacySize.Height + 70, AlwaysOnTop: true);
         repository.SaveStickerLayout(new(first.Id, screen.DeviceName, 32, 42, legacySize.Width, legacySize.Height));
         repository.SaveStickerLayout(customLayout);
         repository.SaveStickerLayout(new(deleted.Id, screen.DeviceName, 112, 122, legacySize.Width, legacySize.Height, true));
+        // Recorded v2 size: native 144 outer 410x152 normalizes to 273x101. This is a
+        // saved-data migration check, not a claim of native 150% monitor coverage.
+        var recordedDpiLayout = new StickerLayout(recordedDpi.Id, screen.DeviceName, 162, 172, 273, 101, AlwaysOnTop: true);
+        var expectedRecordedDpi = previousVersion == 2
+            ? recordedDpiLayout with { Width = compactSize.Width, Height = compactSize.Height } : recordedDpiLayout;
+        repository.SaveStickerLayout(recordedDpiLayout);
         using (var worker = new WorkerClient())
         using (var context = new BookmarkApplicationContext(repository, worker, directory))
         {
@@ -172,8 +181,9 @@ internal static class StickerStartupChecks
                     !((System.Collections.IEnumerable)managerType.GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().Any() &&
                     layouts[first.Id].Width == compactSize.Width && layouts[first.Id].Height == compactSize.Height &&
                     layouts[custom.Id] == customLayout && layouts[deleted.Id].Width == compactSize.Width &&
-                    layouts[deleted.Id].Height == compactSize.Height && layouts[deleted.Id].IsCollapsed && repository.Get(deleted.Id)!.DeletedAtUtc is not null,
-                    "SS17 version-one startup compacts only old defaults, keeps custom outer bounds and the List choice, and leaves deleted bookmarks deleted");
+                    layouts[deleted.Id].Height == compactSize.Height && layouts[deleted.Id].IsCollapsed && repository.Get(deleted.Id)!.DeletedAtUtc is not null &&
+                    layouts[recordedDpi.Id] == expectedRecordedDpi,
+                    $"SS17 version-{previousVersion} startup migrates its recorded defaults including stored 150% bounds, preserves custom sizes and List choice, and leaves deleted rows deleted");
             }
             finally { context.ExitThread(); }
         }
@@ -185,14 +195,19 @@ internal static class StickerStartupChecks
             {
                 var manager = Field<object>(context, "_stickers");
                 Form[] Forms() => ((System.Collections.IEnumerable)managerType.GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
-                PumpUntil(() => Forms().Length == 2 && Forms().All(form => form.Visible));
+                PumpUntil(() => Forms().Length == 3 && Forms().All(form => form.Visible));
                 var compact = Forms().Single(form => BookmarkFor(form).Id == first.Id);
                 var restored = Forms().Single(form => BookmarkFor(form).Id == custom.Id);
+                var restoredRecordedDpi = Forms().Single(form => BookmarkFor(form).Id == recordedDpi.Id);
+                var expectedRecordedBounds = (Rectangle)managerType.GetMethod("RestoreBounds", BindingFlags.Static | BindingFlags.NonPublic)!
+                    .Invoke(null, [expectedRecordedDpi, screen.WorkingArea, restoredRecordedDpi.DeviceDpi, restoredRecordedDpi.MinimumSize])!;
                 var expected = (Rectangle)managerType.GetMethod("RestoreBounds", BindingFlags.Static | BindingFlags.NonPublic)!
                     .Invoke(null, [customLayout, screen.WorkingArea, restored.DeviceDpi, restored.MinimumSize])!;
-                assert(compact.ClientSize == new Size((int)Math.Round(260 * compact.DeviceDpi / 96F), (int)Math.Round(88 * compact.DeviceDpi / 96F)) &&
-                    restored.Bounds == expected && repository.GetStickerLayouts().Single(layout => layout.BookmarkId == custom.Id) == customLayout,
-                    "SS18 reopening version-two stickers restores the compact default and the user's unchanged larger window");
+                assert(compact.ClientSize == new Size((int)Math.Round(260 * compact.DeviceDpi / 96F), (int)Math.Round(36 * compact.DeviceDpi / 96F)) &&
+                    restored.Bounds == expected && repository.GetStickerLayouts().Single(layout => layout.BookmarkId == custom.Id) == customLayout &&
+                    restoredRecordedDpi.Bounds == expectedRecordedBounds &&
+                    repository.GetStickerLayouts().Single(layout => layout.BookmarkId == recordedDpi.Id) == expectedRecordedDpi,
+                    $"SS18 reopening stickers upgraded from version {previousVersion} restores one-line defaults, recorded-size migrations and unchanged custom windows");
             }
             finally { context.ExitThread(); }
         }

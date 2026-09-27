@@ -283,7 +283,7 @@ internal static class StickerInlineNoteChecks
             Pump(Save(form));
             assert(form.Bounds == original, "STN31 saving preserves the full custom window size and position");
         }
-        form.ClientSize = new Size(Px(form, 240), Px(form, 88));
+        form.ClientSize = new Size(Px(form, 240), Px(form, 36));
         var narrow = form.Bounds;
         Begin(form, _ => Task.CompletedTask);
         assert(form.Width == narrow.Width && form.ClientSize.Height == Px(form, 170) && Placement(form) == narrow,
@@ -293,7 +293,7 @@ internal static class StickerInlineNoteChecks
         assert(Placement(form) == narrow, "STN33 resizing while editing changes only the temporary editor geometry");
         Command(form, Keys.Escape);
         assert(form.Bounds == narrow, "STN34 cancelling restores the original narrow size after a temporary resize");
-        form.ClientSize = new Size(Px(form, 260), Px(form, 88));
+        form.ClientSize = new Size(Px(form, 260), Px(form, 36));
         form.Location = new Point(screen.WorkingArea.Left + 60, screen.WorkingArea.Bottom - form.Height - 2);
         var bottom = form.Bounds;
         Begin(form, _ => Task.FromException(new IOException("Injected bottom-edge save failure")));

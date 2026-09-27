@@ -1,0 +1,6 @@
+default: native=96, managed=144, capturedClient={Width=390, Height=54}, compactFrameCompensation=True
+minimum-long-note: native=96, managed=144, capturedClient={Width=360, Height=54}, compactFrameCompensation=True
+minimum-url: native=96, managed=144, capturedClient={Width=360, Height=54}, compactFrameCompensation=True
+minimum-edit-error: native=96, managed=144, capturedClient={Width=360, Height=255}, compactFrameCompensation=True
+collapsed: native=96, managed=144, capturedClient={Width=390, Height=54}, compactFrameCompensation=True
+SYNTHETIC CLIENT DPI REVIEW: PASS (5/5 cases). Native window chrome and monitor transitions are not covered.

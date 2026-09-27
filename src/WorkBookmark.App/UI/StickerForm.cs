@@ -9,8 +9,8 @@ namespace WorkBookmark.App.UI;
 /// <summary>A bookmark view; all data changes go through the application context.</summary>
 internal sealed class StickerForm : Form
 {
-    public static readonly Size DefaultClientSize = new(260, 88);
-    public static readonly Size MinimumClientSize = new(240, 88);
+    public static readonly Size DefaultClientSize = new(260, 36);
+    public static readonly Size MinimumClientSize = new(240, 36);
 
     private static readonly Color Paper = Color.FromArgb(255, 253, 245);
     private static readonly Color Rule = Color.FromArgb(226, 225, 213);
@@ -26,7 +26,7 @@ internal sealed class StickerForm : Form
     private readonly Label _noteStatus = new();
     private readonly Button _cancelNote = new();
     private readonly Button _delete = new();
-    private readonly Button _resume = new();
+    private readonly ShortcutButton _resume = new();
     private readonly ContextMenuStrip _menu = new();
     private readonly ToolStripMenuItem _collapseMenu;
     private readonly ToolStripMenuItem _relinkMenu;
@@ -104,7 +104,7 @@ internal sealed class StickerForm : Form
         SuspendLayout();
         _bodyFont = new Font("맑은 고딕", 9F);
         Font = _bodyFont;
-        _titleFont = new Font(Font.FontFamily, 10.5F, FontStyle.Bold);
+        _titleFont = new Font(Font.FontFamily, 9.5F, FontStyle.Bold);
         _smallFont = new Font(Font.FontFamily, 8.5F);
         _noteFont = new Font(Font.FontFamily, 9.5F);
         ForeColor = UiStyle.Ink;
@@ -160,7 +160,7 @@ internal sealed class StickerForm : Form
         _resumeStatus.ForeColor = Color.FromArgb(138, 80, 43);
         _resumeStatus.AutoEllipsis = true;
         _resumeStatus.UseMnemonic = false;
-        _resumeStatus.AccessibleName = "이어가기 상태";
+        _resumeStatus.AccessibleName = "바로가기 상태";
 
         _noteEditor.Font = _noteFont;
         _noteEditor.BackColor = Paper;
@@ -183,12 +183,12 @@ internal sealed class StickerForm : Form
         _delete.ForeColor = UiStyle.Muted;
         _delete.FlatAppearance.MouseOverBackColor = Color.FromArgb(249, 232, 225);
         _tooltip.SetToolTip(_delete, "스티커와 목록에서 함께 지웁니다. 원본 파일은 유지됩니다. (Ctrl+Delete)");
-        ConfigureButton(_resume, "이어가기", "저장한 작업 위치로 이어가기", 0);
+        ConfigureButton(_resume, "", "바로가기", 0);
         _resume.BackColor = UiStyle.Accent;
         _resume.ForeColor = Color.White;
         _resume.FlatAppearance.MouseOverBackColor = Color.FromArgb(20, 91, 84);
         _resume.FlatAppearance.MouseDownBackColor = Color.FromArgb(16, 78, 72);
-        _tooltip.SetToolTip(_resume, "저장한 작업 위치로 이동 (Ctrl+Enter)");
+        _tooltip.SetToolTip(_resume, "바로가기 (Ctrl+Enter)");
         AcceptButton = _resume;
 
         _collapseMenu = new ToolStripMenuItem("스티커 접기", null, (_, _) => ToggleCollapsed());
@@ -284,7 +284,6 @@ internal sealed class StickerForm : Form
     {
         _busy = busy;
         RefreshActionState();
-        _resume.Text = busy ? "처리 중…" : "이어가기";
     }
 
     public void BeginNoteEdit(Func<string, Task> saveNote)
@@ -466,7 +465,15 @@ internal sealed class StickerForm : Form
         _delete.Visible = false;
         _title.Visible = !editing;
         _resume.Visible = !IsCollapsed && !editing;
-        _resumeStatus.Visible = !IsCollapsed && !editing && _resumeStatus.Text.Length > 0;
+        _resumeStatus.Visible = false;
+        _resume.Busy = _busy;
+        _resume.HasIssue = _resumeStatus.Text.Length > 0;
+        _resume.BackColor = _resume.HasIssue && !_busy ? Color.FromArgb(138, 80, 43) : UiStyle.Accent;
+        _resume.FlatAppearance.MouseOverBackColor = _resume.HasIssue ? Color.FromArgb(158, 95, 55) : Color.FromArgb(20, 91, 84);
+        string shortcutStatus = _busy ? "처리 중…" : _resumeStatus.AccessibleDescription ?? "";
+        _resume.AccessibleDescription = "저장한 작업 위치로 이동 (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : "");
+        _tooltip.SetToolTip(_resume, "바로가기 (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : ""));
+        _resume.Invalidate();
         foreach (Control control in new Control[] { _noteEditor, _noteStatus, _cancelNote })
             control.Visible = editing;
     }
@@ -538,18 +545,18 @@ internal sealed class StickerForm : Form
     {
         base.OnLayout(e);
         if (!_layoutReady) return;
-        int gap = Px(8), width = ClientSize.Width;
-        int bottom = ClientSize.Height - gap;
-        _resume.SetBounds(width - gap - Px(84), bottom - Px(28), Px(84), Px(28));
-        _delete.SetBounds(gap - Px(4), bottom - Px(28), Px(60), Px(28));
+        int gap = Px(6), width = ClientSize.Width;
+        int rowHeight = Px(DefaultClientSize.Height), actionSize = Px(28);
+        _resume.SetBounds(width - gap - actionSize, (rowHeight - actionSize) / 2, actionSize, actionSize);
+        int titleHeight = _title.OneLineHeight + Px(2);
+        int titleLeft = gap - Px(3);
+        int titleRight = IsCollapsed ? width - gap + Px(3) : _resume.Left - gap;
+        _title.SetBounds(titleLeft, Math.Max(0, (rowHeight - titleHeight) / 2), Math.Max(0, titleRight - titleLeft), titleHeight);
+        // Failures belong to the shortcut icon and its tooltip, never a second row.
+        _resumeStatus.Bounds = Rectangle.Empty;
+        int bottom = ClientSize.Height - Px(8);
+        _delete.SetBounds(Px(4), bottom - Px(28), Px(60), Px(28));
         _cancelNote.Bounds = _delete.Bounds;
-        bool singleLine = IsCollapsed || _resumeStatus.Text.Length > 0;
-        int titleHeight = (singleLine ? _title.OneLineHeight : _title.TwoLineHeight) + Px(2);
-        _title.SetBounds(gap - Px(3), IsCollapsed ? Px(6) : gap, width - gap * 2 + Px(6), titleHeight);
-        int statusTop = _title.Bottom + Px(2);
-        int statusHeight = TextRenderer.MeasureText("가Ag", _resumeStatus.Font, new Size(int.MaxValue, int.MaxValue),
-            TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding).Height;
-        _resumeStatus.SetBounds(gap, statusTop, width - gap * 2, Math.Max(0, Math.Min(statusHeight, _resume.Top - Px(2) - statusTop)));
         _noteEditor.SetBounds(gap, Px(12), width - gap * 2, _noteEditor.PreferredHeight);
         int noteStatusTop = _noteEditor.Bottom + Px(6);
         _noteStatus.SetBounds(gap, noteStatusTop, width - gap * 2, Math.Max(0, _cancelNote.Top - Px(8) - noteStatusTop));
@@ -780,14 +787,68 @@ internal sealed class StickerForm : Form
         }
     }
 
+    // Draw the action without a font-dependent arrow glyph, retaining native
+    // button focus, keyboard activation and accessible naming.
+    private sealed class ShortcutButton : Button
+    {
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        internal bool Busy { get; set; }
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        internal bool HasIssue { get; set; }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var buttonState = e.Graphics.Save();
+            base.OnPaint(e);
+            // Flat-button hover painting may leave a background exclusion clip.
+            // Restore the original drawing region before adding the icon.
+            e.Graphics.Restore(buttonState);
+            var state = e.Graphics.Save();
+            try
+            {
+                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                float scale = DeviceDpi / 96F;
+                float left = (ClientSize.Width - 28 * scale) / 2;
+                float top = (ClientSize.Height - 28 * scale) / 2;
+                PointF At(float x, float y) => new(left + x * scale, top + y * scale);
+                using var brush = new SolidBrush(ForeColor);
+                using var pen = new Pen(ForeColor, 1.8F * scale)
+                {
+                    StartCap = System.Drawing.Drawing2D.LineCap.Round,
+                    EndCap = System.Drawing.Drawing2D.LineCap.Round,
+                    LineJoin = System.Drawing.Drawing2D.LineJoin.Round
+                };
+                if (Busy)
+                {
+                    foreach (int x in new[] { 8, 14, 20 })
+                    {
+                        PointF dot = At(x - 1.5F, 12.5F);
+                        e.Graphics.FillEllipse(brush, dot.X, dot.Y, 3 * scale, 3 * scale);
+                    }
+                }
+                else if (HasIssue)
+                {
+                    e.Graphics.DrawLine(pen, At(14, 7), At(14, 16));
+                    PointF dot = At(12.5F, 20);
+                    e.Graphics.FillEllipse(brush, dot.X, dot.Y, 3 * scale, 3 * scale);
+                }
+                else
+                {
+                    e.Graphics.DrawLine(pen, At(8, 20), At(20, 8));
+                    e.Graphics.DrawLines(pen, [At(9, 8), At(20, 8), At(20, 19)]);
+                }
+            }
+            finally { e.Graphics.Restore(state); }
+        }
+    }
+
     // Button semantics keep the title reachable by Tab, Enter/Space and assistive
-    // technology, while explicit text drawing limits the visible title to two lines.
+    // technology, while explicit text drawing keeps the title on one line.
     private sealed class TitleButton : Button
     {
-        private const TextFormatFlags TitleTextFlags = TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
+        private const TextFormatFlags TitleTextFlags = TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
 
         public int OneLineHeight => MeasureTitleHeight(1);
-        public int TwoLineHeight => MeasureTitleHeight(2);
 
         private int MeasureTitleHeight(int lines)
         {
@@ -828,8 +889,7 @@ internal sealed class StickerForm : Form
             }
             if (Fits(Text)) return Text;
 
-            // DrawText's EndEllipsis does not reliably mark vertical overflow.
-            // Fit the actual prefix plus ellipsis using the same wrapping flags,
+            // Fit the actual single-line prefix plus ellipsis using the same flags,
             // without splitting a surrogate pair or a combining text element.
             int[] elements = StringInfo.ParseCombiningCharacters(Text);
             int low = 0, high = elements.Length;
