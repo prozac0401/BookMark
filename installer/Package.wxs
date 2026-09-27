@@ -11,6 +11,14 @@
     <Property Id="ARPURLINFOABOUT" Value="https://github.com/prozac0401/BookMark" />
     <Property Id="ARPPRODUCTICON" Value="WorkBookmarkIcon" />
     <Property Id="REBOOT" Value="ReallySuppress" />
+    <Property Id="SAVED_INSTALLFOLDER" Secure="yes">
+      <RegistrySearch Id="ReadInstallFolder" Root="HKCU" Key="Software\WorkBookmark\Installer"
+                      Name="InstallFolder" Type="raw" Bitness="always64" />
+    </Property>
+    <!-- Resolve the original location before costing, including silent repair/removal.
+         Relocation of an installed product requires uninstall followed by a fresh install. -->
+    <SetProperty Id="INSTALLFOLDER" Value="[SAVED_INSTALLFOLDER]" Before="CostInitialize"
+                 Sequence="both" Condition="SAVED_INSTALLFOLDER" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="업무 책갈피 실행" />
     <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
     <Property Id="WixUnelevatedShellExecTarget" Value="[#WorkBookmarkExecutable]" />
@@ -23,7 +31,12 @@
     <Icon Id="WorkBookmarkIcon" SourceFile="$(var.PublishDirectory)\WorkBookmark.exe" />
     <StandardDirectory Id="LocalAppDataFolder">
       <Directory Id="ProgramsFolder" Name="Programs">
-        <Directory Id="INSTALLFOLDER" Name="WorkBookmark" />
+        <Directory Id="INSTALLFOLDER" Name="WorkBookmark">
+          <Component Id="InstallFolderRegistration" Guid="D10F1804-C10D-481B-A5B0-F831A061C121" Bitness="always64">
+            <RegistryValue Root="HKCU" Key="Software\WorkBookmark\Installer" Name="InstallFolder"
+                           Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+          </Component>
+        </Directory>
       </Directory>
     </StandardDirectory>
     <StandardDirectory Id="ProgramMenuFolder">
@@ -61,6 +74,7 @@
       <ComponentRef Id="StartMenuShortcut" />
       <ComponentRef Id="StartupShortcut" />
       <ComponentRef Id="StartupCleanup" />
+      <ComponentRef Id="InstallFolderRegistration" />
     </Feature>
   </Package>
 </Wix>
