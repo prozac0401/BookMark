@@ -2,7 +2,7 @@
 
 Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·Chrome·네이버 Whale 웹페이지를 로컬에 남기는 트레이 도구입니다.
 
-**0.2.8 평가판:** 네이버 Whale을 확장 없는 웹페이지 저장 대상에 추가했습니다. 제목·URL 확인과 Windows 기본 브라우저로 여는 동작은 유지합니다. Release 빌드 경고·오류 0개와 브라우저 관련 자동검사 34개 통과를 확인했으며 실제 Whale 저장·재열기는 미검증입니다. [변경 사항](docs/release-notes-v0.2.8.md) · [검증 근거](docs/evidence/whale-support-2026-09-27/README.md) · [확장 없는 사용법](docs/browser-without-extension.ko.md).
+**0.2.8 정식 배포:** 기존 v0.2.8의 MSI·ZIP과 소스를 유지해 정식 릴리스 채널로 전환했습니다. 이미 0.2.8을 사용한다면 재설치할 필요가 없습니다. 사용자가 실제 Whale에서 저장·재열기가 정상 동작함을 확인했습니다(USER_CONFIRMED). Windows·Whale build와 원시 로그가 있는 통제 시험은 아니므로 모든 환경 검증으로 확대하지 않습니다. 기존 Release 빌드 경고·오류 0개와 브라우저 자동검사 34개·패키지 검사 54개를 재사용하며 전체 Office·스티커·설치 수명주기를 새로 검증한 것은 아닙니다. [정식 전환 기록](docs/stable-release-20261005.md) · [변경 사항](docs/release-notes-v0.2.8.md) · [기존 검증 근거](docs/evidence/whale-support-2026-09-27/README.md).
 
 0.2.7의 **메모 한 줄·바로가기 화살표·편집 시 일시 확대**와 사용자 크기 보존은 유지합니다. 기존 결과는 [0.2.7 검증 기록](docs/evidence/sticker-single-row-2026-09-27/README.md)에서 확인하세요.
 
