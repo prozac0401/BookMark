@@ -2,19 +2,21 @@
 
 Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·Chrome·네이버 Whale 웹페이지를 로컬에 남기는 트레이 도구입니다.
 
-**0.2.9 로컬 릴리스 준비본 · 공개 배포 전:** 스티커 모드의 **Ctrl+Alt+J 전체 표시·숨기기 토글**, 주변 스티커에 붙는 **자석 정렬**, **가로·세로·격자 일괄 정렬**을 추가했습니다. Release 빌드 경고·오류 0개, 자동검사 **746개 통과**(Desktop **351개** 포함)를 확인했습니다. [변경 사항](docs/release-notes-v0.2.9.md) · [검증 근거](docs/evidence/sticker-alignment-2026-10-06/README.md).
+**0.2.9 릴리스:** 스티커 모드의 **Ctrl+Alt+J 전체 표시·숨기기 토글**, 주변 스티커에 붙는 **자석 정렬**, **가로·세로·격자 일괄 정렬**을 추가했습니다. 2026년 10월 6일 준비 단계에서 Release 빌드 경고·오류 0개, 자동검사 **746개 통과**(Desktop **351개** 포함)를 확인했습니다. 이 기능검사 결과를 재사용하며, 최종 배포 패키지 검사는 동봉 검증 JSON을 기준으로 합니다. [변경 사항](docs/release-notes-v0.2.9.md) · [검증 근거](docs/evidence/sticker-alignment-2026-10-06/README.md).
 
 0.2.7의 **메모 한 줄·바로가기 화살표·편집 시 일시 확대**와 사용자 크기 보존은 유지합니다. 기존 결과는 [0.2.7 검증 기록](docs/evidence/sticker-single-row-2026-09-27/README.md)에서 확인하세요.
 
 **[설치 및 사용 매뉴얼](docs/user-manual.ko.md)** — MSI·포터블 설치, 프로그램별 사용법, 설정, 백업·복원, 업데이트·제거와 문제 해결을 안내합니다. 처음 실행해 보려면 [빠른 시작](docs/quick-start.ko.md)을 참고하세요.
 
-**이전 공개 버전: [WorkBookmark 0.2.8 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.8)** — 네이버 Whale 지원을 추가한 버전입니다. 0.2.9는 MSI·포터블 ZIP·Source.zip·SourceSnapshot.json·검증 JSON·SHA256SUMS.txt의 기존 6종 배포 형식으로 준비합니다. 로컬 패키지 위치와 검사 결과는 [0.2.9 검증 기록](docs/evidence/sticker-alignment-2026-10-06/README.md)에서 확인하세요. [MSI 설치 안내](docs/windows-installer.ko.md)의 이전 경로 이행 절차는 계속 적용됩니다.
+**[WorkBookmark 0.2.9 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.9)** — MSI·포터블 ZIP·Source.zip·SourceSnapshot.json·검증 JSON·SHA256SUMS.txt의 기존 6종 배포 형식입니다. 첨부 검증 JSON은 최종 패키지 검사 결과, SourceSnapshot.json은 소스 기준, SHA256SUMS.txt는 파일 해시를 기록합니다. [MSI 설치 안내](docs/windows-installer.ko.md)의 이전 경로 이행 절차는 계속 적용됩니다.
+
+이전 **0.2.8은 2026년 10월 5일 기존 바이너리를 유지해 정식 채널로 전환**했습니다. 사용자가 실제 Whale 저장·재열기의 정상 동작을 확인했습니다(USER_CONFIRMED). 정확한 Windows·Whale build와 원시 로그가 있는 통제 시험은 아니므로 모든 환경 검증으로 확대하지 않습니다. [0.2.8 정식 전환 기록](docs/stable-release-20261005.md)을 참고하세요.
 
 **0.2.9는 0.2.4의 사용자 지정 설치 경로 보존 수정을 포함합니다.** 메모 자동 저장과 DB v5도 유지합니다.
 
 메모가 있으면 **메모가 스티커 제목**이 됩니다. 메모가 없을 때만 URL·폴더 주소·파일명을 보여 줍니다. 제목을 클릭하거나 **Ctrl+E**로 편집하고, **다른 창이나 스티커로 이동하면 자동 저장**합니다. **Enter**로 바로 저장하거나 저장 전에 **취소 / Esc**로 되돌릴 수 있습니다. 저장 버튼은 표시하지 않습니다.
 
-설치 패키지는 **서명되지 않았습니다**. 격리한 실제 앱에서 사용자 지정 보기 단축키 **Ctrl+Alt+Shift+F16**을 Windows 키 입력으로 눌러 스티커 **2개 표시 → 모두 숨김 → 2개 표시**, 위치·메모 보존과 정상 종료를 확인했습니다. 기본 **Ctrl+Alt+J** 직접 입력, 실제 마우스 드래그·Alt 드래그·혼합 화면 배율·한글 입력기 조합과 이번 MSI 설치·업데이트 실기는 아직 미검증입니다. 이전 Whale 실기 미검증 상태도 유지합니다. [검증 기록](docs/evidence/sticker-alignment-2026-10-06/README.md)과 패키지의 검증 JSON·SHA256SUMS.txt에서 확인 범위를 구분해 확인하세요.
+설치 패키지는 **서명되지 않았습니다**. 커밋 전 검증용 빌드의 격리한 실제 앱에서 사용자 지정 보기 단축키 **Ctrl+Alt+Shift+F16**을 Windows 키 입력으로 눌러 스티커 **2개 표시 → 모두 숨김 → 2개 표시**, 위치·메모 보존과 정상 종료를 확인했습니다. 기본 **Ctrl+Alt+J** 직접 입력, 실제 마우스 드래그·Alt 드래그·혼합 화면 배율·한글 입력기 조합과 이번 MSI 설치·업데이트 실기는 아직 미검증입니다. [검증 기록](docs/evidence/sticker-alignment-2026-10-06/README.md)과 패키지의 검증 JSON·SHA256SUMS.txt에서 확인 범위를 구분해 확인하세요.
 
 ![WorkBookmark 아이콘과 설치 화면 디자인](docs/evidence/branding-2026-09-22/branding-preview.png)
 
@@ -34,7 +36,7 @@ Windows 빌드·자동검사와 실제 환경별 확인 결과는 [검증 보고
 
 **0.2.3 이하를 사용자 지정 경로에 설치했다면 기존 MSI와 원래 INSTALLFOLDER를 지정해 먼저 제거한 뒤 새로 설치하세요.** 기본 경로 설치는 일반 업데이트를 확인했습니다. [설치 경로 이행 안내](docs/windows-installer.ko.md)를 먼저 확인하세요.
 
-준비한 로컬 `WorkBookmark-0.2.9-win-x64.msi`는 기본 경로의 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치하는 방식입니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
+[0.2.9 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.9)의 `WorkBookmark-0.2.9-win-x64.msi`는 기본 경로의 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치하는 방식입니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
 
 포터블 사용은 self-contained win-x64 ZIP을 **폴더 전체**로 압축 해제하고 `WorkBookmark.exe`를 실행합니다. 트레이 메뉴에서 종료할 수 있습니다.
 
