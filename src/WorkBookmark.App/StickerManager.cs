@@ -19,12 +19,13 @@ internal sealed class StickerManager : IDisposable
     private Task? _writeTask;
     private StickerLayout[] _writingBatch = [];
     private int _loadVersion, _revision;
-    private bool _enabled, _hidden, _disposed, _applying;
+    private bool _enabled, _hidden, _disposed, _applying, _showPending;
     private Guid? _busyBookmarkId;
 
     internal event Action<Bookmark>? ResumeRequested, NoteRequested, DeleteRequested, RelinkRequested;
     internal event Action? ShowListRequested, SettingsRequested, UndoRequested;
     internal IReadOnlyCollection<StickerForm> Forms => _forms.Values;
+    internal bool SnapEnabled { get; set; } = true;
 
     internal StickerManager(Func<Task<(IReadOnlyList<Bookmark> Items, IReadOnlyList<StickerLayout> Layouts)>> load,
         Action<IReadOnlyList<StickerLayout>> save, Action<string> notify)
@@ -120,17 +121,31 @@ internal sealed class StickerManager : IDisposable
         await ShowAllAsync(activate);
     }
 
-    internal async Task ShowAllAsync(bool activate = true)
+    internal Task ToggleVisibilityAsync()
     {
-        if (!_enabled || _disposed) return;
+        if (!_enabled || _disposed) return Task.CompletedTask;
+        // Use actual visibility: individual hides and note editing can differ
+        // from the hide-all policy. A second press also cancels a pending reveal.
+        if (_showPending || _forms.Values.Any(form => form.Visible))
+        {
+            HideAll();
+            return Task.CompletedTask;
+        }
+        return ShowAllAsync();
+    }
+
+    internal async Task<bool> ShowAllAsync(bool activate = true)
+    {
+        if (!_enabled || _disposed) return false;
         _hidden = false;
+        _showPending = true;
         int version = ++_loadVersion, revision = _revision;
         try
         {
             var loaded = await _load();
-            if (_disposed || !_enabled || version != _loadVersion) return;
+            if (_disposed || !_enabled || version != _loadVersion) return false;
             // A capture/delete accepted while the read was in flight must not be overwritten.
-            if (revision != _revision) { await ShowAllAsync(activate); return; }
+            if (revision != _revision) return await ShowAllAsync(activate);
             foreach (var layout in loaded.Layouts) _layouts.TryAdd(layout.BookmarkId, layout);
             var active = loaded.Items.Where(item => item.DeletedAtUtc is null).ToArray();
             var identities = active.Select(item => item.Id).ToHashSet();
@@ -151,8 +166,15 @@ internal sealed class StickerManager : IDisposable
                 form.FocusResume();
             }
             if (activate && active.Length == 0) _notify("책갈피가 없습니다. 작업 창에서 저장 단축키를 눌러 주세요.");
+            return true;
         }
-        catch { if (!_disposed) _notify("스티커를 불러오지 못했습니다. 저장된 책갈피는 유지됩니다."); }
+        catch
+        {
+            if (!_disposed && version == _loadVersion)
+                _notify("스티커를 불러오지 못했습니다. 저장된 책갈피는 유지됩니다.");
+            return false;
+        }
+        finally { if (version == _loadVersion) _showPending = false; }
     }
 
     internal void Upsert(Bookmark item)
@@ -163,6 +185,7 @@ internal sealed class StickerManager : IDisposable
         if (_forms.TryGetValue(item.Id, out var existing)) { existing.UpdateBookmark(item); return; }
         if (!_enabled) return;
         var form = new StickerForm(item);
+        form.AdjustMoveBounds = (bounds, modifiers) => SnapMove(form, bounds, modifiers);
         form.ResumeRequested += value => ResumeRequested?.Invoke(value);
         form.NoteRequested += value => NoteRequested?.Invoke(value);
         form.DeleteRequested += value => DeleteRequested?.Invoke(value);
@@ -212,6 +235,7 @@ internal sealed class StickerManager : IDisposable
     internal void HideAll()
     {
         _hidden = true;
+        _showPending = false;
         ++_loadVersion;
         foreach (var form in _forms.Values) form.Hide();
     }
@@ -237,16 +261,31 @@ internal sealed class StickerManager : IDisposable
         form.BeginNoteEdit(saveNote);
     }
 
-    internal async Task ArrangeAsync()
+    private Rectangle SnapMove(StickerForm moving, Rectangle proposed, Keys modifiers)
     {
-        await ShowAllAsync(false);
-        if (_disposed || !_enabled) return;
+        if (!SnapEnabled || !_enabled || _disposed || _applying || (modifiers & Keys.Alt) != 0) return proposed;
+        var screen = Screen.FromRectangle(proposed);
+        var neighbors = _forms.Values.Where(form => form != moving && !form.IsDisposed && form.Visible &&
+                Screen.FromControl(form).DeviceName == screen.DeviceName)
+            .Select(form => form.Bounds).ToArray();
+        return StickerSnap.Snap(proposed, neighbors, screen.WorkingArea, moving.DeviceDpi);
+    }
+
+    internal async Task ArrangeAsync(StickerArrangementMode mode = StickerArrangementMode.Grid)
+    {
+        if (!await ShowAllAsync(false) || _disposed || !_enabled || _hidden) return;
         var screen = Screen.FromPoint(Cursor.Position);
-        int index = 0;
-        foreach (var form in _forms.Values.OrderByDescending(value => value.Bookmark.CaptureSequence))
+        var forms = _forms.Values.OrderByDescending(value => value.Bookmark.CaptureSequence).ToArray();
+        if (forms.Length == 0) return;
+        // Moving to the destination monitor first lets WinForms apply that
+        // monitor's DPI before measuring the row/column layout.
+        foreach (var form in forms) form.Location = screen.WorkingArea.Location;
+        var bounds = StickerArrangement.Arrange(forms.Select(form => form.Size).ToArray(),
+            screen.WorkingArea, forms[0].DeviceDpi, mode);
+        for (int index = 0; index < forms.Length; index++)
         {
-            form.Bounds = DefaultBounds(screen.WorkingArea, form.Size, index++, form.MinimumSize);
-            Remember(form);
+            forms[index].Location = bounds[index].Location;
+            Remember(forms[index]);
         }
     }
 

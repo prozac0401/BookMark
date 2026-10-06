@@ -62,7 +62,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             {
                 _ = CaptureAsync();
             }
-            else ShowBookmarks();
+            else ToggleBookmarkVisibility();
         };
         _recent = new RecentForm(query => ReadAsync(() => _repository.List(query)));
         _recent.ResumeRequested += ResumeFromList;
@@ -73,7 +73,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _stickers = new StickerManager(
             () => ReadAsync(() => (_repository.ListActive(), _repository.GetStickerLayouts())),
             layouts => { lock (_repositoryLock) foreach (var layout in layouts) _repository.SaveStickerLayout(layout); },
-            message => Notify(message));
+            message => Notify(message)) { SnapEnabled = _settings.StickerSnapEnabled };
         _stickers.ResumeRequested += ResumeFromSticker;
         _stickers.NoteRequested += bookmark => _ = EditNoteAsync(bookmark.Id);
         _stickers.DeleteRequested += bookmark => _ = DeleteAsync(bookmark);
@@ -85,7 +85,10 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         menu.Items.Add("책갈피 보기", null, (_, _) => ShowBookmarks());
         menu.Items.Add("목록에서 찾기", null, (_, _) => ShowRecent());
         _hideStickersMenu = new ToolStripMenuItem("스티커 모두 숨기기", null, (_, _) => _stickers.HideAll());
-        _arrangeStickersMenu = new ToolStripMenuItem("스티커 위치 모으기", null, (_, _) => _ = _stickers.ArrangeAsync());
+        _arrangeStickersMenu = new ToolStripMenuItem("스티커 위치 모으기");
+        _arrangeStickersMenu.DropDownItems.Add("격자로 정렬", null, (_, _) => _ = _stickers.ArrangeAsync(StickerArrangementMode.Grid));
+        _arrangeStickersMenu.DropDownItems.Add("가로로 정렬", null, (_, _) => _ = _stickers.ArrangeAsync(StickerArrangementMode.Horizontal));
+        _arrangeStickersMenu.DropDownItems.Add("세로로 정렬", null, (_, _) => _ = _stickers.ArrangeAsync(StickerArrangementMode.Vertical));
         menu.Items.Add(_hideStickersMenu); menu.Items.Add(_arrangeStickersMenu);
         menu.Items.Add("웹페이지 URL로 추가…", null, (_, _) => ShowWebBookmark());
         _undoMenu = new ToolStripMenuItem("삭제 되돌리기", null, (_, _) => _ = UndoAsync()) { Visible = false };
@@ -271,6 +274,13 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         if (_exiting) return;
         if (_dispatcher.InvokeRequired) { _dispatcher.BeginInvoke((Action)ShowBookmarks); return; }
         if (_settings.DisplayMode == BookmarkDisplayMode.Stickers) _ = _stickers.ShowAllAsync();
+        else ShowRecent();
+    }
+    private void ToggleBookmarkVisibility()
+    {
+        if (_exiting) return;
+        if (_dispatcher.InvokeRequired) { _dispatcher.BeginInvoke((Action)ToggleBookmarkVisibility); return; }
+        if (_settings.DisplayMode == BookmarkDisplayMode.Stickers) _ = _stickers.ToggleVisibilityAsync();
         else ShowRecent();
     }
     private void UpdateDisplayMenus()
@@ -656,6 +666,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
                 requested.Save(_dataDirectory);
             });
             _settings = requested; _settingsInvalid = false;
+            _stickers.SnapEnabled = _settings.StickerSnapEnabled;
             UpdateDisplayMenus();
             if (_settings.DisplayMode == BookmarkDisplayMode.Stickers) _recent.Hide();
             await _stickers.SetEnabledAsync(_settings.DisplayMode == BookmarkDisplayMode.Stickers);

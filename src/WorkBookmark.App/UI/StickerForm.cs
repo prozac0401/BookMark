@@ -83,6 +83,8 @@ internal sealed class StickerForm : Form
     public event Action? SettingsRequested;
     public event Action? UndoRequested;
     public event Action<StickerForm>? PlacementChanged;
+    [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+    internal Func<Rectangle, Keys, Rectangle>? AdjustMoveBounds { get; set; }
 
     // Only the act of showing is non-activating. A real click still activates the window,
     // so its buttons, keyboard navigation and native window move/size commands work.
@@ -562,6 +564,28 @@ internal sealed class StickerForm : Form
         _noteStatus.SetBounds(gap, noteStatusTop, width - gap * 2, Math.Max(0, _cancelNote.Top - Px(8) - noteStatusTop));
         Invalidate();
     }
+
+    protected override void WndProc(ref Message message)
+    {
+        // WM_MOVING supplies the proposed screen rectangle before Windows moves
+        // the window. Correct that rectangle so native dragging stays smooth.
+        if (message.Msg == 0x0216 && message.LParam != nint.Zero &&
+            !_presentationChanging && AdjustMoveBounds is { } adjust)
+        {
+            var bounds = Marshal.PtrToStructure<MovingRectangle>(message.LParam);
+            var snapped = adjust(Rectangle.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom), ModifierKeys);
+            Marshal.StructureToPtr(new MovingRectangle
+            {
+                Left = snapped.Left, Top = snapped.Top, Right = snapped.Right, Bottom = snapped.Bottom
+            }, message.LParam, false);
+            message.Result = new nint(1);
+            return;
+        }
+        base.WndProc(ref message);
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MovingRectangle { public int Left, Top, Right, Bottom; }
 
     protected override void OnResizeEnd(EventArgs e)
     {

@@ -61,6 +61,20 @@ internal static class SettingsDisplayChecks
         stickers.Save(directory);
         assert(UserSettings.Load(directory) == stickers,
             "SET02 sticker display choice survives saving and reloading");
+        assert(UserSettings.Default.StickerSnapEnabled && UserSettings.Load(directory).StickerSnapEnabled,
+            "SET16 magnetic alignment defaults on and survives saving and reloading");
+        var unsnappedStickers = stickers with { StickerSnapEnabled = false };
+        unsnappedStickers.Save(directory);
+        assert(UserSettings.Load(directory) == unsnappedStickers,
+            "SET17 disabling magnetic alignment survives saving and reloading");
+        File.WriteAllText(path, JsonSerializer.Serialize(new
+        {
+            previous.Version, previous.CaptureHotkey, previous.RecentHotkey,
+            previous.StartWithWindows, previous.IntroShown, previous.DisplayMode,
+            previous.StickerPresentationVersion
+        }));
+        assert(UserSettings.Load(directory) == previous && legacyWithoutMode.StickerSnapEnabled,
+            "SET18 older settings without magnetic alignment enable it while preserving saved preferences");
         string invalid = JsonSerializer.Serialize(stickers with { DisplayMode = (BookmarkDisplayMode)99 });
         File.WriteAllText(path, invalid);
         bool rejected = false;
@@ -92,37 +106,45 @@ internal static class SettingsDisplayChecks
             Application.DoEvents();
             var list = Field<RadioButton>(form, "_listDisplay");
             var sticker = Field<RadioButton>(form, "_stickerDisplay");
+            var snap = Field<CheckBox>(form, "_stickerSnap");
             var save = Field<Button>(form, "_apply");
-            assert(list.Checked && !sticker.Checked,
-                "SET04 settings shows the saved List choice");
+            assert(list.Checked && !sticker.Checked && snap.Checked && !snap.Enabled,
+                "SET04 settings shows the saved List choice and retains its inactive magnetic alignment preference");
             sticker.Checked = true;
-            assert(sticker.Checked && !list.Checked,
-                "SET05 display choices remain mutually exclusive");
+            assert(sticker.Checked && !list.Checked && snap.Enabled,
+                "SET05 display choices remain mutually exclusive and sticker mode enables magnetic alignment");
+            snap.Checked = false;
+            list.Checked = true;
+            sticker.Checked = true;
+            assert(!snap.Checked && snap.Enabled,
+                "SET19 switching display modes retains the selected magnetic alignment preference");
             save.PerformClick();
             Application.DoEvents();
-            assert(!form.IsDisposed && save.Enabled && sticker.Checked &&
+            assert(!form.IsDisposed && save.Enabled && sticker.Checked && !snap.Checked &&
                 Field<Label>(form, "_status").Text == "테스트: 설정 저장 실패" &&
-                applied == stickers,
-                "SET06 failed apply retains selected mode and existing settings for retry");
+                applied == unsnappedStickers,
+                "SET06 failed apply retains selected display and magnetic alignment preferences for retry");
             fail = false;
             save.PerformClick();
             Application.DoEvents();
-            assert(form.IsDisposed && applied == stickers,
-                "SET07 successful apply closes settings and includes the selected mode");
+            assert(form.IsDisposed && applied == unsnappedStickers,
+                "SET07 successful apply closes settings and includes display and magnetic alignment preferences");
         }
 
         applied = null;
-        using (var form = (Form)Activator.CreateInstance(formType, stickers, true, true,
+        using (var form = (Form)Activator.CreateInstance(formType, unsnappedStickers, true, true,
             directory, apply, (Action)(() => { }), (Action)(() => { }))!)
         {
             form.Show();
             Application.DoEvents();
-            assert(Field<RadioButton>(form, "_stickerDisplay").Checked,
-                "SET08 settings shows the saved Stickers choice");
+            assert(Field<RadioButton>(form, "_stickerDisplay").Checked &&
+                !Field<CheckBox>(form, "_stickerSnap").Checked,
+                "SET08 settings shows saved Stickers and disabled magnetic alignment choices");
+            Field<CheckBox>(form, "_stickerSnap").Checked = true;
             Field<RadioButton>(form, "_listDisplay").Checked = true;
             form.Close();
             assert(applied is null,
-                "SET09 closing settings discards unapplied display changes");
+                "SET09 closing settings discards unapplied display and magnetic alignment changes");
         }
     }
 

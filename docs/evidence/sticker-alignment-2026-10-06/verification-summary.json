@@ -1,0 +1,30 @@
+{
+  "productVersion": "0.2.9",
+  "date": "2026-10-06",
+  "os": "Windows 11 Pro 10.0.22631 x64",
+  "sdk": "10.0.401",
+  "node": "24.13.1",
+  "buildWarnings": 0,
+  "buildErrors": 0,
+  "distinctAutomaticChecks": 746.0,
+  "suites": {
+    "CoreStorage": 52,
+    "IPC": 17,
+    "Desktop": 351,
+    "WindowsAdapter": 10,
+    "ExcelEvidence": 13,
+    "CaptureSession": 14,
+    "Word": 24,
+    "OfficeUrl": 103,
+    "BrowserAdapter": 34,
+    "Notepad": 28,
+    "Pdf": 28,
+    "BrowserHost": 27,
+    "BrowserSqlite": 15,
+    "BrowserExtension": 23,
+    "RegistrationOwnership": 7
+  },
+  "countingRule": "Full pipeline had 345 Desktop checks, then final Desktop rerun had 351. Replace the former count; do not sum repeated runs.",
+  "packageChecks": "See final release validation JSON; not included in automatic-check total",
+  "liveInstallUpgradeReboot": "Not run"
+}

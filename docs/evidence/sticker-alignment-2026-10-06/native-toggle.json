@@ -1,0 +1,197 @@
+{
+  "scope": "Native SendInput through configured custom global hotkey, isolated application context using exact published assembly; not installed Program.Main acceptance",
+  "productVersion": "0.2.9",
+  "productAssemblySha256": "d912e5c03a0a05d3385914dd33e63343cbf383284bdf4c459f3ff3b097ea10f2",
+  "hotkey": "Ctrl+Alt+Shift+F16",
+  "observations": [
+    {
+      "atUtc": "2026-10-06T19:46:37.8412079+09:00",
+      "visibleCount": 2,
+      "totalWindows": 2,
+      "windows": [
+        {
+          "Text": "입력 전 원본 메모 · 업무 책갈피",
+          "Visible": true,
+          "Bounds": {
+            "Location": {
+              "IsEmpty": false,
+              "X": 120,
+              "Y": 130
+            },
+            "Size": {
+              "IsEmpty": false,
+              "Width": 274,
+              "Height": 50
+            },
+            "X": 120,
+            "Y": 130,
+            "Width": 274,
+            "Height": 50,
+            "Left": 120,
+            "Top": 130,
+            "Right": 394,
+            "Bottom": 180,
+            "IsEmpty": false
+          },
+          "DeviceDpi": 96
+        },
+        {
+          "Text": "두 번째 스티커 원본 · 업무 책갈피",
+          "Visible": true,
+          "Bounds": {
+            "Location": {
+              "IsEmpty": false,
+              "X": 560,
+              "Y": 130
+            },
+            "Size": {
+              "IsEmpty": false,
+              "Width": 274,
+              "Height": 50
+            },
+            "X": 560,
+            "Y": 130,
+            "Width": 274,
+            "Height": 50,
+            "Left": 560,
+            "Top": 130,
+            "Right": 834,
+            "Bottom": 180,
+            "IsEmpty": false
+          },
+          "DeviceDpi": 96
+        }
+      ],
+      "sourceUnchanged": true
+    },
+    {
+      "atUtc": "2026-10-06T19:47:00.5254121+09:00",
+      "visibleCount": 0,
+      "totalWindows": 2,
+      "windows": [
+        {
+          "Text": "입력 전 원본 메모 · 업무 책갈피",
+          "Visible": false,
+          "Bounds": {
+            "Location": {
+              "IsEmpty": false,
+              "X": 120,
+              "Y": 130
+            },
+            "Size": {
+              "IsEmpty": false,
+              "Width": 274,
+              "Height": 50
+            },
+            "X": 120,
+            "Y": 130,
+            "Width": 274,
+            "Height": 50,
+            "Left": 120,
+            "Top": 130,
+            "Right": 394,
+            "Bottom": 180,
+            "IsEmpty": false
+          },
+          "DeviceDpi": 96
+        },
+        {
+          "Text": "두 번째 스티커 원본 · 업무 책갈피",
+          "Visible": false,
+          "Bounds": {
+            "Location": {
+              "IsEmpty": false,
+              "X": 560,
+              "Y": 130
+            },
+            "Size": {
+              "IsEmpty": false,
+              "Width": 274,
+              "Height": 50
+            },
+            "X": 560,
+            "Y": 130,
+            "Width": 274,
+            "Height": 50,
+            "Left": 560,
+            "Top": 130,
+            "Right": 834,
+            "Bottom": 180,
+            "IsEmpty": false
+          },
+          "DeviceDpi": 96
+        }
+      ],
+      "sourceUnchanged": true
+    },
+    {
+      "atUtc": "2026-10-06T19:47:17.2343917+09:00",
+      "visibleCount": 2,
+      "totalWindows": 2,
+      "windows": [
+        {
+          "Text": "입력 전 원본 메모 · 업무 책갈피",
+          "Visible": true,
+          "Bounds": {
+            "Location": {
+              "IsEmpty": false,
+              "X": 120,
+              "Y": 130
+            },
+            "Size": {
+              "IsEmpty": false,
+              "Width": 274,
+              "Height": 50
+            },
+            "X": 120,
+            "Y": 130,
+            "Width": 274,
+            "Height": 50,
+            "Left": 120,
+            "Top": 130,
+            "Right": 394,
+            "Bottom": 180,
+            "IsEmpty": false
+          },
+          "DeviceDpi": 96
+        },
+        {
+          "Text": "두 번째 스티커 원본 · 업무 책갈피",
+          "Visible": true,
+          "Bounds": {
+            "Location": {
+              "IsEmpty": false,
+              "X": 560,
+              "Y": 130
+            },
+            "Size": {
+              "IsEmpty": false,
+              "Width": 274,
+              "Height": 50
+            },
+            "X": 560,
+            "Y": 130,
+            "Width": 274,
+            "Height": 50,
+            "Left": 560,
+            "Top": 130,
+            "Right": 834,
+            "Bottom": 180,
+            "IsEmpty": false
+          },
+          "DeviceDpi": 96
+        }
+      ],
+      "sourceUnchanged": true
+    }
+  ],
+  "positionsPreserved": true,
+  "notesPreserved": true,
+  "normalExitCode": 0,
+  "limitations": [
+    "Default Ctrl+Alt+J not sent natively; customized binding uses the same path",
+    "Sticker tool windows not listed as selectable windows; drag, Alt+drag, mixed DPI and IME not run",
+    "Initial hidden launch was cleaned up; native apphost fixture needed explicit bundled dotnet host; final interactive fixture exited normally",
+    "Tested build precedes source commit; final package identity is recorded separately in SourceSnapshot.json and SHA256SUMS.txt"
+  ]
+}

@@ -51,6 +51,10 @@ internal static class Program
         StickerInlineNoteChecks.Run(Assert);
         BookmarkTypeIconChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
+        StickerVisibilityChecks.Run(Path.Combine(data, "sticker-visibility"), Assert);
+        StickerSnapChecks.Run(Assert);
+        StickerArrangementChecks.Run(Assert);
+        StickerAlignmentChecks.Run(Path.Combine(data, "sticker-alignment"), Assert);
         StickerOperationChecks.Run(Path.Combine(data, "sticker-operations"), Assert);
         StickerIntegrationChecks.Run(Path.Combine(data, "sticker-integration"), Assert);
         BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
@@ -144,6 +148,10 @@ internal static class Program
         StickerFormChecks.Run(Assert);
         StickerInlineNoteChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
+        StickerVisibilityChecks.Run(Path.Combine(data, "sticker-visibility"), Assert);
+        StickerSnapChecks.Run(Assert);
+        StickerArrangementChecks.Run(Assert);
+        StickerAlignmentChecks.Run(Path.Combine(data, "sticker-alignment"), Assert);
         StickerPersistenceChecks.Run(Assert);
         Console.WriteLine($"RESULT: {Checks.Count} sticker display, note, settings, startup and layout checks passed. Native input and rendered UI require separate verification.");
     }

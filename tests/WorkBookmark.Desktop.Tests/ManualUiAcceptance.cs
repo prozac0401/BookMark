@@ -100,7 +100,10 @@ internal static class ManualUiAcceptance
                     failureInjected = Volatile.Read(ref rejectNotes) != 0,
                     bookmarks = ids.Select(id => repository.Get(id)).ToArray(),
                     layouts = repository.GetStickerLayouts().Where(layout => ids.Contains(layout.BookmarkId)).ToArray(),
-                    sourceUnchanged = true, settings = UserSettings.Load(data)
+                    sourceUnchanged = true, settings = UserSettings.Load(data),
+                    stickerWindows = Application.OpenForms.Cast<Form>()
+                        .Where(form => form.GetType().Name == "StickerForm")
+                        .Select(form => new { form.Text, form.Visible, form.Bounds, form.DeviceDpi }).ToArray()
                 };
                 string name = "snapshot-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff") + "-" + stage + ".json";
                 File.WriteAllText(Path.Combine(root, name), JsonSerializer.Serialize(result, Json));

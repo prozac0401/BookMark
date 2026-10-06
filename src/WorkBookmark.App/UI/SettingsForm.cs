@@ -12,6 +12,7 @@ internal sealed class SettingsForm : Form
     private readonly Button _apply;
     private readonly RadioButton _listDisplay;
     private readonly RadioButton _stickerDisplay;
+    private readonly CheckBox _stickerSnap;
     public SettingsForm(UserSettings settings, bool captureRegistered, bool recentRegistered, string directory, Func<UserSettings, Task<string?>> apply, Action openData, Action openLogs)
     {
         UiStyle.Apply(this); Text = "업무 책갈피 설정";
@@ -67,6 +68,16 @@ internal sealed class SettingsForm : Form
         modes.Controls.Add(TextLabel("검색과 최근 책갈피를 한 창에서 확인합니다.", true, new Padding(25, 0, 0, 0)));
         modes.Controls.Add(_stickerDisplay);
         modes.Controls.Add(TextLabel("책갈피를 각각 띄워 놓고 위치와 크기를 자유롭게 조절합니다.", true, new Padding(25, 0, 0, 0)));
+        _stickerSnap = new CheckBox
+        {
+            Text = "스티커 자석 정렬", AutoSize = true,
+            Checked = settings.StickerSnapEnabled, Enabled = _stickerDisplay.Checked,
+            Margin = new Padding(25, 12, 0, 3), AccessibleName = "스티커 자석 정렬",
+            AccessibleDescription = "주변 스티커 가까이로 끌면 행과 열을 맞춥니다. Alt를 누르는 동안 자석 정렬을 잠시 끕니다."
+        };
+        _stickerDisplay.CheckedChanged += (_, _) => _stickerSnap.Enabled = _stickerDisplay.Checked;
+        modes.Controls.Add(_stickerSnap);
+        modes.Controls.Add(TextLabel("주변 스티커 가까이로 끌면 행과 열을 맞춥니다.\nAlt를 누르는 동안 자석 정렬을 잠시 끕니다.", true, new Padding(25, 0, 0, 0)));
         content.Controls.Add(modes);
         content.Controls.Add(TextLabel("‘지우기’는 책갈피 삭제 · × / Esc는 스티커 숨기기\n스티커 모드에서도 트레이 메뉴로 목록을 열 수 있습니다.", true, new Padding(0, 0, 0, 20)));
 
@@ -88,7 +99,7 @@ internal sealed class SettingsForm : Form
         hotkeys.Controls.Add(RegistrationLabel(captureRegistered), 2, 0);
         hotkeys.Controls.Add(RegistrationLabel(recentRegistered), 2, 1);
         content.Controls.Add(hotkeys);
-        content.Controls.Add(TextLabel("책갈피 보기는 위에서 선택한 방식으로 열립니다.\n입력칸에서 Ctrl 또는 Alt를 포함한 조합을 누르세요.", true, new Padding(0, 0, 0, 18)));
+        content.Controls.Add(TextLabel("책갈피 보기: 스티커 모드는 모두 표시 / 숨기기, 목록 모드는 목록 열기.\n입력칸에서 Ctrl 또는 Alt를 포함한 조합을 누르세요.", true, new Padding(0, 0, 0, 18)));
 
         _startup = new CheckBox { Text = "Windows 로그인 시 실행 · 이 사용자만 (&W)", Checked = settings.StartWithWindows, AutoSize = true, Margin = new Padding(0, 0, 0, 15) };
         content.Controls.Add(_startup);
@@ -113,7 +124,7 @@ internal sealed class SettingsForm : Form
             _apply.Enabled = false;
             try
             {
-                string? error = await apply(settings with { CaptureHotkey = _capture.Value, RecentHotkey = _recent.Value, StartWithWindows = _startup.Checked, IntroShown = true, DisplayMode = _stickerDisplay.Checked ? BookmarkDisplayMode.Stickers : BookmarkDisplayMode.List });
+                string? error = await apply(settings with { CaptureHotkey = _capture.Value, RecentHotkey = _recent.Value, StartWithWindows = _startup.Checked, IntroShown = true, DisplayMode = _stickerDisplay.Checked ? BookmarkDisplayMode.Stickers : BookmarkDisplayMode.List, StickerSnapEnabled = _stickerSnap.Checked });
                 if (IsDisposed) return;
                 if (error is null) Close();
                 else { _status.Text = error; _status.ForeColor = Color.Firebrick; }

@@ -1,0 +1,352 @@
+PASS: SET01 old settings without display mode retain other values and await the sticker presentation upgrade
+PASS: SET10 new settings default to stickers and apply presentation once at startup
+PASS: SET11 an explicit legacy List choice is loaded without marking the startup upgrade complete
+PASS: SET12 the one-time upgrade changes legacy List to Stickers while preserving hotkeys and startup preferences
+PASS: SET13 a List choice made after the upgrade is retained without another reset
+PASS: SET15 one-line presentation upgrades version 1 without resetting the user's List choice
+PASS: SET15 one-line presentation upgrades version 2 without resetting the user's List choice
+PASS: SET02 sticker display choice survives saving and reloading
+PASS: SET16 magnetic alignment defaults on and survives saving and reloading
+PASS: SET17 disabling magnetic alignment survives saving and reloading
+PASS: SET18 older settings without magnetic alignment enable it while preserving saved preferences
+PASS: SET03 unknown display mode is rejected without rewriting settings
+PASS: SET14 invalid presentation version is rejected without rewriting the original settings
+PASS: SET04 settings shows the saved List choice and retains its inactive magnetic alignment preference
+PASS: SET05 display choices remain mutually exclusive and sticker mode enables magnetic alignment
+PASS: SET19 switching display modes retains the selected magnetic alignment preference
+PASS: SET06 failed apply retains selected display and magnetic alignment preferences for retry
+PASS: SET07 successful apply closes settings and includes display and magnetic alignment preferences
+PASS: SET08 settings shows saved Stickers and disabled magnetic alignment choices
+PASS: SET09 closing settings discards unapplied display and magnetic alignment changes
+PASS: STK01 sticker accepts normal activation for accessible controls and keyboard navigation
+PASS: STK02 initial sticker display avoids focus stealing and taskbar clutter
+PASS: STK03 collapse preserves expanded dimensions and applies always-on-top
+PASS: STK04 restoring a legacy unpinned presentation keeps the sticker above ordinary windows and returns its full size
+PASS: STK05 resizing a collapsed sticker retains its new width and original expanded height
+PASS: STK06 minimum one-line title and shortcut icon fit side by side without overlap
+PASS: STK07 resume and note commands always use the current shared bookmark revision
+PASS: STK08 busy state prevents duplicate commands while retaining the compact icon layout
+PASS: STK09 explicit delete routes the bookmark identity to shared storage
+PASS: STK10 undo is routed centrally while native close only hides the sticker
+PASS: STK11 Escape hides the sticker without deleting or disposing its bookmark
+PASS: STK12 failed resume retains an actionable message on the shortcut icon tooltip
+PASS: STK13 failed resume keeps only the title and shortcut icon without adding a row or enlarging the sticker
+PASS: STK14 default width, height and type scale are compact (initialClient={Width=260, Height=36}, dpi=96, font=9, titleFont=9.5)
+PASS: STK15 note titles hide duplicate target details while retaining tooltips and stored data
+PASS: STK20 normal stickers show only title and the accessible shortcut icon, with caption removed and a context menu available
+PASS: STK22 shortcut glyph remains visible after native button painting in every state (dpi=96; normal: white=36, background=266, hover: white=36, background=277, pressed: white=36, background=277, focused: white=36, background=266)
+PASS: STK21 the context menu deletes the same bookmark while persisted placement remains the normal size
+PASS: STK16 collapsed stickers show only their memo-first title and retain the collapsed placement
+PASS: STK17 empty or whitespace memo uses the appropriate ExcelCell fallback
+PASS: STK17 empty or whitespace memo uses the appropriate WebPage fallback
+PASS: STK17 empty or whitespace memo uses the appropriate Folder fallback
+PASS: STK17 empty or whitespace memo uses the appropriate ExcelCell fallback
+PASS: STK17 empty or whitespace memo uses the appropriate NotepadSnapshot fallback
+PASS: STK18 long notes remain keyboard reachable in one-line bounds with complete tooltip text
+PASS: STK19 Enter on the focused title requests note editing without resuming the target
+PASS: STN01 clicking the compact title temporarily enlarges only its height in the same window and preserves placement
+PASS: STN02 inline editing has a one-line limit and cancel control without a save button
+PASS: STN03 background refresh, repeated editing and focus within the sticker retain the draft without writing
+PASS: STN04 collapse requests cannot hide an active memo draft and saved unpinned layouts remain topmost
+PASS: STN05 editor deletion and undo shortcuts cannot delete or restore bookmarks
+PASS: STN06 synthetic IME composition Enter/Escape cannot submit, resume or cancel the note
+PASS: STN07 IME commit Enter retains the suppression interval
+PASS: STN08 injected persistence failure retains editable text and inline retry feedback
+PASS: STN09 retry by Enter commits the retained draft without opening the bookmarked target
+PASS: STN10 Escape cancels only the inline draft and keeps the saved note and sticker visible
+PASS: STN11 a pending save blocks duplicate writes and cancel until commit completes
+PASS: STN12 asynchronous note commit restores normal sticker actions
+PASS: STN13 inline editor and feedback remain inside the minimum sticker bounds
+PASS: STN14 temporary editing shows only editor, feedback and cancel without replacing the normal placement
+PASS: STN15 a delayed save completion cannot overwrite a newer published bookmark note
+PASS: STN26 adding a memo by Ctrl+E immediately replaces the file fallback and window title
+PASS: STN27 clearing a memo immediately restores its fallback without rewriting the stored draft
+PASS: STN28 editing a collapsed sticker temporarily reveals its editor while retaining collapsed placement
+PASS: STN29 cancelling an edit restores the original collapsed size and presentation
+PASS: STN16 moving to an ordinary window automatically saves the note without taking focus back
+PASS: STN17 repeated deactivation of a completed editor does not write again
+PASS: STN18 automatic save failure retains an editable draft and feedback without stealing focus
+PASS: STN19 returning to a failed draft and leaving again retries and commits it automatically
+PASS: STN20 Escape cancels the draft and any queued automatic save
+PASS: STN21 leaving during synthetic IME composition defers automatic persistence
+PASS: STN22 deferred automatic save waits for the committed IME text and keeps the destination focused
+PASS: STN23 returning before IME completion cancels the pending automatic save and keeps editing
+PASS: STN24 repeated departure events cannot duplicate a pending automatic write
+PASS: STN25 a delayed automatic save completes in the background without reactivating its sticker
+PASS: STN30 editing a 420x210 custom client never resizes an already sufficient window
+PASS: STN31 saving preserves the full custom window size and position
+PASS: STN30 editing a 240x160 custom client never resizes an already sufficient window
+PASS: STN31 saving preserves the full custom window size and position
+PASS: STN32 a narrow compact sticker keeps its chosen width while only its editing height expands
+PASS: STN33 resizing while editing changes only the temporary editor geometry
+PASS: STN34 cancelling restores the original narrow size after a temporary resize
+PASS: STN35 editing at the work-area bottom moves the temporary editor into view while preserving the original anchor
+PASS: STN36 a bottom-edge save failure retains the visible enlarged draft and its original persisted placement
+PASS: STN37 cancelling a bottom-edge edit restores both its compact size and original position
+PASS: TIC01 Folder has a visible 24px type icon without a real target
+PASS: TIC01 File has a visible 24px type icon without a real target
+PASS: TIC01 ExcelCell has a visible 24px type icon without a real target
+PASS: TIC01 WordPosition has a visible 24px type icon without a real target
+PASS: TIC01 PowerPointSlide has a visible 24px type icon without a real target
+PASS: TIC01 PdfPage has a visible 24px type icon without a real target
+PASS: TIC01 NotepadSnapshot has a visible 24px type icon without a real target
+PASS: TIC01 WebPage has a visible 24px type icon without a real target
+PASS: TIC02 folder, file, Office, PDF, snapshot and webpage fallbacks are visually distinct
+PASS: TIC03 Explorer file .xlsx receives its document type fallback
+PASS: TIC03 Explorer file .docx receives its document type fallback
+PASS: TIC03 Explorer file .pptx receives its document type fallback
+PASS: TIC03 Explorer file .pdf receives its document type fallback
+PASS: TIC03 Explorer file .txt receives its document type fallback
+PASS: TIC04 icon identity ignores business paths but changes when relink changes file type
+PASS: TIC05 folder, Office URL, snapshot and webpage use only synthetic Shell type lookups
+PASS: TIC06 unsafe or excessive extensions cannot reach the native Shell lookup
+PASS: TIC07 fallback renders directly at 24px for caller DPI
+PASS: TIC07 fallback renders directly at 36px for caller DPI
+PASS: TIC07 fallback renders directly at 48px for caller DPI
+PASS: TIC07 fallback renders directly at 72px for caller DPI
+PASS: TIC08 a blocked native lookup returns a fallback within a bounded wait
+PASS: TIC09 failed native lookup is contained and preserves the fallback
+PASS: TIC10 concurrent type lookups return separately owned DPI-sized bitmaps
+PASS: TIC11 disposing one sticker icon does not invalidate another sticker's image
+PASS: SS01 a legacy List installation automatically starts active stickers on the UI thread before any view hotkey
+PASS: SS02 startup restores legacy unpinned stickers as native always-on-top windows
+PASS: SS03 startup retains collapsed presentation and saved sticker mode without opening the list
+PASS: SS08 startup resizes active, collapsed and deleted layouts before recording completion while retaining their placement
+PASS: SS09 the migrated outer size matches the default client size including the DPI-scaled window frame
+PASS: SS04 a newly committed bookmark appears immediately above ordinary windows in sticker mode
+PASS: SS10 newly captured bookmarks use the same compact default outer size
+PASS: SS05 explicit hide-all remains effective for existing updates and new captures without deleting bookmarks
+PASS: SS06 explicit reveal restores every sticker above ordinary windows with its position and collapsed size intact
+PASS: SS07 startup, capture and reveal never request resume or open a bookmarked target
+PASS: SS11 the next startup retains the user's later List choice and custom size without repeating migration
+PASS: SS12 later user-sized stickers restore at restart without returning to the compact default
+PASS: SS17 version-1 startup migrates its recorded defaults including stored 150% bounds, preserves custom sizes and List choice, and leaves deleted rows deleted
+PASS: SS18 reopening stickers upgraded from version 1 restores one-line defaults, recorded-size migrations and unchanged custom windows
+PASS: SS17 version-2 startup migrates its recorded defaults including stored 150% bounds, preserves custom sizes and List choice, and leaves deleted rows deleted
+PASS: SS18 reopening stickers upgraded from version 2 restores one-line defaults, recorded-size migrations and unchanged custom windows
+PASS: SS13 a new empty installation defaults to stickers without inventing a window or opening a target
+PASS: SS14 startup does not overwrite corrupt settings with a presentation completion marker
+PASS: SS15 a failed startup upgrade leaves its marker incomplete while the previously selected sticker mode remains usable
+PASS: SS16 the next startup retries and completes a previously failed presentation upgrade
+PASS: SV01 the registered custom view hotkey hides visible stickers without deleting bookmarks
+PASS: SV02 a capture after hotkey hide stays hidden until the next reveal
+PASS: SV03 the next hotkey restores every sticker with its identity, position, collapse state and note intact
+PASS: SV04 one individually hidden sticker does not prevent the hotkey from hiding all remaining visible stickers
+PASS: SV05 closing every sticker individually makes the next view hotkey reveal them all
+PASS: SV06 explicit show remains reveal-only when stickers are already visible
+PASS: SV07 toggling visibility never opens a bookmarked target
+PASS: SV08 the same custom hotkey continues to open and keep the list visible in list mode
+PASS: SV09 a second press cancels a pending startup reveal and suppresses its late failure
+PASS: SV10 a cancelled load completing during the next reveal cannot display stale stickers
+PASS: SV11 late completion of the old load cannot clear the new pending reveal and turn hide into another load
+PASS: SV12 the next press reveals stickers normally after rapid load cancellations
+PASS: SV13 an empty reveal and a failed reveal each finish and report their result
+PASS: SV14 the next hotkey retries after empty or failed loads without an extra hide press
+PASS: SV15 a note opened while globally hidden is still a visible sticker and the hotkey hides it during save
+PASS: SV16 late note-save failure retains its draft without revealing a hidden sticker
+PASS: SV17 revealing after a failed hidden save preserves the pending note draft
+PASS: SV18 hiding during an arrangement load cancels its late reveal, movement and layout writes
+PASS: SV19 a cancelled arrangement cannot move hidden stickers while a newer reveal is loading
+PASS: SV20 a late arrangement completion retains the newer pending toggle so the next press cancels it
+PASS: SV21 failed arrangement loading reports once and preserves existing positions and stored layouts
+PASS: SV22 an old arrangement cannot reposition or rewrite stickers after a newer explicit reveal completes
+PASS: SV23 switching to list mode during an arrangement load prevents late placement changes
+PASS: SN01 an isolated sticker remains freely positioned
+PASS: SN02 adjacent stickers snap into a row with an eight-pixel gap
+PASS: SN03 adjacent stickers snap into a column with an eight-pixel gap
+PASS: SN04 placing a sticker before its peer supports negative screen coordinates
+PASS: SN05 placing a sticker above its peer preserves the same gap
+PASS: SN06 unequal-width stickers can align their right edges in a column
+PASS: SN07 unequal-height stickers can align their bottom edges in a row
+PASS: SN08 matching edges on a distant sticker do not attract a dragged sticker
+PASS: SN09 the twelve-pixel snap threshold is inclusive
+PASS: SN10 movement beyond the snap threshold is unchanged
+PASS: SN11 slight edge overlap can snap outward into separated placement
+PASS: SN12 magnets do not pull a crossing sticker deeper over a peer
+PASS: SN13 the closest eligible peer edge wins
+PASS: SN14 equal-distance ties are stable regardless of peer enumeration order
+PASS: SN15 150-percent DPI scales both the gap and inclusive threshold
+PASS: SN16 the scaled threshold does not attract a sticker one pixel beyond it
+PASS: SN17 200-percent DPI preserves proportional magnetic spacing
+PASS: SN18 a monitor left and above the primary screen snaps correctly
+PASS: SN19 a candidate extending beyond the working area is rejected
+PASS: SN20 unsnapped movement is not forcibly clamped to a monitor
+PASS: SN21 empty or invalid peer bounds do not participate in snapping
+PASS: SN22 multi-peer corner movement preserves size, threshold, bounds and overlap invariants
+PASS: SA01 all arrangement modes accept an empty sticker collection
+PASS: SA02 horizontal layout packs left-to-right and wraps below the tallest sticker in the row
+PASS: SA03 vertical layout packs top-to-bottom and wraps beside the widest sticker in the column
+PASS: SA04 grid aligns unequal and collapsed sticker sizes to a consistent row and column pitch
+PASS: SA05 every arrangement retains input order and each sticker's exact size
+PASS: SA06 mixed sticker sizes do not overlap when they fit on the first page
+PASS: SA07 Grid respects negative monitor coordinates
+PASS: SA08 Grid scales margins and gaps with monitor DPI
+PASS: SA09 Grid overflow placement stays on-screen, preserves sizes and is deterministic
+PASS: SA10 Grid starts its overflow page with a visible cascade offset
+PASS: SA11 Grid keeps an oversized sticker's top-left reachable without resizing it
+PASS: SA07 Horizontal respects negative monitor coordinates
+PASS: SA08 Horizontal scales margins and gaps with monitor DPI
+PASS: SA09 Horizontal overflow placement stays on-screen, preserves sizes and is deterministic
+PASS: SA10 Horizontal starts its overflow page with a visible cascade offset
+PASS: SA11 Horizontal keeps an oversized sticker's top-left reachable without resizing it
+PASS: SA07 Vertical respects negative monitor coordinates
+PASS: SA08 Vertical scales margins and gaps with monitor DPI
+PASS: SA09 Vertical overflow placement stays on-screen, preserves sizes and is deterministic
+PASS: SA10 Vertical starts its overflow page with a visible cascade offset
+PASS: SA11 Vertical keeps an oversized sticker's top-left reachable without resizing it
+PASS: SA12 a row containing collapsed and expanded stickers moves together to the next page when needed
+PASS: SA13 small working areas reduce margins and retain a reachable sticker
+PASS: SA01 startup applies the saved magnetic alignment opt-out to actual sticker movement
+PASS: SA02 a visible neighboring sticker aligns the dragged sticker's row and adjacent spacing
+PASS: SA03 holding Alt bypasses magnetic alignment without changing the saved preference
+PASS: SA04 hidden stickers and the moving sticker itself cannot attract a drag
+PASS: SA05 WM_MOVING returns the manager's corrected native rectangle without resizing the sticker
+PASS: SA06 finishing the native drag persists the final snapped position in normalized monitor coordinates
+PASS: SA07 the tray exposes grid, horizontal and vertical arrangement choices
+PASS: SA08 Grid tray arrangement reveals stickers, dispatches the selected layout and preserves sizes, collapse state and notes in storage
+PASS: SA08 Horizontal tray arrangement reveals stickers, dispatches the selected layout and preserves sizes, collapse state and notes in storage
+PASS: SA08 Vertical tray arrangement reveals stickers, dispatches the selected layout and preserves sizes, collapse state and notes in storage
+PASS: SO01 resume click changes only the originating sticker; sibling actions and geometry remain unchanged
+PASS: SO09 a busy sticker's note click and a right click cannot begin memo editing
+PASS: SO02 a second sticker click cannot queue or replace the active external operation
+PASS: SO03 a sticker created during another bookmark's request does not inherit its progress state
+PASS: SO04 completion persists only the requested bookmark result and keeps stickers displayed
+PASS: SO05 capture/background operations do not animate existing sticker buttons
+PASS: SO06 one click on an empty sticker memo starts a blank inline editor on that sticker only
+PASS: SO07 a failed automatic repository write keeps the draft and destination focus without changing stored data
+PASS: SO08 returning and leaving retries automatic persistence for only the edited bookmark
+PASS: SO10 one click on existing memo text edits the saved text in place without another window
+PASS: SO11 switching to another sticker editor automatically persists the first draft without copying it into the second
+PASS: SO12 leaving the second sticker commits its own draft and preserves the first sticker's stored note
+PASS: SM01 existing list mode does not create sticker windows
+PASS: SM02 sticker mode loads all active bookmarks beyond recent twenty on the UI thread
+PASS: SM03 resized sticker commits expanded dimensions in logical pixels
+PASS: SM04 bookmark updates reuse the same sticker and preserve placement
+PASS: SM05 rejected deletion preserves both database entry and sticker
+PASS: SM06 committed deletion removes only the matching sticker identity
+PASS: SM07 consecutive delete and undo restore both independent bookmarks
+PASS: SM08 undo restores previous sticker placement and note
+PASS: SM09 native close hides without mutating shared bookmark storage
+PASS: SM10 switching to list hides all stickers without deleting records
+PASS: SM11 switching back restores windows at their saved positions
+PASS: SM12 capture respects explicit hide-all without losing new bookmark
+PASS: SM13 expired quick undo cannot restore a record
+PASS: SM14 persistent deleted-items restoration works after quick undo expires
+PASS: SM15 missing/offscreen display placement clamps within work area at 150 percent scaling
+PASS: SM16 application shutdown preserves bookmarks and final sticker placements
+PASS: SM17 reopening database retains bookmarks and resized layout
+PASS: RF01 authoritative deleted snapshot removes the matching sticker
+PASS: RF02 late active snapshot cannot recreate a deleted sticker or discard its undo
+PASS: RF03 late deleted snapshot cannot remove a recaptured bookmark or restore stale undo
+PASS: RF04 modeless editor stays above pinned stickers without owning a disposable bookmark view
+PASS: RF05 deleting a sticker preserves an open editor and its unsaved input
+PASS: RF06 a delayed inline-note read cannot resurrect a sticker after a newer deletion refresh
+PASS: RF07 a delayed inline-note read cannot replace a newer recapture/note revision with a stale draft
+PASS: SP09 a partial layout-save failure cannot write the completion marker or switch the saved mode
+PASS: SP10 settings-save failure leaves the old completion marker after all layout saves succeed
+PASS: SP11 retry safely completes partial layout and settings failures while preserving placement and collapse
+PASS: SP12 completed presentation does not repeat layout writes or reset a later List choice
+PASS: SP13 a partial version-1 upgrade leaves the marker and custom outer bounds unchanged
+PASS: SP14 version-1 settings failure after resizing recorded defaults preserves custom bounds and remains retryable
+PASS: SP15 retrying version 1 preserves migrated stored 150% defaults and custom bounds without resetting the List choice
+PASS: SP13 a partial version-2 upgrade leaves the marker and custom outer bounds unchanged
+PASS: SP14 version-2 settings failure after resizing recorded defaults preserves custom bounds and remains retryable
+PASS: SP15 retrying version 2 preserves migrated stored 150% defaults and custom bounds without resetting the List choice
+PASS: SP16 shutdown during a temporarily resized editor persists the original collapsed placement after a pending layout write
+PASS: SP17 a delayed placement continuation cannot replace normal bounds with disposed editor geometry
+PASS: SP01 moving during a pending layout write does not start a competing storage write
+PASS: SP02 a placement changed during the first batch is persisted by the next batch without reverting
+PASS: SP03 failed layout persistence reports once and does not claim a successful save
+PASS: SP04 movement after a failed write retries the newest placement rather than the failed snapshot
+PASS: SP06 shutdown flushes newer movement after storage completes but before its UI continuation runs
+PASS: SP08 a delayed successful-write continuation cannot overwrite the final shutdown placement
+PASS: SP05 shutdown flushes the latest layout when a failed write has not yet reached its UI continuation
+PASS: SP07 a delayed failed-write continuation cannot notify or rewrite after manager disposal
+PASS: notification area uses the product icon rather than the generic Windows application icon
+PASS: application forms use the product icon
+PASS: ResumeOutcomeUnknown quietly clears progress instead of displaying repetitive warning
+PASS: ResumeOutcomeUnknown remains quiet without an active progress toast
+PASS: OfficeDocumentOpened quietly clears progress instead of displaying repetitive warning
+PASS: OfficeDocumentOpened remains quiet without an active progress toast
+PASS: TargetUnavailable remains visible for user action
+PASS: OpenedPositionFailed remains visible for user action
+PASS: OfficeResumePending remains visible for user action
+PASS: verified position keeps success after focus changes
+PASS: disposing the application context removes the tray icon and closes owned forms
+PASS: settings atomic overwrite round-trip
+PASS: settings no temporary leftovers
+PASS: corrupt settings preserved
+PASS: native hotkeys registered
+PASS: conflict fixture registered
+PASS: replacement collision refused
+PASS: old registration retained and pending reservation rolled back
+PASS: duplicate shortcut pair refused
+PASS: Windows Shell parses Unicode startup target
+PASS: startup ownership description parsed
+PASS: startup working directory parsed
+PASS: IME composition suppresses submission
+PASS: IME commit Enter has a suppression window
+PASS: note write failure retains editable content
+PASS: note retry saves retained text
+PASS: recent form opens with loaded first selection
+PASS: input hooks run on a dedicated background message loop
+PASS: releasing the initiating key and moving the mouse do not interrupt a request
+PASS: input latches immediately and a blocking cancellation action cannot hold the hook callback
+PASS: cancellation work runs outside both the hook callback and its message loop
+PASS: additional input remains responsive while cancellation is blocked and notification is one-shot
+PASS: disposing the observer stops its hook message loop even with a callback blocked
+PASS: worker input signal is set before the UI can process queued cancellation
+PASS: input cancellation is posted to the original UI context
+PASS: the original UI thread performs cancellation exactly once
+PASS: late callbacks cannot cancel a completed request
+PASS: capture disposal flushes already observed input on its owner exactly once
+PASS: a monitored worker uses only its shared input signal and installs no input hooks on its COM thread
+PASS: standalone workers also keep input hooks off their COM thread
+PASS: an unexpected observer exit closes both the local guard and the worker's shared input signal
+PASS: capture shortcut key-up preserves the observed target
+PASS: new key before worker response prevents capture commit
+PASS: new mouse button before worker response prevents capture commit
+PASS: wheel input before worker response prevents capture commit
+PASS: new input wins against an already returned capture response
+PASS: accepted capture survives new work during the database write
+PASS: unsaved Korean and emoji snapshot: success waits for durable SQLite commit
+PASS: unsaved Korean and emoji snapshot: single capture without file selection
+PASS: unsaved Korean and emoji snapshot: original body and selection committed before success
+PASS: unsaved Korean and emoji snapshot: snapshot survives database reopen
+PASS: empty new Notepad snapshot: success waits for durable SQLite commit
+PASS: empty new Notepad snapshot: single capture without file selection
+PASS: empty new Notepad snapshot: original body and selection committed before success
+PASS: empty new Notepad snapshot: snapshot survives database reopen
+PASS: snapshot SQLite write failure: success waits for durable SQLite commit
+PASS: snapshot SQLite write failure: single capture without file selection
+PASS: snapshot SQLite write failure: rejected or rolled-back snapshot cannot report success
+PASS: snapshot content identity mismatch: single capture without file selection
+PASS: snapshot content identity mismatch: rejected or rolled-back snapshot cannot report success
+PASS: recent list over twenty records uses recent-count guidance
+PASS: search limit remains one hundred results
+PASS: UI04 NoteForm Escape closes without persisting edited text
+PASS: UI04 native note editor accepts 500 characters and refuses character 501
+PASS: UI04 NoteForm Enter persists the accepted 500-character note exactly once
+PASS: RL01 Cancel relink preview shows candidate path, retained note and existing cell read-only
+PASS: RL01 actual modal relink Cancel button returns the correct commit/cancel decision
+PASS: RL01 OK relink preview shows candidate path, retained note and existing cell read-only
+PASS: RL01 actual modal relink OK button returns the correct commit/cancel decision
+PASS: UI03 deleting a bookmark arms the real 10-second undo timer and menu
+PASS: UI03 expired undo is refused even when its timer callback has not fired
+PASS: UI03 real expiry callback clears the undo identity and hides its menu
+PASS: UI03 a stale undo action after the expiry callback cannot restore a deleted bookmark
+PASS: UI03 a fresh unexpired undo restores once and disarms both timer and menu
+PASS: UI03 repeated undo after successful restoration does not issue a second repository restore
+PASS: WEB01 manual entry refuses executable, file and credential URLs without saving
+PASS: WEB02 failed URL save preserves editable URL for retry
+PASS: WEB03 extension-free manual entry preserves URL state and supplies missing title
+PASS: MSI01 shutdown succeeds when no application instance exists
+PASS: MSI02 synthetic application publishes shutdown event and acquires instance mutex
+PASS: MSI03 installer shutdown signals the instance and waits for graceful mutex release
+PASS: browser success waits for repository commit
+PASS: browser simultaneous request returns busy without another write
+PASS: browser exact acknowledgment follows committed capture
+PASS: browser repository failure cannot report successful capture
+PASS: browser cancelled queued request cannot write
+PASS: browser invalid URI cannot reach repository
+RESULT: 351 checks passed. Native launch, actual IME and rendered UI remain separate manual gates.

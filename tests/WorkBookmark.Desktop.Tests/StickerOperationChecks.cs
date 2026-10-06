@@ -41,7 +41,9 @@ internal static class StickerOperationChecks
         var before = (siblingResume.Text, siblingResume.Enabled, siblingResume.Bounds, sibling.Bounds);
         originResume.PerformClick();
         PumpUntil(() => worker.IsBusy && !originResume.Enabled);
-        assert(originResume.Text.Contains("처리 중", StringComparison.Ordinal) &&
+        assert(originResume.Text == before.Text && originResume.AccessibleName == "바로가기" &&
+            originResume.AccessibleDescription?.Contains("처리 중", StringComparison.Ordinal) == true &&
+            Field<ToolTip>(origin, "_tooltip").GetToolTip(originResume)?.Contains("처리 중", StringComparison.Ordinal) == true &&
             (siblingResume.Text, siblingResume.Enabled, siblingResume.Bounds, sibling.Bounds) == before &&
             Field<Button>(sibling, "_delete").Enabled && Field<Button>(sibling, "_title").Enabled,
             "SO01 resume click changes only the originating sticker; sibling actions and geometry remain unchanged");
