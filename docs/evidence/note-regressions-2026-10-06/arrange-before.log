@@ -1,0 +1,18 @@
+PASS: SAN01 Grid/expanded/Esc bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Grid/expanded/Esc a failed save preserves the draft, editing bounds and stored note
+SAN geometry Grid/expanded/Esc: old={X=-1306,Y=624}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=104}, final={X=-1350,Y=104}, stored=(16,104), dpi=96
+PASS: SAN01 Horizontal/collapsed/Esc bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Horizontal/collapsed/Esc a failed save preserves the draft, editing bounds and stored note
+SAN geometry Horizontal/collapsed/Esc: old={X=-1306,Y=668}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=148}, final={X=-1350,Y=148}, stored=(16,148), dpi=96
+PASS: SAN01 Vertical/expanded/save bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Vertical/expanded/save a failed save preserves the draft, editing bounds and stored note
+SAN geometry Vertical/expanded/save: old={X=-1306,Y=624}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=104}, final={X=-1350,Y=104}, stored=(16,104), dpi=96
+System.Exception: FAIL: SAN04 Grid/expanded/Esc arranged normal placement and stored coordinates use the new destination without the old clamp offset
+   at WorkBookmark.Desktop.Tests.Program.Assert(Boolean condition, String name) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\Program.cs:line 17
+   at WorkBookmark.Desktop.Tests.StickerArrangeNoteChecks.Run(String directory, Action`2 assert) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\StickerArrangeNoteChecks.cs:line 27
+   at WorkBookmark.Desktop.Tests.Program.Run(String[] args) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\Program.cs:line 50
+   at WorkBookmark.Desktop.Tests.Program.RunSafely(String[] args) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\Program.cs:line 35
+PASS: SAN01 Grid/collapsed/save bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Grid/collapsed/save a failed save preserves the draft, editing bounds and stored note
+SAN geometry Grid/collapsed/save: old={X=-1306,Y=668}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=148}, final={X=-1350,Y=148}, stored=(16,148), dpi=96
+PASS: SAN03 Grid/expanded/Esc arrangement preserves the failed draft and editing size without forcing another save

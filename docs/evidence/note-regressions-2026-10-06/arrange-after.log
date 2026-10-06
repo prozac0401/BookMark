@@ -1,0 +1,33 @@
+PASS: SAN01 Grid/expanded/Esc bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Grid/expanded/Esc a failed save preserves the draft, editing bounds and stored note
+SAN geometry Grid/expanded/Esc: old={X=-1306,Y=624}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=16}, final={X=-1350,Y=16}, stored=(16,16), dpi=96
+PASS: SAN01 Horizontal/collapsed/Esc bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Horizontal/collapsed/Esc a failed save preserves the draft, editing bounds and stored note
+SAN geometry Horizontal/collapsed/Esc: old={X=-1306,Y=668}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=16}, final={X=-1350,Y=16}, stored=(16,16), dpi=96
+PASS: SAN01 Vertical/expanded/save bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Vertical/expanded/save a failed save preserves the draft, editing bounds and stored note
+SAN geometry Vertical/expanded/save: old={X=-1306,Y=624}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=16}, final={X=-1350,Y=16}, stored=(16,16), dpi=96
+PASS: SAN01 Grid/collapsed/save bottom-edge editing expands upward without changing normal placement
+PASS: SAN02 Grid/collapsed/save a failed save preserves the draft, editing bounds and stored note
+SAN geometry Grid/collapsed/save: old={X=-1306,Y=668}, edit={X=-1306,Y=536}, arranged={X=-1350,Y=16}, placement={X=-1350,Y=16}, final={X=-1350,Y=16}, stored=(16,16), dpi=96
+PASS: SAN03 Grid/expanded/Esc arrangement preserves the failed draft and editing size without forcing another save
+PASS: SAN04 Grid/expanded/Esc arranged normal placement and stored coordinates use the new destination without the old clamp offset
+PASS: SAN05 Grid/expanded/Esc exiting editing retains the arranged location and restores the original size and collapse state
+PASS: SAN06 Grid/expanded/Esc persisted placement remains the arranged destination after editing exits
+PASS: SAN07 Grid/expanded/Esc Enter saves the retained draft while Esc cancels it without writing or hiding
+PASS: SAN03 Horizontal/collapsed/Esc arrangement preserves the failed draft and editing size without forcing another save
+PASS: SAN04 Horizontal/collapsed/Esc arranged normal placement and stored coordinates use the new destination without the old clamp offset
+PASS: SAN05 Horizontal/collapsed/Esc exiting editing retains the arranged location and restores the original size and collapse state
+PASS: SAN06 Horizontal/collapsed/Esc persisted placement remains the arranged destination after editing exits
+PASS: SAN07 Horizontal/collapsed/Esc Enter saves the retained draft while Esc cancels it without writing or hiding
+PASS: SAN03 Vertical/expanded/save arrangement preserves the failed draft and editing size without forcing another save
+PASS: SAN04 Vertical/expanded/save arranged normal placement and stored coordinates use the new destination without the old clamp offset
+PASS: SAN05 Vertical/expanded/save exiting editing retains the arranged location and restores the original size and collapse state
+PASS: SAN06 Vertical/expanded/save persisted placement remains the arranged destination after editing exits
+PASS: SAN07 Vertical/expanded/save Enter saves the retained draft while Esc cancels it without writing or hiding
+PASS: SAN03 Grid/collapsed/save arrangement preserves the failed draft and editing size without forcing another save
+PASS: SAN04 Grid/collapsed/save arranged normal placement and stored coordinates use the new destination without the old clamp offset
+PASS: SAN05 Grid/collapsed/save exiting editing retains the arranged location and restores the original size and collapse state
+PASS: SAN06 Grid/collapsed/save persisted placement remains the arranged destination after editing exits
+PASS: SAN07 Grid/collapsed/save Enter saves the retained draft while Esc cancels it without writing or hiding
+RESULT: 28 focused note checks passed. Native input is a separate manual gate.

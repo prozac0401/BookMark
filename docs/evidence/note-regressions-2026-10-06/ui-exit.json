@@ -1,0 +1,116 @@
+{
+  "stage": "exit",
+  "atUtc": "2026-10-06T12:59:11.7273597+00:00",
+  "pid": 84836,
+  "productAssemblySha256": "4b74aaf053f25f888d685a090a4881a9cb5ac5ce05811abbc162241553f9877e",
+  "noteAttempts": 2,
+  "failureInjected": false,
+  "Armed": false,
+  "Pending": false,
+  "CompletedReads": 0,
+  "openingNote": false,
+  "foregroundWindow": 6754608,
+  "foregroundPid": 81208,
+  "bookmarks": [
+    {
+      "Id": "5f126859-6e5b-4375-9c5b-75fdee2a648d",
+      "Target": {
+        "Kind": 1,
+        "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\note-regressions-20261006-visible\\\uD569\uC131 \uC791\uC5C5 \uBB38\uC11C.txt",
+        "SheetName": null,
+        "CellAddress": null,
+        "HadUnsavedChanges": null,
+        "WordStart": null,
+        "SlideId": null,
+        "SlideNumber": null,
+        "PdfPage": null,
+        "PageTitle": null,
+        "TextOffset": null,
+        "TextContent": null,
+        "TextSelectionEnd": null,
+        "SnapshotTitle": null
+      },
+      "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\note-regressions-20261006-visible\\\uD569\uC131 \uC791\uC5C5 \uBB38\uC11C.txt",
+      "DisplayName": "\uD569\uC131 \uC791\uC5C5 \uBB38\uC11C.txt",
+      "Note": "\uC785\uB825 \uC804 \uC6D0\uBCF8 \uBA54\uBAA8",
+      "CreatedAtUtc": "2026-10-06T12:57:55.142721+00:00",
+      "CapturedAtUtc": "2026-10-06T12:57:55.142721+00:00",
+      "CaptureSequence": 1,
+      "NoteUpdatedAtUtc": "2026-10-06T12:57:55.1821071+00:00",
+      "LastResumeAtUtc": null,
+      "LastResumeResult": null,
+      "DeletedAtUtc": null
+    },
+    {
+      "Id": "ec3bb649-e680-4558-8b54-7b4616f73809",
+      "Target": {
+        "Kind": 0,
+        "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\note-regressions-20261006-visible\\\uD569\uC131 \uC791\uC5C5 \uD3F4\uB354",
+        "SheetName": null,
+        "CellAddress": null,
+        "HadUnsavedChanges": null,
+        "WordStart": null,
+        "SlideId": null,
+        "SlideNumber": null,
+        "PdfPage": null,
+        "PageTitle": null,
+        "TextOffset": null,
+        "TextContent": null,
+        "TextSelectionEnd": null,
+        "SnapshotTitle": null
+      },
+      "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\note-regressions-20261006-visible\\\uD569\uC131 \uC791\uC5C5 \uD3F4\uB354",
+      "DisplayName": "\uD569\uC131 \uC791\uC5C5 \uD3F4\uB354",
+      "Note": "\uB450 \uBC88\uC9F8 \uC2A4\uD2F0\uCEE4 \uC6D0\uBCF8",
+      "CreatedAtUtc": "2026-10-06T12:57:55.1736495+00:00",
+      "CapturedAtUtc": "2026-10-06T12:57:55.1736495+00:00",
+      "CaptureSequence": 2,
+      "NoteUpdatedAtUtc": "2026-10-06T12:57:55.1901024+00:00",
+      "LastResumeAtUtc": null,
+      "LastResumeResult": null,
+      "DeletedAtUtc": null
+    }
+  ],
+  "layouts": [
+    {
+      "BookmarkId": "5f126859-6e5b-4375-9c5b-75fdee2a648d",
+      "MonitorDevice": "\\\\.\\DISPLAY2",
+      "Left": 80,
+      "Top": 964,
+      "Width": 320,
+      "Height": 60,
+      "IsCollapsed": false,
+      "AlwaysOnTop": true
+    },
+    {
+      "BookmarkId": "ec3bb649-e680-4558-8b54-7b4616f73809",
+      "MonitorDevice": "\\\\.\\DISPLAY2",
+      "Left": 440,
+      "Top": 932,
+      "Width": 360,
+      "Height": 100,
+      "IsCollapsed": true,
+      "AlwaysOnTop": true
+    }
+  ],
+  "sourceUnchanged": true,
+  "settings": {
+    "Version": 1,
+    "CaptureHotkey": {
+      "Modifiers": 7,
+      "VirtualKey": 126,
+      "IsValid": true
+    },
+    "RecentHotkey": {
+      "Modifiers": 7,
+      "VirtualKey": 127,
+      "IsValid": true
+    },
+    "StartWithWindows": false,
+    "IntroShown": true,
+    "DisplayMode": 1,
+    "StickerPresentationVersion": 3,
+    "StickerSnapEnabled": true
+  },
+  "stickerWindows": []
+}

@@ -1,0 +1,10 @@
+PASS: NR01 the real application note-open route waits at the controlled repository read before editing
+OBSERVE NR02: visible=False, editing=False, activations=0, reveals=0
+PASS: NR02 a note read completing after HideAll cannot reveal, activate or edit any sticker
+PASS: NR03 a new note request after hide waits for its own controlled read
+PASS: NR04 a fresh request after the cancelled read opens the requested note and keeps other stickers hidden
+PASS: NR05 a fresh request after hide is accepted while the cancelled note read is still pending
+PASS: NR06 the cancelled read's completion keeps the newer opening guard and every sticker hidden
+PASS: NR07 the newer pending request still suppresses duplicate note opens in the same visibility generation
+PASS: NR08 the request made after hide opens its own note when its read completes
+RESULT: 8 focused note checks passed. Native input is a separate manual gate.

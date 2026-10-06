@@ -487,6 +487,18 @@ internal sealed class StickerForm : Form
         else _resume.Focus();
     }
 
+    internal void SetArrangedLocation(Point location)
+    {
+        Location = location;
+        if (_noteRestoreBounds is { } resting)
+        {
+            // An explicit arrangement replaces the resting location, including
+            // the temporary screen-edge correction made when editing began.
+            _noteRestoreBounds = new Rectangle(Location, resting.Size);
+            _noteEditAnchor = Location;
+        }
+    }
+
     public void ApplyPresentation(bool collapsed, bool alwaysOnTop)
     {
         _presentationChanging = true;

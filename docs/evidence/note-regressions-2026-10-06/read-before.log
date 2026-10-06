@@ -1,0 +1,8 @@
+PASS: NR01 the real application note-open route waits at the controlled repository read before editing
+OBSERVE NR02: visible=True, editing=True, activations=1, reveals=1
+System.Exception: FAIL: NR02 a note read completing after HideAll cannot reveal, activate or edit any sticker
+   at WorkBookmark.Desktop.Tests.Program.Assert(Boolean condition, String name) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\Program.cs:line 17
+   at WorkBookmark.Desktop.Tests.NoteReadVisibilityChecks.LateReadAfterHide(String directory, Action`2 assert) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\NoteReadVisibilityChecks.cs:line 36
+   at WorkBookmark.Desktop.Tests.NoteReadVisibilityChecks.Run(String directory, Action`2 assert) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\NoteReadVisibilityChecks.cs:line 15
+   at WorkBookmark.Desktop.Tests.Program.Run(String[] args) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\Program.cs:line 49
+   at WorkBookmark.Desktop.Tests.Program.RunSafely(String[] args) in D:\Github_REPOS\BookMark\tests\WorkBookmark.Desktop.Tests\Program.cs:line 35

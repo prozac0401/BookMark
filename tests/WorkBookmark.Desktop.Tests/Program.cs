@@ -19,7 +19,7 @@ internal static class Program
     {
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] == "--stickers-only";
+        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -38,10 +38,19 @@ internal static class Program
     private static void Run(string[] args)
     {
         if (args.Length == 3 && args[0] == "--manual-ui") { ManualUiAcceptance.Run(args[1], args[2]); return; }
+        if (args.Length == 3 && args[0] == "--manual-note-regressions") { ManualUiAcceptance.Run(args[1], args[2], noteRegressions: true); return; }
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
+        if (args.Length == 1 && args[0] is "--note-read-visibility-only" or "--arrange-note-only")
+        {
+            string focusedData = Path.Combine(Path.GetTempPath(), "WorkBookmark-NoteRegression-" + Guid.NewGuid().ToString("N"));
+            if (args[0] == "--note-read-visibility-only") NoteReadVisibilityChecks.Run(focusedData, Assert);
+            else StickerArrangeNoteChecks.Run(focusedData, Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} focused note checks passed. Native input is a separate manual gate.");
+            return;
+        }
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); StickerInlineNoteChecks.Render(args[1]); return; }
@@ -52,6 +61,8 @@ internal static class Program
         BookmarkTypeIconChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
         StickerVisibilityChecks.Run(Path.Combine(data, "sticker-visibility"), Assert);
+        NoteReadVisibilityChecks.Run(Path.Combine(data, "note-read-visibility"), Assert);
+        StickerArrangeNoteChecks.Run(Path.Combine(data, "arrange-note"), Assert);
         StickerSnapChecks.Run(Assert);
         StickerArrangementChecks.Run(Assert);
         StickerAlignmentChecks.Run(Path.Combine(data, "sticker-alignment"), Assert);
@@ -149,10 +160,13 @@ internal static class Program
         StickerInlineNoteChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
         StickerVisibilityChecks.Run(Path.Combine(data, "sticker-visibility"), Assert);
+        NoteReadVisibilityChecks.Run(Path.Combine(data, "note-read-visibility"), Assert);
+        StickerArrangeNoteChecks.Run(Path.Combine(data, "arrange-note"), Assert);
         StickerSnapChecks.Run(Assert);
         StickerArrangementChecks.Run(Assert);
         StickerAlignmentChecks.Run(Path.Combine(data, "sticker-alignment"), Assert);
         StickerPersistenceChecks.Run(Assert);
+        BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
         Console.WriteLine($"RESULT: {Checks.Count} sticker display, note, settings, startup and layout checks passed. Native input and rendered UI require separate verification.");
     }
 

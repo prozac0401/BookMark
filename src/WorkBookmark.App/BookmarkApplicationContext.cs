@@ -44,6 +44,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private long _lastResumeTick;
     private bool _operationInFlight, _busyNotified, _exiting, _settingsInvalid;
     private bool _openingNote;
+    private int _openingNoteHideVersion;
 
     public BookmarkApplicationContext(IBookmarkRepository repository, WorkerClient worker, string dataDirectory)
         : this(repository, worker, dataDirectory, worker.RunAsync) { }
@@ -480,15 +481,18 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private async Task EditNoteAsync(Guid id)
     {
-        if (_openingNote) return;
+        int hideVersion = _stickers.HideVersion;
+        if (_openingNote && _openingNoteHideVersion == hideVersion) return;
         _openingNote = true;
+        _openingNoteHideVersion = hideVersion;
         try
         {
             if (_settings.DisplayMode != BookmarkDisplayMode.Stickers && _note is { IsDisposed: false }) { _note.Activate(); return; }
             // Versioned refresh prevents a delayed editor read from recreating a
             // sticker deleted or recaptured while that read was in flight.
             Bookmark? bookmark = await RefreshBookmarkAsync(id);
-            if (bookmark is null || bookmark.DeletedAtUtc is not null || _exiting) return;
+            // Hide cancels earlier opens, while a new request after hide remains valid.
+            if (bookmark is null || bookmark.DeletedAtUtc is not null || _exiting || hideVersion != _stickers.HideVersion) return;
             _recent.Hide();
             async Task SaveNote(string text)
             {
@@ -508,7 +512,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             ShowAuxiliary(_note);
         }
         catch { Notify("메모를 읽을 수 없습니다. 기존 기록은 유지됩니다."); }
-        finally { _openingNote = false; }
+        finally { if (_openingNoteHideVersion == hideVersion) _openingNote = false; }
     }
     private async Task DeleteAsync(Bookmark bookmark)
     {

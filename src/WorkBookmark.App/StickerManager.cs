@@ -26,6 +26,7 @@ internal sealed class StickerManager : IDisposable
     internal event Action? ShowListRequested, SettingsRequested, UndoRequested;
     internal IReadOnlyCollection<StickerForm> Forms => _forms.Values;
     internal bool SnapEnabled { get; set; } = true;
+    internal int HideVersion { get; private set; }
 
     internal StickerManager(Func<Task<(IReadOnlyList<Bookmark> Items, IReadOnlyList<StickerLayout> Layouts)>> load,
         Action<IReadOnlyList<StickerLayout>> save, Action<string> notify)
@@ -234,6 +235,7 @@ internal sealed class StickerManager : IDisposable
 
     internal void HideAll()
     {
+        ++HideVersion;
         _hidden = true;
         _showPending = false;
         ++_loadVersion;
@@ -284,7 +286,7 @@ internal sealed class StickerManager : IDisposable
             screen.WorkingArea, forms[0].DeviceDpi, mode);
         for (int index = 0; index < forms.Length; index++)
         {
-            forms[index].Location = bounds[index].Location;
+            forms[index].SetArrangedLocation(bounds[index].Location);
             Remember(forms[index]);
         }
     }
