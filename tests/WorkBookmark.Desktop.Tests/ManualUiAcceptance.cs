@@ -19,6 +19,9 @@ internal static class ManualUiAcceptance
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
+    internal static void RunTreeColors(string directory, string workerExecutable) =>
+        ManualTreeColorsAcceptance.Run(directory, workerExecutable);
+
     internal static void Run(string directory, string workerExecutable, bool noteRegressions = false)
     {
         ApplicationConfiguration.Initialize();
@@ -219,6 +222,8 @@ internal static class ManualUiAcceptance
         public IReadOnlyList<Bookmark> ListDeleted(int limit = 100) => inner.ListDeleted(limit);
         public IReadOnlyList<StickerLayout> GetStickerLayouts() => inner.GetStickerLayouts();
         public void SaveStickerLayout(StickerLayout layout) => inner.SaveStickerLayout(layout);
+        public void SetParent(Guid id, Guid? parentId) => inner.SetParent(id, parentId);
+        public void SetColor(Guid id, BookmarkColor color) => inner.SetColor(id, color);
         public void UpdateNote(Guid id, string note) => inner.UpdateNote(id, note);
         public void SoftDelete(Guid id) => inner.SoftDelete(id);
         public void Restore(Guid id) => inner.Restore(id);

@@ -65,11 +65,15 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             }
             else ToggleBookmarkVisibility();
         };
-        _recent = new RecentForm(query => ReadAsync(() => _repository.List(query)));
+        // Load the complete graph so older parents and children remain reachable
+        // and search can retain the ancestors of a matching bookmark.
+        _recent = new RecentForm(_ => ReadAsync(() => new SearchResults(_repository.ListActive(), false)));
         _recent.ResumeRequested += ResumeFromList;
         _recent.NoteRequested += bookmark => _ = EditNoteAsync(bookmark.Id);
         _recent.DeleteRequested += bookmark => _ = DeleteAsync(bookmark);
         _recent.RelinkRequested += bookmark => _ = RelinkAsync(bookmark);
+        _recent.ParentChangeRequested += (bookmark, parentId) => _ = ChangeParentAsync(bookmark, parentId);
+        _recent.ColorChangeRequested += (bookmark, color) => _ = ChangeColorAsync(bookmark, color);
         _recent.CancelRequested += CancelOperation;
         _stickers = new StickerManager(
             () => ReadAsync(() => (_repository.ListActive(), _repository.GetStickerLayouts())),
@@ -79,6 +83,8 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _stickers.NoteRequested += bookmark => _ = EditNoteAsync(bookmark.Id);
         _stickers.DeleteRequested += bookmark => _ = DeleteAsync(bookmark);
         _stickers.RelinkRequested += bookmark => _ = RelinkAsync(bookmark);
+        _stickers.ParentChangeRequested += (bookmark, parentId) => _ = ChangeParentAsync(bookmark, parentId);
+        _stickers.ColorChangeRequested += (bookmark, color) => _ = ChangeColorAsync(bookmark, color);
         _stickers.ShowListRequested += ShowRecent;
         _stickers.SettingsRequested += ShowSettings;
         _stickers.UndoRequested += () => _ = UndoAsync();
@@ -513,6 +519,45 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         }
         catch { Notify("메모를 읽을 수 없습니다. 기존 기록은 유지됩니다."); }
         finally { if (_openingNoteHideVersion == hideVersion) _openingNote = false; }
+    }
+    private async Task ChangeColorAsync(Bookmark bookmark, BookmarkColor color)
+    {
+        if (_exiting || !_mutatingBookmarks.Add(bookmark.Id)) return;
+        try
+        {
+            await WriteAsync(() => _repository.SetColor(bookmark.Id, color));
+            if (!_exiting) await RefreshBookmarkAsync(bookmark.Id);
+        }
+        catch (Exception error)
+        {
+            DiagnosticLog.Write("bookmark_color", error is BookmarkException known ? known.Code : ResultCode.PersistenceFailed);
+            const string message = "색상을 저장하지 못했습니다. 기존 색상은 유지됩니다. 다시 선택해 주세요.";
+            if (!_exiting) _recent.SetBusy(_operationInFlight, message);
+            Notify(message);
+        }
+        finally { _mutatingBookmarks.Remove(bookmark.Id); }
+    }
+    private async Task ChangeParentAsync(Bookmark bookmark, Guid? parentId)
+    {
+        if (_exiting || !_mutatingBookmarks.Add(bookmark.Id)) return;
+        try
+        {
+            await WriteAsync(() => _repository.SetParent(bookmark.Id, parentId));
+            if (_exiting) return;
+            await RefreshBookmarkAsync(bookmark.Id);
+        }
+        catch (Exception error)
+        {
+            DiagnosticLog.Write("bookmark_parent", error is BookmarkException known ? known.Code : ResultCode.PersistenceFailed);
+            string message = error is BookmarkException { Code: ResultCode.InvalidRequest }
+                ? "자기 자신이나 하위 책갈피 아래로 옮길 수 없습니다."
+                : error is BookmarkException { Code: ResultCode.TargetUnavailable }
+                    ? "옮기려는 책갈피가 삭제되었습니다. 목록을 다시 열어 주세요."
+                    : "책갈피 관계를 저장하지 못했습니다. 기존 관계는 유지됩니다. 다시 끌어 놓아 주세요.";
+            if (!_exiting) _recent.SetBusy(_operationInFlight, message);
+            Notify(message);
+        }
+        finally { _mutatingBookmarks.Remove(bookmark.Id); }
     }
     private async Task DeleteAsync(Bookmark bookmark)
     {

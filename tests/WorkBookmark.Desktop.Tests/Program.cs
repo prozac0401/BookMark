@@ -19,7 +19,7 @@ internal static class Program
     {
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only";
+        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -39,10 +39,20 @@ internal static class Program
     {
         if (args.Length == 3 && args[0] == "--manual-ui") { ManualUiAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--manual-note-regressions") { ManualUiAcceptance.Run(args[1], args[2], noteRegressions: true); return; }
+        if (args.Length == 3 && args[0] == "--manual-tree-colors") { ManualUiAcceptance.RunTreeColors(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
+        if (args.Length == 1 && args[0] == "--hierarchy-only")
+        {
+            RecentTreeChecks.Run(Assert);
+            StickerTreeChecks.Run(Assert);
+            BookmarkColorChecks.Run(Assert);
+            HierarchyIntegrationChecks.Run(Path.Combine(Path.GetTempPath(), "WorkBookmark-Hierarchy-" + Guid.NewGuid().ToString("N")), Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} hierarchy checks passed. Physical mouse input remains a separate manual check.");
+            return;
+        }
         if (args.Length == 1 && args[0] is "--note-read-visibility-only" or "--arrange-note-only")
         {
             string focusedData = Path.Combine(Path.GetTempPath(), "WorkBookmark-NoteRegression-" + Guid.NewGuid().ToString("N"));
@@ -54,6 +64,14 @@ internal static class Program
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); StickerInlineNoteChecks.Render(args[1]); return; }
+        if (args.Length == 2 && args[0] == "--render-hierarchy")
+        {
+            Directory.CreateDirectory(args[1]);
+            RecentTreeChecks.Render(Path.Combine(args[1], "recent-tree.png"));
+            StickerTreeChecks.Render(args[1]);
+            BookmarkColorChecks.Render(args[1]);
+            return;
+        }
         string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-UiQa-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(data);
         SettingsDisplayChecks.Run(Path.Combine(data, "display-settings"), Assert);
         StickerFormChecks.Run(Assert);
@@ -69,6 +87,11 @@ internal static class Program
         StickerOperationChecks.Run(Path.Combine(data, "sticker-operations"), Assert);
         StickerIntegrationChecks.Run(Path.Combine(data, "sticker-integration"), Assert);
         BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
+        RecentTreeChecks.Run(Assert);
+        StickerTreeChecks.Run(Assert);
+        HierarchyIntegrationChecks.Run(Path.Combine(data, "hierarchy"), Assert);
+        BookmarkColorChecks.Run(Assert);
+        ColorIntegrationChecks.Run(Path.Combine(data, "colors"), Assert);
         StickerPersistenceChecks.Run(Assert);
         ResumeNotificationChecks.Run(Path.Combine(data, "resume-notifications"), Assert);
         var custom = UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F19), RecentHotkey = new Hotkey(7, (int)Keys.F20), IntroShown = true };
@@ -316,20 +339,21 @@ internal static class Program
     {
         Type recentType = assembly.GetType("WorkBookmark.App.UI.RecentForm")!;
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
-        Func<string, Task<SearchResults>> load = query => Task.FromResult(new SearchResults(
-            Enumerable.Range(0, string.IsNullOrWhiteSpace(query) ? 20 : 100).Select(_ => sample with { Id = Guid.NewGuid() }).ToArray(), true));
+        Func<string, Task<SearchResults>> load = _ => Task.FromResult(new SearchResults(
+            Enumerable.Range(0, 135).Select(index => sample with { Id = Guid.NewGuid(), DisplayName = $"fixture {index}" }).ToArray(), false));
         using var recent = (Form)Activator.CreateInstance(recentType, load)!;
         var task = (Task)recentType.GetMethod("OpenAsync")!.Invoke(recent, null)!;
         while (!task.IsCompleted) { Application.DoEvents(); Thread.Sleep(1); }
         task.GetAwaiter().GetResult();
         var label = (Label)recentType.GetField("_status", flags)!.GetValue(recent)!;
-        Assert(label.Text.Contains("최근 20개", StringComparison.Ordinal) && !label.Text.Contains("100개", StringComparison.Ordinal), "recent list over twenty records uses recent-count guidance");
+        var items = (ListBox)recentType.GetField("_items", flags)!.GetValue(recent)!;
+        Assert(items.Items.Count == 135 && !label.Text.Contains("최근 20개", StringComparison.Ordinal), "hierarchy list includes all active records beyond twenty");
         var search = (TextBox)recentType.GetField("_search", flags)!.GetValue(recent)!;
         search.Text = "fixture";
         task = (Task)recentType.GetMethod("ReloadAsync")!.Invoke(recent, [true])!;
         while (!task.IsCompleted) { Application.DoEvents(); Thread.Sleep(1); }
         task.GetAwaiter().GetResult();
-        Assert(label.Text.Contains("검색 결과 100개", StringComparison.Ordinal), "search limit remains one hundred results");
+        Assert(items.Items.Count == 135 && label.Text.Contains("135", StringComparison.Ordinal), "hierarchy search includes all matching records beyond one hundred");
     }
 
     private static void BrowserCommitChecks(string data)

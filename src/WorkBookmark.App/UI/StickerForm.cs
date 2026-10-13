@@ -18,6 +18,7 @@ internal sealed class StickerForm : Form
     private readonly Panel _header = new();
     private readonly PictureBox _typeIcon = new();
     private readonly Label _kind = new();
+    private readonly Label _treeMark = new();
     private readonly Button _collapse = new();
     private readonly Button _options = new();
     private readonly TitleButton _title = new();
@@ -33,6 +34,8 @@ internal sealed class StickerForm : Form
     private readonly ToolStripMenuItem _copyMenu;
     private readonly ToolStripMenuItem _undoMenu;
     private readonly ToolStripMenuItem _deleteMenu;
+    private readonly ToolStripMenuItem _detachMenu;
+    private readonly ToolStripMenuItem _colorMenu;
     private readonly ToolTip _tooltip = new() { AutoPopDelay = 12000, InitialDelay = 500, ReshowDelay = 100 };
     private readonly Icon _ownedIcon;
     private readonly Font _bodyFont;
@@ -55,6 +58,12 @@ internal sealed class StickerForm : Form
     private int _iconSize;
     private int _iconRevision;
     private bool _iconLookupStarted;
+    private bool _nativeMoving;
+    private bool _insideSizeMove;
+    private Point _nativeMoveOrigin;
+    private bool _dropTarget;
+    private string? _parentTitle;
+    private int _treeDepth, _childCount;
 
     public Bookmark Bookmark { get; private set; }
     public bool IsCollapsed { get; private set; }
@@ -78,11 +87,14 @@ internal sealed class StickerForm : Form
     public event Action<Bookmark>? NoteRequested;
     public event Action<Bookmark>? DeleteRequested;
     public event Action<Bookmark>? RelinkRequested;
+    public event Action<Bookmark>? DetachRequested;
+    public event Action<Bookmark, BookmarkColor>? ColorChangeRequested;
     public event Action? HideAllRequested;
     public event Action? ShowListRequested;
     public event Action? SettingsRequested;
     public event Action? UndoRequested;
     public event Action<StickerForm>? PlacementChanged;
+    internal event Action<StickerForm, bool>? NativeMoveCompleted;
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     internal Func<Rectangle, Keys, Rectangle>? AdjustMoveBounds { get; set; }
 
@@ -138,6 +150,13 @@ internal sealed class StickerForm : Form
         _typeIcon.AccessibleName = "책갈피 파일 종류 아이콘";
         _typeIcon.Cursor = Cursors.SizeAll;
         _typeIcon.TabStop = false;
+        _treeMark.Font = _smallFont;
+        _treeMark.ForeColor = UiStyle.Accent;
+        _treeMark.BackColor = Paper;
+        _treeMark.TextAlign = ContentAlignment.MiddleCenter;
+        _treeMark.Cursor = Cursors.SizeAll;
+        _treeMark.UseMnemonic = false;
+        _treeMark.MouseDown += DragHeader;
         ConfigureButton(_collapse, "접기", "스티커 접기", 4);
         ConfigureButton(_options, "•••", "스티커 더 보기", 5);
         _collapse.Font = _smallFont;
@@ -198,9 +217,16 @@ internal sealed class StickerForm : Form
         _relinkMenu = new ToolStripMenuItem("위치 다시 지정", null, (_, _) => { if (!_busy && !IsEditingNote) RelinkRequested?.Invoke(Bookmark); });
         _undoMenu = new ToolStripMenuItem("지우기 되돌리기", null, (_, _) => { if (!IsEditingNote) UndoRequested?.Invoke(); }) { ShortcutKeyDisplayString = "Ctrl+Z" };
         _deleteMenu = new ToolStripMenuItem("책갈피 지우기", null, (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); }) { ShortcutKeyDisplayString = "Ctrl+Delete" };
+        _detachMenu = new ToolStripMenuItem("최상위로 꺼내기", null, (_, _) =>
+        {
+            if (!_busy && !IsEditingNote && Bookmark.ParentId is not null) DetachRequested?.Invoke(Bookmark);
+        });
+        _colorMenu = BookmarkColors.CreateMenu(() => Bookmark, (value, color) => ColorChangeRequested?.Invoke(value, color), () => !_busy && !_noteSaving);
         _menu.Items.AddRange([
             new ToolStripMenuItem("메모 편집", null, (_, _) => RequestNoteEdit()) { ShortcutKeyDisplayString = "Ctrl+E" },
             _collapseMenu,
+            _colorMenu,
+            _detachMenu,
             new ToolStripMenuItem("스티커 이동", null, (_, _) => BeginWindowMove()),
             new ToolStripMenuItem("이 스티커 숨기기", null, (_, _) => Hide()) { ShortcutKeyDisplayString = "Esc" },
             new ToolStripSeparator(),
@@ -221,7 +247,8 @@ internal sealed class StickerForm : Form
         _resume.ContextMenuStrip = _menu;
         _resumeStatus.ContextMenuStrip = _menu;
         MouseDown += DragHeader;
-        _tooltip.SetToolTip(this, "빈 여백을 드래그하여 이동 · 우클릭하여 메뉴 열기");
+        _tooltip.SetToolTip(this, "빈 여백을 드래그하여 이동 · 다른 스티커 위에 놓으면 하위 책갈피로 묶기 · Alt: 자유 이동 · 우클릭: 메뉴");
+        _treeMark.ContextMenuStrip = _menu;
         _header.ContextMenuStrip = _menu;
         _typeIcon.ContextMenuStrip = _menu;
         _kind.ContextMenuStrip = _menu;
@@ -229,7 +256,7 @@ internal sealed class StickerForm : Form
         _collapse.Click += (_, _) => ToggleCollapsed();
         _delete.Click += (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); };
         _resume.Click += (_, _) => { if (!_busy && !IsEditingNote) ResumeRequested?.Invoke(Bookmark); };
-        Controls.AddRange([_header, _title, _resumeStatus, _noteEditor, _noteStatus, _cancelNote, _delete, _resume]);
+        Controls.AddRange([_header, _treeMark, _title, _resumeStatus, _noteEditor, _noteStatus, _cancelNote, _delete, _resume]);
         _layoutReady = true;
         UpdateBookmark(bookmark);
         ApplyPresentation(false, false);
@@ -245,6 +272,7 @@ internal sealed class StickerForm : Form
     public void UpdateBookmark(Bookmark value)
     {
         Bookmark = value;
+        ApplyBookmarkColor();
         string title = PresentationTitle(value);
         Text = $"{title} · 업무 책갈피";
         AccessibleName = $"책갈피 스티커: {title}";
@@ -269,6 +297,8 @@ internal sealed class StickerForm : Form
         };
         bool empty = string.IsNullOrWhiteSpace(value.Note);
         string details = title + "\n" + value.DisplayName + "\n" + UiStyle.Location(value) + $"\n저장: {value.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm}";
+        if (_parentTitle is not null) details += $"\n상위 책갈피: {_parentTitle} · {_treeDepth}단계";
+        if (_childCount > 0) details += $"\n하위 책갈피 {_childCount}개 · 함께 드래그하여 이동";
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
             details += CanRelink(value) ? "\n우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
@@ -280,6 +310,52 @@ internal sealed class StickerForm : Form
         RefreshActionState();
         PerformLayout();
         // A refresh updates the saved bookmark, never the editor's in-progress draft.
+    }
+
+    internal void SetHierarchy(int depth, string? parentTitle, int childCount)
+    {
+        if (_treeDepth == depth && _parentTitle == parentTitle && _childCount == childCount) return;
+        _treeDepth = depth;
+        _parentTitle = parentTitle;
+        _childCount = childCount;
+        _treeMark.Text = depth > 0 ? "↳" : "┬";
+        _treeMark.AccessibleName = depth > 0 ? $"{parentTitle}의 하위 책갈피, {depth}단계" : $"하위 책갈피 {childCount}개";
+        _tooltip.SetToolTip(_treeMark, _treeMark.AccessibleName + "\n드래그하면 하위 책갈피도 함께 이동합니다.\n우클릭: 최상위로 꺼내기");
+        UpdateBookmark(Bookmark);
+    }
+
+    internal void SetDropTarget(bool value)
+    {
+        if (_dropTarget == value) return;
+        _dropTarget = value;
+        ApplyBookmarkColor();
+        AccessibleDescription = value ? "여기에 놓으면 이 책갈피의 하위 항목으로 묶입니다." : null;
+        Invalidate(true);
+    }
+
+    private void ApplyBookmarkColor()
+    {
+        var palette = BookmarkColors.Get(Bookmark.Color);
+        Color paper = _dropTarget ? Color.FromArgb(209, 235, 225) : palette.Paper;
+        BackColor = paper;
+        foreach (Control control in new Control[] { _header, _typeIcon, _kind, _treeMark, _title, _resumeStatus, _noteEditor, _noteStatus, _collapse, _options, _cancelNote, _delete })
+            control.BackColor = paper;
+        foreach (Button button in new Button[] { _title, _collapse, _options, _cancelNote, _delete })
+        {
+            button.FlatAppearance.MouseOverBackColor = palette.Hover;
+            button.FlatAppearance.MouseDownBackColor = palette.Rule;
+        }
+        _delete.FlatAppearance.MouseOverBackColor = Color.FromArgb(249, 232, 225);
+        BookmarkColors.UpdateMenu(_colorMenu, Bookmark, !_busy && !_noteSaving);
+        Invalidate(true);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+        if (!_dropTarget) return;
+        using var pen = new Pen(UiStyle.Accent, Math.Max(2, Px(2)));
+        e.Graphics.DrawRectangle(pen, 1, 1, Math.Max(0, ClientSize.Width - 3), Math.Max(0, ClientSize.Height - 3));
     }
 
     public void SetBusy(bool busy)
@@ -466,6 +542,7 @@ internal sealed class StickerForm : Form
         _header.Visible = false;
         _delete.Visible = false;
         _title.Visible = !editing;
+        _treeMark.Visible = !editing && (_treeDepth > 0 || _childCount > 0);
         _resume.Visible = !IsCollapsed && !editing;
         _resumeStatus.Visible = false;
         _resume.Busy = _busy;
@@ -564,6 +641,9 @@ internal sealed class StickerForm : Form
         _resume.SetBounds(width - gap - actionSize, (rowHeight - actionSize) / 2, actionSize, actionSize);
         int titleHeight = _title.OneLineHeight + Px(2);
         int titleLeft = gap - Px(3);
+        bool treeMarkVisible = _treeDepth > 0 || _childCount > 0;
+        _treeMark.SetBounds(Px(3), 0, treeMarkVisible ? Px(18) : 0, rowHeight);
+        if (treeMarkVisible) titleLeft += Px(18);
         int titleRight = IsCollapsed ? width - gap + Px(3) : _resume.Left - gap;
         _title.SetBounds(titleLeft, Math.Max(0, (rowHeight - titleHeight) / 2), Math.Max(0, titleRight - titleLeft), titleHeight);
         // Failures belong to the shortcut icon and its tooltip, never a second row.
@@ -579,11 +659,22 @@ internal sealed class StickerForm : Form
 
     protected override void WndProc(ref Message message)
     {
+        if (message.Msg == 0x0231) // WM_ENTERSIZEMOVE also occurs for resizing.
+        {
+            _insideSizeMove = true;
+            _nativeMoving = false;
+            _nativeMoveOrigin = Location;
+        }
         // WM_MOVING supplies the proposed screen rectangle before Windows moves
         // the window. Correct that rectangle so native dragging stays smooth.
         if (message.Msg == 0x0216 && message.LParam != nint.Zero &&
             !_presentationChanging && AdjustMoveBounds is { } adjust)
         {
+            if (!_nativeMoving)
+            {
+                if (!_insideSizeMove) _nativeMoveOrigin = Location;
+                _nativeMoving = true;
+            }
             var bounds = Marshal.PtrToStructure<MovingRectangle>(message.LParam);
             var snapped = adjust(Rectangle.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom), ModifierKeys);
             Marshal.StructureToPtr(new MovingRectangle
@@ -594,6 +685,13 @@ internal sealed class StickerForm : Form
             return;
         }
         base.WndProc(ref message);
+        if (message.Msg == 0x0232) // WM_EXITSIZEMOVE; programmatic arrange/resize never reparents.
+        {
+            bool moved = _nativeMoving && Location != _nativeMoveOrigin;
+            bool hadNativeMove = _nativeMoving;
+            _insideSizeMove = _nativeMoving = false;
+            if (hadNativeMove && !_presentationChanging) NativeMoveCompleted?.Invoke(this, moved);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -688,6 +786,9 @@ internal sealed class StickerForm : Form
         _relinkMenu.Enabled = !_busy && !IsEditingNote;
         _undoMenu.Enabled = !IsEditingNote;
         _deleteMenu.Enabled = !_busy && !IsEditingNote;
+        _detachMenu.Visible = Bookmark.ParentId is not null;
+        _detachMenu.Enabled = !_busy && !IsEditingNote;
+        BookmarkColors.UpdateMenu(_colorMenu, Bookmark, !_busy && !_noteSaving);
     }
 
     private void UpdateTypeIcon()

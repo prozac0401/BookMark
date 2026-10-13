@@ -95,7 +95,7 @@ internal static class ExtendedTargetChecks
             string backup = Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single();
             CheckVersionTwo(backup, before);
             using var current = Open(database);
-            Check(Scalar(current, "PRAGMA user_version") == 5 && Scalar(current, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name='text_offset'") == 1,
+            Check(Scalar(current, "PRAGMA user_version") == 7 && Scalar(current, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name='text_offset'") == 1,
                 "Schema 5 exposes exactly one text offset column.");
         }
 
@@ -216,7 +216,7 @@ internal static class ExtendedTargetChecks
             string backup = Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single();
             CheckLegacy(backup, legacy);
             using var current = Open(database);
-            Check(Scalar(current, "PRAGMA user_version") == 5, "Migrated schema version must be 5.");
+            Check(Scalar(current, "PRAGMA user_version") == 7, "Migrated schema version must be 7.");
             Check(Scalar(current, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name IN ('word_start','slide_id','slide_number','pdf_page','page_title','text_offset')") == 6, "All new position/browser columns must exist.");
         }
 

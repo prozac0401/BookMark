@@ -63,7 +63,7 @@ internal static class StickerStorageChecks
                 var other = new StickerLayout(second.Id, @"\\.\DISPLAY2", 40, 80, 320, 260);
                 repo.SaveStickerLayout(other);
                 repo.SaveStickerLayout(new StickerLayout(first.Id, @"\\.\DISPLAY1", -25, -40, 300, 250));
-                expected = new StickerLayout(first.Id, @"\\.\DISPLAY2", 125, -15, 440, 370, true, true);
+                expected = new StickerLayout(first.Id, @"\\.\DISPLAY2", 125, -15, 440, 370, true, true, second.Id);
                 repo.SaveStickerLayout(expected);
                 Check(repo.Get(first.Id) == first, "Moving, resizing and pinning a sticker cannot change capture, note or resume data.");
                 Check(repo.GetStickerLayouts().Count == 2 && repo.GetStickerLayouts().Contains(other), "Updating one layout cannot replace another layout.");
@@ -71,7 +71,7 @@ internal static class StickerStorageChecks
             }
             using var reopened = new SqliteBookmarkRepository(database);
             Check(reopened.Get(first.Id) == first && reopened.GetStickerLayouts().Single(layout => layout.BookmarkId == first.Id) == expected,
-                "Monitor, negative offset, expanded size, collapse and topmost state survive restart exactly.");
+                "Monitor, negative offset, expanded size, collapse, topmost state and placement parent snapshot survive restart exactly.");
         }
 
         void Deletion()
@@ -110,7 +110,7 @@ internal static class StickerStorageChecks
             var layout = new StickerLayout(first.Id, @"\\.\DISPLAY1", 20, 30, 300, 280);
             repo.SaveStickerLayout(layout);
             fail = "sticker-layout";
-            Fails(() => repo.SaveStickerLayout(layout with { Left = 999, Width = 500, IsCollapsed = true }));
+            Fails(() => repo.SaveStickerLayout(layout with { Left = 999, Width = 500, IsCollapsed = true, ParentId = second.Id }));
             Fails(() => repo.SaveStickerLayout(layout with { BookmarkId = second.Id }));
             Check(repo.GetStickerLayouts().Single() == layout && repo.Get(first.Id) == first && repo.Get(second.Id) == second,
                 "Failed layout creates and updates leave geometry and bookmark data unchanged.");
@@ -132,7 +132,7 @@ internal static class StickerStorageChecks
             var first = repo.UpsertCapture(FileTarget()).Bookmark;
             var layout = new StickerLayout(first.Id, "", -100000, 100000, 1, 16384);
             repo.SaveStickerLayout(layout);
-            foreach (var invalid in new[] { layout with { BookmarkId = Guid.Empty }, layout with { MonitorDevice = null! },
+            foreach (var invalid in new[] { layout with { BookmarkId = Guid.Empty }, layout with { ParentId = Guid.Empty }, layout with { MonitorDevice = null! },
                 layout with { MonitorDevice = new string('x', 257) }, layout with { MonitorDevice = "bad\0monitor" }, layout with { MonitorDevice = "bad\nmonitor" },
                 layout with { Left = -100001 }, layout with { Top = 100001 }, layout with { Width = 0 }, layout with { Width = 16385 }, layout with { Height = -1 } })
                 Fails(() => repo.SaveStickerLayout(invalid), ResultCode.InvalidRequest);
@@ -156,6 +156,8 @@ internal static class StickerStorageChecks
             var expected = CreateVersionFour(database);
             string beforeRows = Rows(database, "SELECT * FROM bookmarks ORDER BY id");
             string beforeSchema = Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name");
+            string unchangedSchema = Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name<>'bookmarks' ORDER BY type,name");
+            string beforeColumns = Rows(database, "SELECT * FROM pragma_table_info('bookmarks')");
             if (injectFailure)
             {
                 Fails(() => { using var ignored = new SqliteBookmarkRepository(database, operation => { if (operation == "migration") throw new IOException("Injected v4 migration failure"); }); });
@@ -170,11 +172,12 @@ internal static class StickerStorageChecks
             CheckVersionFour(backup, beforeRows, beforeSchema);
             using var repo = new SqliteBookmarkRepository(database);
             Check(expected.All(row => repo.Get(row.Id) == row) && repo.GetStickerLayouts().Count == 0, "Migration starts with no invented placements or modified bookmarks.");
-            Check(Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT IN ('sticker_layouts','sqlite_autoindex_sticker_layouts_1','bookmark_deleted') ORDER BY type,name") == beforeSchema,
-                "Version 4 tables, indexes and unrelated content keep their exact schema.");
+            Check(Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT IN ('bookmarks','sticker_layouts','sqlite_autoindex_sticker_layouts_1','bookmark_deleted','bookmark_parent') ORDER BY type,name") == unchangedSchema
+                && Rows(database, "SELECT * FROM pragma_table_info('bookmarks') WHERE name NOT IN ('parent_id','color')") == beforeColumns,
+                "Existing version 4 bookmark columns, indexes and unrelated schema remain unchanged.");
             using (var db = Open(database))
             {
-                Check(Scalar(db, "PRAGMA user_version") == 5 && Scalar(db, "SELECT value FROM metadata WHERE name='capture_sequence'") == 23,
+                Check(Scalar(db, "PRAGMA user_version") == 7 && Scalar(db, "SELECT value FROM metadata WHERE name='capture_sequence'") == 23,
                     "Version and sequence update independently.");
                 Check(Scalar(db, "SELECT count(*) FROM unrelated_content WHERE value='preserve me'") == 1, "Unrelated user data is preserved.");
             }
@@ -233,7 +236,7 @@ internal static class StickerStorageChecks
         Check(Rows(database, "SELECT * FROM bookmarks ORDER BY id") == expectedRows && Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name") == expectedSchema,
             "All original fields and schema objects survive backup and rollback.");
     }
-    private static IReadOnlyList<Bookmark> CreateVersionFour(string database)
+    internal static IReadOnlyList<Bookmark> CreateVersionFour(string database)
     {
         var time = DateTimeOffset.Parse("2026-09-01T01:02:03Z");
         CapturedTarget[] targets = [FileTarget(), new(TargetKind.ExcelCell, @"C:\synthetic\sheet.xlsx", "확정자", "$D$127", true),

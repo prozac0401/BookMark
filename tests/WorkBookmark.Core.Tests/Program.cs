@@ -10,7 +10,9 @@ int extendedResult = ExtendedTargetChecks.Run();
 int snapshotResult = NotepadSnapshotChecks.Run();
 int officeUrlResult = OfficeUrlChecks.Run();
 int stickerResult = StickerStorageChecks.Run();
-return baselineResult == 0 && extendedResult == 0 && snapshotResult == 0 && officeUrlResult == 0 && stickerResult == 0 ? 0 : 1;
+int hierarchyResult = BookmarkHierarchyChecks.Run();
+int colorResult = BookmarkColorChecks.Run();
+return baselineResult == 0 && extendedResult == 0 && snapshotResult == 0 && officeUrlResult == 0 && stickerResult == 0 && hierarchyResult == 0 && colorResult == 0 ? 0 : 1;
 
 internal sealed class PolicyStorageSuite
 {

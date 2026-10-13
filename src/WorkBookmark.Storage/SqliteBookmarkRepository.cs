@@ -12,13 +12,16 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
     private readonly Action<string>? _beforeCommit;
     private readonly Func<DateTimeOffset> _utcNow;
     private bool _disposed;
-    private const int SchemaVersion = 5;
+    private const int SchemaVersion = 7;
     private const string LegacyColumns = "id,kind,path,normalized_path,sheet_name,cell_address,display_name,note,created_at_utc,captured_at_utc,capture_sequence,note_updated_at_utc,had_unsaved_changes,last_resume_at_utc,last_resume_result,deleted_at_utc";
 
     private const string VersionTwoColumns = LegacyColumns + ",word_start,slide_id,slide_number,pdf_page,page_title";
     private const string VersionThreeColumns = VersionTwoColumns + ",text_offset";
-    private const string Columns = VersionThreeColumns + ",text_content,text_selection_end,snapshot_title";
-    private const string StickerColumns = "bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top";
+    private const string VersionFourColumns = VersionThreeColumns + ",text_content,text_selection_end,snapshot_title";
+    private const string VersionSixColumns = VersionFourColumns + ",parent_id";
+    private const string Columns = VersionSixColumns + ",color";
+    private const string VersionFiveStickerColumns = "bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top";
+    private const string StickerColumns = VersionFiveStickerColumns + ",parent_id";
 
     // Hooks are local test injection only; product construction supplies just databasePath.
     public SqliteBookmarkRepository(string databasePath, Action<string>? beforeCommit = null, Func<DateTimeOffset>? utcNow = null)
@@ -60,7 +63,12 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
             }
             else
             {
-                using var verify = Command(db, null, "SELECT " + (version == 1 ? LegacyColumns : version == 2 ? VersionTwoColumns : version == 3 ? VersionThreeColumns : Columns) + " FROM bookmarks LIMIT 0");
+                using var verify = Command(db, null, "SELECT " + (version == 1 ? LegacyColumns : version == 2 ? VersionTwoColumns : version == 3 ? VersionThreeColumns : version < 6 ? VersionFourColumns : VersionSixColumns) + " FROM bookmarks LIMIT 0");
+                using var reader = verify.ExecuteReader();
+            }
+            if (version >= 5)
+            {
+                using var verify = Command(db, null, "SELECT " + (version == 5 ? VersionFiveStickerColumns : StickerColumns) + " FROM sticker_layouts LIMIT 0");
                 using var reader = verify.ExecuteReader();
             }
             if (existed)
@@ -76,7 +84,7 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
                 using var rename = Command(db, tx, "ALTER TABLE bookmarks RENAME TO bookmarks_previous; DROP INDEX bookmark_target; DROP INDEX bookmark_recent;");
                 rename.ExecuteNonQuery();
             }
-            // Version 4 already has the complete bookmark schema. Add presentation state without rebuilding its table.
+            // Versions 4 onward gain presentation, hierarchy and color state without rebuilding existing tables.
             if (version < 4)
                 using (var create = Command(db, tx, SchemaSql)) create.ExecuteNonQuery();
             if (version is 1 or 2 or 3)
@@ -90,8 +98,12 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
                 using var metadata = Command(db, tx, "CREATE TABLE metadata (name TEXT PRIMARY KEY NOT NULL,value INTEGER NOT NULL); INSERT INTO metadata(name,value) VALUES('capture_sequence',0);");
                 metadata.ExecuteNonQuery();
             }
-            using (var createStickers = Command(db, tx, StickerSchemaSql)) createStickers.ExecuteNonQuery();
-            using (var setVersion = Command(db, tx, "PRAGMA user_version=5;")) setVersion.ExecuteNonQuery();
+            if (version < 5)
+                using (var createStickers = Command(db, tx, StickerSchemaSql)) createStickers.ExecuteNonQuery();
+            if (version < 6)
+                using (var createHierarchy = Command(db, tx, HierarchySchemaSql)) createHierarchy.ExecuteNonQuery();
+            using (var createColor = Command(db, tx, "ALTER TABLE bookmarks ADD COLUMN color INTEGER NOT NULL DEFAULT 0 CHECK(color BETWEEN 0 AND 6);")) createColor.ExecuteNonQuery();
+            using (var setVersion = Command(db, tx, "PRAGMA user_version=7;")) setVersion.ExecuteNonQuery();
             _beforeCommit?.Invoke("migration");
             tx.Commit();
         }
@@ -154,6 +166,11 @@ CREATE TABLE sticker_layouts (
  always_on_top INTEGER NOT NULL CHECK(always_on_top IN (0,1))
 );
 CREATE INDEX bookmark_deleted ON bookmarks(deleted_at_utc DESC,capture_sequence DESC) WHERE deleted_at_utc IS NOT NULL;";
+
+    private const string HierarchySchemaSql = @"
+ALTER TABLE bookmarks ADD COLUMN parent_id TEXT REFERENCES bookmarks(id) ON DELETE SET NULL CHECK(parent_id IS NULL OR parent_id<>id);
+CREATE INDEX bookmark_parent ON bookmarks(parent_id);
+ALTER TABLE sticker_layouts ADD COLUMN parent_id TEXT;";
 
     public CaptureCommit UpsertCapture(CapturedTarget target)
     {
@@ -242,7 +259,7 @@ VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,
         while (reader.Read())
         {
             var layout = new StickerLayout(Guid.Parse(reader.GetString(0)), reader.GetString(1), reader.GetInt32(2), reader.GetInt32(3),
-                reader.GetInt32(4), reader.GetInt32(5), reader.GetBoolean(6), reader.GetBoolean(7));
+                reader.GetInt32(4), reader.GetInt32(5), reader.GetBoolean(6), reader.GetBoolean(7), reader.IsDBNull(8) ? null : Guid.Parse(reader.GetString(8)));
             ValidateStickerLayout(layout, ResultCode.PersistenceFailed);
             results.Add(layout);
         }
@@ -256,19 +273,19 @@ VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,
         {
             using (var exists = Command(db, tx, "SELECT 1 FROM bookmarks WHERE id=$id", ("$id", layout.BookmarkId.ToString())))
                 if (exists.ExecuteScalar() is null) throw new BookmarkException(ResultCode.TargetUnavailable);
-            using var command = Command(db, tx, @"INSERT INTO sticker_layouts (bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top)
-VALUES($id,$monitor,$left,$top,$width,$height,$collapsed,$topmost)
+            using var command = Command(db, tx, @"INSERT INTO sticker_layouts (bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top,parent_id)
+VALUES($id,$monitor,$left,$top,$width,$height,$collapsed,$topmost,$parent)
 ON CONFLICT(bookmark_id) DO UPDATE SET monitor_device=excluded.monitor_device,left_offset=excluded.left_offset,top_offset=excluded.top_offset,
-width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,always_on_top=excluded.always_on_top",
+width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,always_on_top=excluded.always_on_top,parent_id=excluded.parent_id",
                 ("$id", layout.BookmarkId.ToString()), ("$monitor", layout.MonitorDevice), ("$left", layout.Left), ("$top", layout.Top),
-                ("$width", layout.Width), ("$height", layout.Height), ("$collapsed", layout.IsCollapsed), ("$topmost", layout.AlwaysOnTop));
+                ("$width", layout.Width), ("$height", layout.Height), ("$collapsed", layout.IsCollapsed), ("$topmost", layout.AlwaysOnTop), ("$parent", layout.ParentId?.ToString()));
             return command.ExecuteNonQuery();
         });
     }
 
     private static void ValidateStickerLayout(StickerLayout layout, ResultCode failure)
     {
-        if (layout is null || layout.BookmarkId == Guid.Empty || layout.MonitorDevice is null || layout.MonitorDevice.Length > 256 || layout.MonitorDevice.Any(char.IsControl)
+        if (layout is null || layout.BookmarkId == Guid.Empty || layout.ParentId == Guid.Empty || layout.MonitorDevice is null || layout.MonitorDevice.Length > 256 || layout.MonitorDevice.Any(char.IsControl)
             || layout.Left is < -100000 or > 100000 || layout.Top is < -100000 or > 100000
             || layout.Width is < 1 or > 16384 || layout.Height is < 1 or > 16384)
             throw new BookmarkException(failure);
@@ -280,6 +297,38 @@ width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,a
             throw new BookmarkException(ResultCode.InvalidRequest);
         Write("note", (db, tx) => ExecuteExisting(db, tx, id,
             "UPDATE bookmarks SET note=$note,note_updated_at_utc=$now WHERE id=$id", ("$note", note), ("$now", Timestamp())));
+    }
+
+    public void SetParent(Guid id, Guid? parentId)
+    {
+        if (id == Guid.Empty || parentId == Guid.Empty || id == parentId) throw new BookmarkException(ResultCode.InvalidRequest);
+        Write("parent", (db, tx) =>
+        {
+            var child = FindId(db, tx, id);
+            if (child is null || child.DeletedAtUtc is not null) throw new BookmarkException(ResultCode.TargetUnavailable);
+            if (parentId is Guid proposedParent)
+            {
+                var parent = FindId(db, tx, proposedParent);
+                if (parent is null || parent.DeletedAtUtc is not null) throw new BookmarkException(ResultCode.TargetUnavailable);
+                // Follow retained links through deleted nodes too: restoring one must never reveal a cycle.
+                var visited = new HashSet<Guid>();
+                Guid? current = proposedParent;
+                while (current is Guid ancestor)
+                {
+                    if (ancestor == id || !visited.Add(ancestor)) throw new BookmarkException(ResultCode.InvalidRequest);
+                    using var readParent = Command(db, tx, "SELECT parent_id FROM bookmarks WHERE id=$id", ("$id", ancestor.ToString()));
+                    current = readParent.ExecuteScalar() is string value ? Guid.Parse(value) : null;
+                }
+            }
+            return ExecuteExisting(db, tx, id, "UPDATE bookmarks SET parent_id=$parent WHERE id=$id", ("$parent", parentId?.ToString()));
+        });
+    }
+
+    public void SetColor(Guid id, BookmarkColor color)
+    {
+        if (id == Guid.Empty || !Enum.IsDefined(color)) throw new BookmarkException(ResultCode.InvalidRequest);
+        Write("color", (db, tx) => ExecuteExisting(db, tx, id,
+            "UPDATE bookmarks SET color=$color WHERE id=$id AND deleted_at_utc IS NULL", ("$color", (int)color)));
     }
 
     public void SoftDelete(Guid id) => Write("delete", (db, tx) => ExecuteExisting(db, tx, id,
@@ -391,7 +440,10 @@ width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,a
             StringOrNull(row, 22), row.IsDBNull(23) ? null : row.GetInt32(23), StringOrNull(row, 24))),
         row.GetString(3), row.GetString(6), row.GetString(7), DateTimeOffset.Parse(row.GetString(8), CultureInfo.InvariantCulture),
         DateTimeOffset.Parse(row.GetString(9), CultureInfo.InvariantCulture), row.GetInt64(10), DateOrNull(row, 11), DateOrNull(row, 13),
-        row.IsDBNull(14) ? null : (ResultCode)row.GetInt32(14), DateOrNull(row, 15));
+        row.IsDBNull(14) ? null : (ResultCode)row.GetInt32(14), DateOrNull(row, 15), row.IsDBNull(25) ? null : Guid.Parse(row.GetString(25)), ValidatedColor(row.GetInt32(26)));
+
+    private static BookmarkColor ValidatedColor(int value) => Enum.IsDefined((BookmarkColor)value)
+        ? (BookmarkColor)value : throw new BookmarkException(ResultCode.PersistenceFailed);
 
     private static CapturedTarget ValidatedTarget(CapturedTarget target)
     {
