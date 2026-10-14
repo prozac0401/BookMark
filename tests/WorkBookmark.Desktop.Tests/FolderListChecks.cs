@@ -27,12 +27,11 @@ internal static class FolderListChecks
         Pump((Task)Invoke(form, "OpenAsync")!);
         var list = Field<ListBox>(form, "_items");
         var toggles = new List<Guid>();
-        var expansions = new List<bool>();
         var resumes = new List<Guid>();
         var creates = new List<Guid?>();
         var renames = new List<Guid>();
         var drops = new List<(Guid Source, Guid? Target)>();
-        RecentType.GetEvent("FolderExpansionRequested")!.AddEventHandler(form, (Action<Bookmark, bool>)((item, expanded) => { toggles.Add(item.Id); expansions.Add(expanded); }));
+        RecentType.GetEvent("FolderToggleRequested")!.AddEventHandler(form, (Action<Bookmark>)(item => toggles.Add(item.Id)));
         RecentType.GetEvent("ResumeRequested")!.AddEventHandler(form, (Action<Bookmark>)(item => resumes.Add(item.Id)));
         RecentType.GetEvent("CreateFolderRequested")!.AddEventHandler(form, (Action<Guid?>)(parent => creates.Add(parent)));
         RecentType.GetEvent("RenameFolderRequested")!.AddEventHandler(form, (Action<Bookmark>)(item => renames.Add(item.Id)));
@@ -70,23 +69,19 @@ internal static class FolderListChecks
             "FL07 search reveals a matching path through closed folders without mutating their saved state");
         int previousToggles = toggles.Count;
         Click(form, folder.Id);
-        assert(toggles.Count == previousToggles + 1 && toggles.Last() == folder.Id && !expansions.Last() && resumes.Count == 0 && form.Visible,
-            "FL08 clicking a search folder requests its persisted state without resuming or hiding the list");
-        Replace(folder);
-        assert(Items(list).Select(item => item.Id).SequenceEqual([folder.Id]) && form.Visible &&
-            Field<TextBox>(form, "_search").Text == deep.DisplayName && records[deep.Id].ParentId == nested.Id && nested.FolderExpanded,
-            "FL24 closing a temporarily expanded search path retains query, graph and nested saved state");
-        Click(form, folder.Id);
-        assert(expansions.Last(), "FL25 clicking a collapsed search folder requests opening");
-        folder = folder with { FolderExpanded = true };
-        Replace(folder);
-        assert(Visible(list, deep.Id) && form.Visible, "FL27 committed search opening reveals matching descendants in the list");
-        folder = folder with { FolderExpanded = false };
-        Replace(folder);
-        typeof(Form).GetMethod("OnDeactivate", Private)!.Invoke(form, [EventArgs.Empty]);
-        assert(form.Visible, "FL26 focus loss during sticker refresh does not dismiss the modeless list");
+        assert(toggles.Count == previousToggles && resumes.Count == 0 && Field<Label>(form, "_status").Text.Contains("검색 중", StringComparison.Ordinal),
+            "FL08 clicking a folder in search preserves the matched ancestor path and explains temporary expansion");
         Search(form, "");
         assert(!Visible(list, child.Id) && !Visible(list, deep.Id), "FL09 clearing search restores committed closed-folder visibility");
+
+        using (var other = new Form())
+        {
+            other.Show();
+            other.Activate();
+            Application.DoEvents();
+            assert(!form.Visible, "FL26 activating another window still dismisses the recent list");
+        }
+        Pump((Task)Invoke(form, "OpenAsync")!);
 
         list.SelectedIndex = Index(list, folder.Id);
         MenuOpening(form);

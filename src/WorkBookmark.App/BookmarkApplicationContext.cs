@@ -75,7 +75,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _recent.RelinkRequested += bookmark => _ = RelinkAsync(bookmark);
         _recent.ParentChangeRequested += (bookmark, parentId) => _ = ChangeParentAsync(bookmark, parentId);
         _recent.ColorChangeRequested += (bookmark, color) => _ = ChangeColorAsync(bookmark, color);
-        _recent.FolderExpansionRequested += (bookmark, expanded) => _ = ToggleFolderAsync(bookmark, expanded);
+        _recent.FolderToggleRequested += bookmark => _ = ToggleFolderAsync(bookmark);
         _recent.CreateFolderRequested += parentId => ShowFolderName(parentId);
         _recent.RenameFolderRequested += bookmark => ShowFolderName(null, bookmark);
         _recent.CancelRequested += CancelOperation;
@@ -413,7 +413,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         }
         finally { _mutatingBookmarks.Remove(folder.Id); }
     }
-    private async Task ToggleFolderAsync(Bookmark folder, bool? expanded = null)
+    private async Task ToggleFolderAsync(Bookmark folder)
     {
         if (_exiting || !folder.IsFolder || !_mutatingBookmarks.Add(folder.Id)) return;
         try
@@ -422,7 +422,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             {
                 var current = _repository.Get(folder.Id);
                 if (current is not { IsFolder: true, DeletedAtUtc: null }) throw new BookmarkException(ResultCode.TargetUnavailable);
-                _repository.SetFolderExpanded(current.Id, expanded ?? !current.FolderExpanded);
+                _repository.SetFolderExpanded(current.Id, !current.FolderExpanded);
             });
             if (!_exiting) await RefreshBookmarkAsync(folder.Id);
         }

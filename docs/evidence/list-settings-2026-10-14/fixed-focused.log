@@ -1,0 +1,119 @@
+PASS: SET01 old settings without display mode retain other values and await the sticker presentation upgrade
+PASS: SET10 new settings default to stickers and apply presentation once at startup
+PASS: SET11 an explicit legacy List choice is loaded without marking the startup upgrade complete
+PASS: SET12 the one-time upgrade changes legacy List to Stickers while preserving hotkeys and startup preferences
+PASS: SET13 a List choice made after the upgrade is retained without another reset
+PASS: SET15 one-line presentation upgrades version 1 without resetting the user's List choice
+PASS: SET15 one-line presentation upgrades version 2 without resetting the user's List choice
+PASS: SET02 sticker display choice survives saving and reloading
+PASS: SET16 magnetic alignment defaults on and survives saving and reloading
+PASS: SET17 disabling magnetic alignment survives saving and reloading
+PASS: SET18 older settings without magnetic alignment enable it while preserving saved preferences
+PASS: SET03 unknown display mode is rejected without rewriting settings
+PASS: SET14 invalid presentation version is rejected without rewriting the original settings
+PASS: SET04 settings shows the saved List choice and retains its inactive magnetic alignment preference
+PASS: SET05 display choices remain mutually exclusive and sticker mode enables magnetic alignment
+PASS: SET19 switching display modes retains the selected magnetic alignment preference
+PASS: SET06 failed apply retains draft preferences and leaves persisted settings unchanged for retry
+PASS: SET07 successful retry applies once, persists display preferences and closes modeless settings
+PASS: SET08 settings shows saved Stickers and disabled magnetic alignment choices
+PASS: SET09 modeless close button discards all pending preferences without applying or writing settings
+PASS: SET20 Escape routed from _stickerSnap closes modeless settings without applying or changing saved bytes
+PASS: SET20 Escape routed from _capture closes modeless settings without applying or changing saved bytes
+PASS: SET20 Escape routed from _recent closes modeless settings without applying or changing saved bytes
+PASS: SET21 window close discards pending settings without invoking apply or altering persisted settings
+PASS: FL01 committed closed folders hide every descendant while physical folders remain ordinary bookmarks
+PASS: FL02 folder title click requests opening without launching a target or changing visibility before commit
+PASS: FL03 committing an open parent reveals its children while nested closed folders stay closed
+PASS: FL04 Enter on a folder requests its persisted toggle instead of invoking resume
+PASS: FL05 committing a nested open state reveals descendants at their full depth
+PASS: FL06 closing an ancestor hides expanded nested folders without changing their saved expansion
+PASS: FL07 search reveals a matching path through closed folders without mutating their saved state
+PASS: FL08 clicking a folder in search preserves the matched ancestor path and explains temporary expansion
+PASS: FL09 clearing search restores committed closed-folder visibility
+PASS: FL26 activating another window still dismisses the recent list
+PASS: FL10 folder context provides rename and child-folder creation while excluding filesystem actions
+PASS: FL11 create and rename affordances emit the exact parent or folder and await persistence
+PASS: FL23 Enter on the new-folder toolbar creates a folder without activating the selected row
+PASS: FL12 clicking a physical folder resumes it and keeps its ordinary path-copy menu
+PASS: FL13 dropping onto an ordinary bookmark requests grouping and leaves both rows unchanged until commit
+PASS: FL14 one committed grouping batch inserts the closed folder, hides its members and selects the folder coherently
+PASS: FL15 opening a grouped folder reveals original bookmarks with independent colors intact
+PASS: FL16 dropping into an existing closed folder preserves its expansion and selects the visible ancestor
+PASS: FL17 a folder cannot be grouped onto one of its own descendants
+PASS: FL18 an empty folder still opens through Enter without requiring a child or launching anything
+PASS: FL19 committed rename and expansion update an empty folder independently
+PASS: FL20 a stale initial read cannot remove a newly committed folder batch or restore ungrouped rows
+PASS: FL21 a later committed folder toggle wins over an older in-flight closed-folder snapshot
+PASS: FL22 an empty list still offers root-folder creation without an existing bookmark
+PASS: FS01 a closed virtual folder hides descendants while retaining their live view identities
+PASS: FS02 a virtual folder uses its name and a folder action rather than a link or note title
+PASS: FS03 a note request beneath a closed folder declines inline editing without revealing the child
+PASS: FS04 a folder title requests editing while its action and Ctrl+Enter request a persisted toggle without resuming a worker
+PASS: FS05 busy folder actions cannot toggle, rename, or resume
+PASS: FS06 virtual-folder menus route rename/create and omit nonexistent path and note actions
+PASS: FS07 a linked disk folder remains an ordinary resumable bookmark
+PASS: FS08 opening a folder reveals direct children but keeps a nested closed folder's contents hidden without moving windows
+PASS: FS09 nested folders govern their own expansion and retain saved geometry
+PASS: FS10 closing and reopening a folder does not reveal a child that the user individually hid
+PASS: FS11 explicit show-all restores user-hidden children while honoring persisted folder expansion
+PASS: FS12 closing a folder keeps a child's editing draft and does not synthesize a focus-loss save
+PASS: FS13 reopening and recoloring a folder preserve child drafts, normal placement and folder geometry
+PASS: FS14 committed folder toggles never override the hide-all policy
+PASS: FS15 dropping on an ordinary sticker requests atomic folder grouping without an optimistic parent change
+PASS: FS16 a committed grouping replaces the target location with a closed folder and lays out its hidden children once
+PASS: FS17 opening a newly grouped folder reveals its organized children without another layout
+PASS: FS18 a folder can be dropped into another folder while ancestor-to-descendant drops remain invalid
+PASS: FS19 dropping into an existing folder preserves both folders' expansion state
+PASS: FS20 a later authoritative reload does not reveal descendants of a closed folder
+PASS: FS21 a stale in-flight reveal retries after a committed folder close rather than resurrecting its children
+PASS: FS22 restarting with a closed folder and reopening it retains independent child placement and layout persistence
+PASS: FS23 clicking a folder title opens the same inline editor with its selected name and preserves normal placement and expansion
+PASS: FS24 an invalid folder name is rejected before persistence and retains the editable draft with validation feedback
+PASS: FS25 failed rename, color refresh and repeated editing preserve the original draft and save callback
+PASS: FS26 Enter retries a normalized folder rename without changing its note, expansion, or moved normal geometry
+PASS: FS27 F2 opens folder editing and Escape cancels only the draft while restoring the normal sticker
+PASS: FS37 Enter on the focused inline cancel button cancels the folder draft instead of saving it
+PASS: FS28 leaving folder inline editing automatically persists its name without stealing focus or changing geometry
+PASS: FS29 a delayed rename completion cannot overwrite a newer authoritative folder name
+PASS: FS30 cancelling a folder native move restores its descendants without a drop, rename, or toggle
+PASS: FS31 a title component activation invokes editing exactly once without starting a move
+PASS: FS32 component pointer jitter within the system threshold keeps capture and leaves title editing available
+PASS: FS33 a component drag releases capture and suppresses nested activation plus a reflected click inside native WM_LBUTTONUP
+PASS: FS34 accessibility activation and a fresh title component gesture remain editable after dragging
+PASS: FS35 native capture loss cancels the pending component gesture without editing or dragging
+PASS: FS36 right-button component gestures remain available for the context menu and never start a move
+PASS: FI01 bookmark-on-bookmark creates one closed linkless folder and preserves both original bookmarks
+PASS: FI02 atomic grouping reaches both views without exposing children of a closed folder
+PASS: FI03 list folder opening reveals preserved child colors in both views
+PASS: FI28 repetition 1: committed folder closure hides child stickers while retaining the list and search focus
+PASS: FI29 repetition 1: committed folder opening reveals child stickers without deactivating the list
+PASS: FI28 repetition 2: committed folder closure hides child stickers while retaining the list and search focus
+PASS: FI29 repetition 2: committed folder opening reveals child stickers without deactivating the list
+PASS: FI28 repetition 3: committed folder closure hides child stickers while retaining the list and search focus
+PASS: FI29 repetition 3: committed folder opening reveals child stickers without deactivating the list
+PASS: FI04 folder rename updates both views without moving the folder
+PASS: FI05 folders and bookmarks move into folders without creating extra wrappers; nested closed state is retained
+PASS: FI06 sticker folder toggle commits the same open state to the list
+PASS: FI07 dropping a folder onto its own descendant refuses a cycle without creating a wrapper
+PASS: FI08 failed ordinary-target grouping rolls back the new folder and all parent changes in both views
+PASS: FI09 folder activation closes its entire subtree without sending an external resume request or recording a resume
+PASS: FI10 failed folder-open persistence leaves the folder closed everywhere
+PASS: FI11 folder colors remain independent and never defeat hide-all
+PASS: FI12 reload preserves saved folder closure while showing roots
+PASS: FI13 deleting a folder preserves its children as accessible roots
+PASS: FI14 restoring the closed folder restores membership, color and child visibility without losing targets
+PASS: FI15 the sticker rename event opens its own 100-character inline name editor without a separate window or revealing closed-folder children
+PASS: FI16 inline folder-name save commits to SQLite and both views while preserving note, history, color, closure and normal geometry
+PASS: FI17 failed inline folder rename retains the editable draft and reports failure without publishing uncommitted names to either view
+PASS: FI18 retry commits the retained folder-name draft through the original application callback and restores normal placement
+PASS: FI19 cancelling inline folder rename discards only the draft and preserves both committed views and closed-folder visibility
+PASS: FI20 renaming a folder hidden beneath a closed ancestor falls back to the name dialog without revealing its sticker or descendants
+PASS: FI21 cancelling the hidden-folder fallback leaves its name, expansion and membership unchanged
+PASS: FI22 saving through the hidden-folder fallback persists its name without changing ancestor closure or child visibility
+PASS: FI23 opening the ancestor later displays the fallback-renamed folder consistently in the list and sticker views
+PASS: FI24 requesting two different folder names keeps independent modeless drafts without committing either one
+PASS: FI25 requesting the same folder again reuses only that folder's editor and preserves both unsaved drafts
+PASS: FI26 saving the second dialog renames only its own folder in SQLite and both views while retaining the first draft
+PASS: FI27 saving the first retained dialog uses its original folder callback without changing the second folder
+RESULT: 118 list/settings component checks passed. Physical mouse, keyboard and Alt+Tab input remain separate manual checks.

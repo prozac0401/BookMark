@@ -19,7 +19,7 @@ internal static class Program
     {
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only";
+        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -40,10 +40,27 @@ internal static class Program
         if (args.Length == 3 && args[0] == "--manual-ui") { ManualUiAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--manual-note-regressions") { ManualUiAcceptance.Run(args[1], args[2], noteRegressions: true); return; }
         if (args.Length == 3 && args[0] == "--manual-tree-colors") { ManualUiAcceptance.RunTreeColors(args[1], args[2]); return; }
+        if (args.Length == 3 && args[0] == "--manual-list-settings") { ManualListSettingsAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
+        if (args.Length == 1 && args[0] is "--show-focus-only" or "--show-focus-component")
+        {
+            StickerShowFocusChecks.Run(Assert, requireForeground: args[0] == "--show-focus-only");
+            Console.WriteLine($"RESULT: {Checks.Count} sticker show focus checks passed; {StickerShowFocusChecks.NotRunCount} NOT RUN. Other-app Alt+Tab requires native input.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--list-settings-only")
+        {
+            string focusedData = Path.Combine(Path.GetTempPath(), "WorkBookmark-ListSettings-" + Guid.NewGuid().ToString("N"));
+            SettingsDisplayChecks.Run(Path.Combine(focusedData, "settings"), Assert);
+            FolderListChecks.Run(Assert);
+            FolderStickerChecks.Run(Assert);
+            FolderIntegrationChecks.Run(Path.Combine(focusedData, "folders"), Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} list/settings component checks passed. Physical mouse, keyboard and Alt+Tab input remain separate manual checks.");
+            return;
+        }
         if (args.Length == 1 && args[0] == "--folders-only")
         {
             FolderListChecks.Run(Assert);

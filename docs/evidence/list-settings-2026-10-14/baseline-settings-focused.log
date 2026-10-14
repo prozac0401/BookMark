@@ -1,0 +1,24 @@
+PASS: SET01 old settings without display mode retain other values and await the sticker presentation upgrade
+PASS: SET10 new settings default to stickers and apply presentation once at startup
+PASS: SET11 an explicit legacy List choice is loaded without marking the startup upgrade complete
+PASS: SET12 the one-time upgrade changes legacy List to Stickers while preserving hotkeys and startup preferences
+PASS: SET13 a List choice made after the upgrade is retained without another reset
+PASS: SET15 one-line presentation upgrades version 1 without resetting the user's List choice
+PASS: SET15 one-line presentation upgrades version 2 without resetting the user's List choice
+PASS: SET02 sticker display choice survives saving and reloading
+PASS: SET16 magnetic alignment defaults on and survives saving and reloading
+PASS: SET17 disabling magnetic alignment survives saving and reloading
+PASS: SET18 older settings without magnetic alignment enable it while preserving saved preferences
+PASS: SET03 unknown display mode is rejected without rewriting settings
+PASS: SET14 invalid presentation version is rejected without rewriting the original settings
+PASS: SET04 settings shows the saved List choice and retains its inactive magnetic alignment preference
+PASS: SET05 display choices remain mutually exclusive and sticker mode enables magnetic alignment
+PASS: SET19 switching display modes retains the selected magnetic alignment preference
+PASS: SET06 failed apply retains draft preferences and leaves persisted settings unchanged for retry
+PASS: SET07 successful retry applies once, persists display preferences and closes modeless settings
+PASS: SET08 settings shows saved Stickers and disabled magnetic alignment choices
+System.Exception: FAIL: SET09 modeless close button discards all pending preferences without applying or writing settings
+   at WorkBookmark.Desktop.Tests.Program.Assert(Boolean condition, String name) in D:\Github_REPOS\BookMark\artifacts\list-settings-20261014\baseline\tests\WorkBookmark.Desktop.Tests\Program.cs:line 17
+   at WorkBookmark.Desktop.Tests.SettingsDisplayChecks.Run(String directory, Action`2 assert)
+   at WorkBookmark.Desktop.Tests.Program.Run(String[] args) in D:\Github_REPOS\BookMark\artifacts\list-settings-20261014\baseline\tests\WorkBookmark.Desktop.Tests\Program.cs:line 51
+   at WorkBookmark.Desktop.Tests.Program.RunSafely(String[] args) in D:\Github_REPOS\BookMark\artifacts\list-settings-20261014\baseline\tests\WorkBookmark.Desktop.Tests\Program.cs:line 35

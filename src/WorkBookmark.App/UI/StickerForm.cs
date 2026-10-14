@@ -107,6 +107,77 @@ internal sealed class StickerForm : Form
     // so its buttons, keyboard navigation and native window move/size commands work.
     protected override bool ShowWithoutActivation => true;
 
+    protected override void SetVisibleCore(bool value)
+    {
+        if (!value || Visible)
+        {
+            base.SetVisibleCore(value);
+            return;
+        }
+
+        var recent = Form.ActiveForm as RecentForm;
+        nint recentWindow = recent is { IsDisposed: false, IsHandleCreated: true, Visible: true }
+            && GetForegroundWindow() == recent.Handle ? recent.Handle : nint.Zero;
+        // WinForms reapplies TopMost while creating the first handle and focuses
+        // a child after Show(), even with ShowWithoutActivation. Veto only this
+        // sticker's activation/focus during the synchronous show on this UI thread.
+        // No global hook, permanent window style, or focus restoration is needed.
+        using (new NonActivatingShowScope(this))
+            base.SetVisibleCore(true);
+
+        // Keep newly revealed children behind the list only while that same
+        // list is still foreground. Never reactivate it after the user leaves.
+        if (!IsDisposed && IsHandleCreated && Visible && recentWindow != nint.Zero &&
+            recent is { IsDisposed: false, IsHandleCreated: true, Visible: true } &&
+            recent.Handle == recentWindow && GetForegroundWindow() == recentWindow)
+            SetWindowPos(Handle, recentWindow, 0, 0, 0, 0, 0x0013); // SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+    }
+
+    private sealed class NonActivatingShowScope : IDisposable
+    {
+        // Keep the native callback rooted even if removing a hook ever fails.
+        private static readonly HookProc Callback = FilterActivation;
+        [ThreadStatic] private static NonActivatingShowScope? _current;
+        private readonly NonActivatingShowScope? _previous;
+        private readonly StickerForm _form;
+        private nint _hook;
+
+        internal NonActivatingShowScope(StickerForm form)
+        {
+            _form = form;
+            _previous = _current;
+            _hook = SetWindowsHookEx(5, Callback, nint.Zero, GetCurrentThreadId()); // WH_CBT, this thread only
+            if (_hook == nint.Zero) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            _current = this;
+        }
+
+        public void Dispose()
+        {
+            if (_hook == nint.Zero) return;
+            // Remove the veto before unhooking. A surviving hook is harmless
+            // once its scope ends, and nested shows retain their outer scope.
+            _current = _previous;
+            nint hook = _hook;
+            _hook = nint.Zero;
+            UnhookWindowsHookEx(hook);
+        }
+
+        private static nint FilterActivation(int code, nint target, nint data)
+        {
+            if (code is 5 or 9) // HCBT_ACTIVATE / HCBT_SETFOCUS
+            {
+                for (var scope = _current; scope is not null; scope = scope._previous)
+                {
+                    var form = scope._form;
+                    if (!form.IsDisposed && form.IsHandleCreated &&
+                        (target == form.Handle || code == 9 && GetAncestor(target, 2) == form.Handle))
+                        return new nint(1);
+                }
+            }
+            return CallNextHookEx(nint.Zero, code, target, data);
+        }
+    }
+
     protected override CreateParams CreateParams
     {
         get
@@ -778,6 +849,7 @@ internal sealed class StickerForm : Form
     [StructLayout(LayoutKind.Sequential)]
     private struct MovingRectangle { public int Left, Top, Right, Bottom; }
 
+
     protected override void OnResizeEnd(EventArgs e)
     {
         base.OnResizeEnd(e);
@@ -1228,6 +1300,23 @@ internal sealed class StickerForm : Form
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ReleaseCapture();
+    [DllImport("user32.dll")]
+    private static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowPos(nint window, nint insertAfter, int x, int y, int width, int height, uint flags);
+    private delegate nint HookProc(int code, nint wParam, nint lParam);
+    [DllImport("kernel32.dll")]
+    private static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll", EntryPoint = "SetWindowsHookExW", SetLastError = true)]
+    private static extern nint SetWindowsHookEx(int type, HookProc callback, nint module, uint thread);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnhookWindowsHookEx(nint hook);
+    [DllImport("user32.dll")]
+    private static extern nint CallNextHookEx(nint hook, int code, nint wParam, nint lParam);
+    [DllImport("user32.dll")]
+    private static extern nint GetAncestor(nint window, uint flags);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern nint SendMessage(nint hwnd, uint message, nint wParam, nint lParam);
 }

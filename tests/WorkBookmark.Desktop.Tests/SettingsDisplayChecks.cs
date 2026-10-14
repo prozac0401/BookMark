@@ -93,11 +93,19 @@ internal static class SettingsDisplayChecks
 
         Type formType = typeof(UserSettings).Assembly.GetType("WorkBookmark.App.UI.SettingsForm")!;
         UserSettings? applied = null;
+        int applyCalls = 0;
         bool fail = true;
+        previous.Save(directory);
+        byte[] savedBeforeApply = File.ReadAllBytes(path);
+        // The callback writes only this synthetic fixture. It never registers
+        // startup or hotkeys, even when those settings are changed in the form.
         Func<UserSettings, Task<string?>> apply = candidate =>
         {
+            applyCalls++;
             applied = candidate;
-            return Task.FromResult<string?>(fail ? "테스트: 설정 저장 실패" : null);
+            if (fail) return Task.FromResult<string?>("테스트: 설정 저장 실패");
+            candidate.Save(directory);
+            return Task.FromResult<string?>(null);
         };
         using (var form = (Form)Activator.CreateInstance(formType, previous, true, true,
             directory, apply, (Action)(() => { }), (Action)(() => { }))!)
@@ -122,16 +130,18 @@ internal static class SettingsDisplayChecks
             Application.DoEvents();
             assert(!form.IsDisposed && save.Enabled && sticker.Checked && !snap.Checked &&
                 Field<Label>(form, "_status").Text == "테스트: 설정 저장 실패" &&
-                applied == unsnappedStickers,
-                "SET06 failed apply retains selected display and magnetic alignment preferences for retry");
+                applied == unsnappedStickers && applyCalls == 1 && File.ReadAllBytes(path).SequenceEqual(savedBeforeApply),
+                "SET06 failed apply retains draft preferences and leaves persisted settings unchanged for retry");
             fail = false;
             save.PerformClick();
             Application.DoEvents();
-            assert(form.IsDisposed && applied == unsnappedStickers,
-                "SET07 successful apply closes settings and includes display and magnetic alignment preferences");
+            assert(form.IsDisposed && applied == unsnappedStickers && applyCalls == 2 && UserSettings.Load(directory) == unsnappedStickers,
+                "SET07 successful retry applies once, persists display preferences and closes modeless settings");
         }
 
         applied = null;
+        applyCalls = 0;
+        byte[] savedBeforeDismiss = File.ReadAllBytes(path);
         using (var form = (Form)Activator.CreateInstance(formType, unsnappedStickers, true, true,
             directory, apply, (Action)(() => { }), (Action)(() => { }))!)
         {
@@ -140,12 +150,62 @@ internal static class SettingsDisplayChecks
             assert(Field<RadioButton>(form, "_stickerDisplay").Checked &&
                 !Field<CheckBox>(form, "_stickerSnap").Checked,
                 "SET08 settings shows saved Stickers and disabled magnetic alignment choices");
-            Field<CheckBox>(form, "_stickerSnap").Checked = true;
-            Field<RadioButton>(form, "_listDisplay").Checked = true;
+            ChangeUnappliedSettings(form);
             ((Button)form.CancelButton!).PerformClick();
             Application.DoEvents();
-            assert(form.IsDisposed && applied is null,
-                "SET09 closing settings discards unapplied display and magnetic alignment changes");
+            assert(form.IsDisposed && applied is null && applyCalls == 0 && File.ReadAllBytes(path).SequenceEqual(savedBeforeDismiss),
+                "SET09 modeless close button discards all pending preferences without applying or writing settings");
+        }
+
+        foreach (string focusField in new[] { "_stickerSnap", "_capture", "_recent" })
+        {
+            using var form = (Form)Activator.CreateInstance(formType, unsnappedStickers, true, true,
+                directory, apply, (Action)(() => { }), (Action)(() => { }))!;
+            form.Show();
+            Application.DoEvents();
+            ChangeUnappliedSettings(form);
+            // Keep the checkbox enabled for the ordinary-control Escape case.
+            if (focusField == "_stickerSnap") Field<RadioButton>(form, "_stickerDisplay").Checked = true;
+            var focused = Field<Control>(form, focusField);
+            focused.Select();
+            bool selected = form.ActiveControl == focused;
+            bool forwarded = true;
+            if (focusField is "_capture" or "_recent")
+            {
+                var message = Message.Create(focused.Handle, 0x0100, (nint)Keys.Escape, 0);
+                forwarded = !(bool)focused.GetType().GetMethod("ProcessCmdKey", Instance)!
+                    .Invoke(focused, [message, Keys.Escape])!;
+            }
+            bool handled = (bool)typeof(Control).GetMethod("ProcessDialogKey", Instance)!.Invoke(focused, [Keys.Escape])!;
+            Application.DoEvents();
+            assert(selected && forwarded && handled && form.IsDisposed && applied is null && applyCalls == 0 &&
+                File.ReadAllBytes(path).SequenceEqual(savedBeforeDismiss),
+                $"SET20 Escape routed from {focusField} closes modeless settings without applying or changing saved bytes");
+        }
+
+        using (var form = (Form)Activator.CreateInstance(formType, unsnappedStickers, true, true,
+            directory, apply, (Action)(() => { }), (Action)(() => { }))!)
+        {
+            form.Show();
+            Application.DoEvents();
+            ChangeUnappliedSettings(form);
+            form.Close();
+            Application.DoEvents();
+            assert(form.IsDisposed && applied is null && applyCalls == 0 && File.ReadAllBytes(path).SequenceEqual(savedBeforeDismiss),
+                "SET21 window close discards pending settings without invoking apply or altering persisted settings");
+        }
+    }
+
+    private static void ChangeUnappliedSettings(Form form)
+    {
+        Field<CheckBox>(form, "_stickerSnap").Checked = true;
+        Field<RadioButton>(form, "_listDisplay").Checked = true;
+        Field<CheckBox>(form, "_startup").Checked = false;
+        foreach (var (name, key) in new[] { ("_capture", Keys.F23), ("_recent", Keys.F24) })
+        {
+            Control hotkey = Field<Control>(form, name);
+            var message = Message.Create(hotkey.Handle, 0x0100, (nint)key, 0);
+            hotkey.GetType().GetMethod("ProcessCmdKey", Instance)!.Invoke(hotkey, [message, key | Keys.Control | Keys.Alt]);
         }
     }
 
