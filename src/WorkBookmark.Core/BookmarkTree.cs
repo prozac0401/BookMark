@@ -62,9 +62,27 @@ public static class BookmarkTree
         var byId = items.DistinctBy(item => item.Id).ToDictionary(item => item.Id);
         if (!byId.TryGetValue(id, out var child) || child.DeletedAtUtc is not null) return false;
         if (parentId is null) return true;
-        if (!byId.TryGetValue(parentId.Value, out var parent) || parent.DeletedAtUtc is not null) return false;
+        if (!byId.TryGetValue(parentId.Value, out var parent) || parent.DeletedAtUtc is not null || !parent.IsFolder) return false;
         var visited = new HashSet<Guid>();
         Guid? current = parentId;
+        while (current is Guid ancestor)
+        {
+            if (ancestor == id || !visited.Add(ancestor)) return false;
+            current = byId.TryGetValue(ancestor, out var row) ? row.ParentId : null;
+        }
+        return true;
+    }
+
+    public static bool CanDropOnto(IEnumerable<Bookmark> items, Guid id, Guid targetId)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        if (id == Guid.Empty || targetId == Guid.Empty || id == targetId) return false;
+        var byId = items.DistinctBy(item => item.Id).ToDictionary(item => item.Id);
+        if (!byId.TryGetValue(id, out var source) || source.DeletedAtUtc is not null ||
+            !byId.TryGetValue(targetId, out var target) || target.DeletedAtUtc is not null ||
+            target.IsFolder && source.ParentId == targetId) return false;
+        var visited = new HashSet<Guid>();
+        Guid? current = targetId;
         while (current is Guid ancestor)
         {
             if (ancestor == id || !visited.Add(ancestor)) return false;

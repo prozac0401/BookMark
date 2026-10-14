@@ -26,9 +26,14 @@ internal static class HierarchyIntegrationChecks
         {
             if (failWrites) throw new IOException("Injected hierarchy write failure");
         });
-        var rows = Enumerable.Range(0, 26).Select(index => repository.UpsertCapture(
+        var parent = repository.CreateFolder("부모 폴더");
+        var rows = Enumerable.Range(0, 24).Select(index => repository.UpsertCapture(
             new CapturedTarget(TargetKind.File, Path.Combine(directory, $"계층 {index:00}.txt"))).Bookmark).ToArray();
-        var parent = rows[0]; var child = rows[25]; var grandchild = rows[24];
+        var child = repository.CreateFolder("자식 폴더");
+        repository.SetFolderExpanded(parent.Id, true);
+        repository.SetFolderExpanded(child.Id, true);
+        parent = repository.Get(parent.Id)!; child = repository.Get(child.Id)!;
+        var grandchild = rows[23];
         using var worker = new WorkerClient();
         using var context = new BookmarkApplicationContext(repository, worker, directory);
         Application.DoEvents();

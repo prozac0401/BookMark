@@ -1,5 +1,7 @@
 # 검증 및 인수 보고서
 
+> 2026-10-14 WorkBookmark 0.2.12: 링크 없는 폴더, 폴더 열기·닫기와 스티커 위 드롭 시 새 폴더 생성을 추가했습니다. 전체 `scripts/build.ps1` Release 빌드 경고·오류 0개, 자동검사 **940개**(Core 76, Desktop 521) 통과입니다. DB v8 이전·롤백, 폴더 생성·중첩·상태 동기화·목록 모드 재시작 배치를 검증했습니다. 실제 WinForms 렌더링 5개를 확인했습니다. 실제 마우스·MSI 설치·재부팅·혼합 DPI·IME는 미실행입니다. [폴더 검증 기록](evidence/folders-2026-10-14/README.md)과 [0.2.12 릴리스 안내](release-notes-v0.2.12.md)를 참고하세요. 최종 MSI 구조·관리 추출은 동봉 검증 JSON을 기준으로 합니다.
+
 > 2026-10-14 WorkBookmark 0.2.11: 스티커·목록의 드래그 트리 구성과 항목별 색상을 추가했습니다. 전체 `scripts/build.ps1` Release 빌드 경고·오류 0개, 자동검사 **866개**(Desktop 456개) 통과입니다. 목록 모드에서 색상·메모 변경 후 기존 스티커 배치가 유지되는 회귀검사도 포함합니다. WinForms 화면 렌더링을 확인했으며 실제 마우스 입력은 Windows 잠금으로 미실행입니다. MSI 실제 설치·업데이트·제거·재부팅, 혼합 DPI·IME도 미실행입니다. [검증 기록](evidence/tree-colors-2026-10-14/README.md)과 [0.2.11 릴리스 안내](release-notes-v0.2.11.md)에 범위를 구분했습니다. 최종 MSI 구조·관리 추출 결과는 릴리스 첨부 검증 JSON, 소스 기준과 파일 지문은 SourceSnapshot.json·SHA256SUMS.txt를 따릅니다. 아래는 과거 버전의 검증 이력입니다.
 
 > 2026-10-06 WorkBookmark 0.2.9 배포 준비 검증: 스티커 표시·숨김 토글, 자석 정렬과 격자·가로·세로 일괄 정렬을 추가했습니다. 준비 단계의 Release 빌드 경고 0·오류 0, 자동검사 746개(Desktop 351개 포함) 결과를 재사용합니다. 커밋 전 검증용 빌드의 사용자 지정 전역 단축키 실제 입력으로 스티커 2개 표시→숨김→2개 표시와 위치·메모 유지를 확인했습니다. [준비 단계 검증 기록](evidence/sticker-alignment-2026-10-06/README.md)에 실행 로그와 확인 범위를 구분했습니다. 기본 Ctrl+Alt+J 직접 입력, 실제 드래그·Alt 드래그·혼합 DPI·IME·MSI 설치 및 업데이트는 미검증입니다. 최종 배포 패키지 검사는 [0.2.9 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.9)의 동봉 검증 JSON, 소스와 파일 식별은 SourceSnapshot.json·SHA256SUMS.txt를 기준으로 합니다. 이 기록은 게시 후 다운로드 검증 성공을 뜻하지 않습니다. 아래 결과는 이전 버전의 검증 이력입니다.

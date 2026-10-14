@@ -19,7 +19,7 @@ internal static class Program
     {
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only";
+        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -44,6 +44,15 @@ internal static class Program
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
+        if (args.Length == 1 && args[0] == "--folders-only")
+        {
+            FolderListChecks.Run(Assert);
+            FolderStickerChecks.Run(Assert);
+            FolderNameChecks.Run(Assert);
+            FolderIntegrationChecks.Run(Path.Combine(Path.GetTempPath(), "WorkBookmark-Folders-" + Guid.NewGuid().ToString("N")), Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} folder checks passed. Physical mouse input remains a separate manual check.");
+            return;
+        }
         if (args.Length == 1 && args[0] == "--hierarchy-only")
         {
             RecentTreeChecks.Run(Assert);
@@ -64,6 +73,13 @@ internal static class Program
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); StickerInlineNoteChecks.Render(args[1]); return; }
+        if (args.Length == 2 && args[0] == "--render-folders")
+        {
+            Directory.CreateDirectory(args[1]);
+            FolderListChecks.Render(args[1]);
+            FolderStickerChecks.Render(args[1]);
+            return;
+        }
         if (args.Length == 2 && args[0] == "--render-hierarchy")
         {
             Directory.CreateDirectory(args[1]);
@@ -92,6 +108,10 @@ internal static class Program
         HierarchyIntegrationChecks.Run(Path.Combine(data, "hierarchy"), Assert);
         BookmarkColorChecks.Run(Assert);
         ColorIntegrationChecks.Run(Path.Combine(data, "colors"), Assert);
+        FolderListChecks.Run(Assert);
+        FolderStickerChecks.Run(Assert);
+        FolderNameChecks.Run(Assert);
+        FolderIntegrationChecks.Run(Path.Combine(data, "folders"), Assert);
         StickerPersistenceChecks.Run(Assert);
         ResumeNotificationChecks.Run(Path.Combine(data, "resume-notifications"), Assert);
         var custom = UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F19), RecentHotkey = new Hotkey(7, (int)Keys.F20), IntroShown = true };

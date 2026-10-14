@@ -40,12 +40,11 @@ internal static class BookmarkHierarchyChecks
             StickerLayout layout;
             using (var repo = new SqliteBookmarkRepository(database))
             {
-                parent = repo.UpsertCapture(Target("parent")).Bookmark;
-                child = repo.UpsertCapture(Target("child")).Bookmark;
+                parent = repo.CreateFolder("parent");
+                child = repo.CreateFolder("child");
                 grandchild = repo.UpsertCapture(Target("grandchild")).Bookmark;
-                other = repo.UpsertCapture(Target("other")).Bookmark;
+                other = repo.CreateFolder("other");
                 repo.UpdateNote(child.Id, "계층 이동 후에도 유지할 메모");
-                repo.RecordResume(child.Id, ResultCode.PositionRestored);
                 child = repo.Get(child.Id)!;
                 layout = new StickerLayout(child.Id, @"\\.\DISPLAY2", -40, 220, 340, 290, true, true, parent.Id);
                 repo.SaveStickerLayout(layout);
@@ -75,7 +74,7 @@ internal static class BookmarkHierarchyChecks
             Guid parentId, childId;
             using (var repo = new SqliteBookmarkRepository(database))
             {
-                parentId = repo.UpsertCapture(Target("parent")).Bookmark.Id;
+                parentId = repo.CreateFolder("parent").Id;
                 childId = repo.UpsertCapture(Target("child")).Bookmark.Id;
                 repo.SetParent(childId, parentId);
                 repo.SoftDelete(parentId);
@@ -95,9 +94,9 @@ internal static class BookmarkHierarchyChecks
         void Validation()
         {
             using var repo = new SqliteBookmarkRepository(Db());
-            var parent = repo.UpsertCapture(Target("parent")).Bookmark;
-            var middle = repo.UpsertCapture(Target("middle")).Bookmark;
-            var child = repo.UpsertCapture(Target("child")).Bookmark;
+            var parent = repo.CreateFolder("parent");
+            var middle = repo.CreateFolder("middle");
+            var child = repo.CreateFolder("child");
             repo.SetParent(middle.Id, parent.Id);
             repo.SetParent(child.Id, middle.Id);
             var before = repo.ListActive().ToArray();
@@ -124,8 +123,8 @@ internal static class BookmarkHierarchyChecks
         {
             bool fail = false;
             using var repo = new SqliteBookmarkRepository(Db(), operation => { if (fail && operation == "parent") throw new IOException("Injected parent write failure"); });
-            var parent = repo.UpsertCapture(Target("parent")).Bookmark;
-            var other = repo.UpsertCapture(Target("other")).Bookmark;
+            var parent = repo.CreateFolder("parent");
+            var other = repo.CreateFolder("other");
             var child = repo.UpsertCapture(Target("child")).Bookmark;
             fail = true;
             Fails(() => repo.SetParent(child.Id, parent.Id), ResultCode.PersistenceFailed);
@@ -175,8 +174,8 @@ internal static class BookmarkHierarchyChecks
                 "Hierarchy migration preserves active and deleted records and their complete sticker geometry, with unknown placement parents starting null.");
             using (var db = Open(database))
             {
-                Check(Scalar(db, "PRAGMA user_version") == 7 && Scalar(db, "SELECT count(*) FROM pragma_foreign_key_list('bookmarks') WHERE \"from\"='parent_id' AND \"table\"='bookmarks'") == 1,
-                    "Schema 7 parent links reference existing bookmark identities.");
+                Check(Scalar(db, "PRAGMA user_version") == 8 && Scalar(db, "SELECT count(*) FROM pragma_foreign_key_list('bookmarks') WHERE \"from\"='parent_id' AND \"table\"='bookmarks'") == 1,
+                    "Schema 8 parent links reference existing bookmark identities.");
                 Execute(db, "PRAGMA foreign_keys=ON");
                 foreach (var sql in new[] { "UPDATE bookmarks SET parent_id='missing'", "UPDATE bookmarks SET parent_id=id" })
                 {
@@ -185,8 +184,9 @@ internal static class BookmarkHierarchyChecks
                 }
                 Check(Scalar(db, "SELECT count(*) FROM unrelated_content WHERE value='preserve me'") == 1, "Migration preserves unrelated user content.");
             }
-            repo.SetParent(expected[1].Id, expected[0].Id);
-            Check(repo.Get(expected[1].Id)!.ParentId == expected[0].Id && repo.UpsertCapture(Target("after-migration")).Bookmark.CaptureSequence == 24,
+            var group = repo.CreateFolder("after-migration");
+            repo.SetParent(expected[1].Id, group.Id);
+            Check(repo.Get(expected[1].Id)!.ParentId == group.Id && group.CaptureSequence == 24 && repo.UpsertCapture(Target("after-migration")).Bookmark.CaptureSequence == 25,
                 "Migrated trees are writable without resetting capture sequence.");
 
             void CheckOld(string path)
@@ -203,7 +203,7 @@ internal static class BookmarkHierarchyChecks
         void FullTree()
         {
             using var repo = new SqliteBookmarkRepository(Db());
-            var parent = repo.UpsertCapture(Target("old-parent")).Bookmark;
+            var parent = repo.CreateFolder("old-parent");
             var children = Enumerable.Range(0, 134).Select(index => repo.UpsertCapture(Target("child-" + index)).Bookmark).ToArray();
             foreach (var child in children) repo.SetParent(child.Id, parent.Id);
             var rows = BookmarkTree.Flatten(repo.ListActive());

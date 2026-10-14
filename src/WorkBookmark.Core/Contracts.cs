@@ -1,6 +1,6 @@
 namespace WorkBookmark.Core;
 
-public enum TargetKind { Folder, File, ExcelCell, WordPosition, PowerPointSlide, PdfPage, WebPage, NotepadPosition, NotepadSnapshot }
+public enum TargetKind { Folder, File, ExcelCell, WordPosition, PowerPointSlide, PdfPage, WebPage, NotepadPosition, NotepadSnapshot, BookmarkFolder }
 public enum BookmarkColor { Default = 0, Yellow, Green, Blue, Pink, Purple, Gray }
 public enum Operation { Capture, Resume, ValidateRelink }
 public enum ResultCode { Captured, CaptureCommitted, UnsupportedTarget, AmbiguousTarget, ContextChanged, MultipleSelection, UnsavedWorkbook, AppBusy, CaptureTimedOut, PersistenceFailed, OpenRequested, RevealRequested, PositionRestored, PositionRestoredFocusPending, OpenedPositionFailed, ResumeOutcomeUnknown, TargetUnavailable, InvalidRequest, Cancelled, Validated, EnumerationIncomplete, DuplicateTarget, UnsavedDocument, BrowserExtensionRequired, NotepadFileRequired, NotepadOpenRequested, OfficeResumePending, OfficeDocumentOpened, BrowserAddressUnavailable }
@@ -9,7 +9,11 @@ public sealed record TargetSnapshot(long Hwnd, uint ProcessId, long ProcessStart
 public sealed record NotepadObservation(string ContentFingerprint, int TextOffset, int SelectionEnd, bool HadUnsavedChanges);
 public sealed record WorkerRequest(int ProtocolVersion, Guid RequestId, Operation Operation, DateTimeOffset DeadlineUtc, TargetSnapshot? Snapshot = null, CapturedTarget? Target = null, NotepadObservation? ExpectedNotepad = null, bool MonitorInput = false);
 public sealed record WorkerResponse(int ProtocolVersion, Guid RequestId, ResultCode Code, CapturedTarget? Target = null, bool ExternalActionStarted = false, long TargetHwnd = 0, NotepadObservation? NotepadObservation = null);
-public sealed record Bookmark(Guid Id, CapturedTarget Target, string NormalizedPath, string DisplayName, string Note, DateTimeOffset CreatedAtUtc, DateTimeOffset CapturedAtUtc, long CaptureSequence, DateTimeOffset? NoteUpdatedAtUtc, DateTimeOffset? LastResumeAtUtc, ResultCode? LastResumeResult, DateTimeOffset? DeletedAtUtc, Guid? ParentId = null, BookmarkColor Color = BookmarkColor.Default);
+public sealed record Bookmark(Guid Id, CapturedTarget Target, string NormalizedPath, string DisplayName, string Note, DateTimeOffset CreatedAtUtc, DateTimeOffset CapturedAtUtc, long CaptureSequence, DateTimeOffset? NoteUpdatedAtUtc, DateTimeOffset? LastResumeAtUtc, ResultCode? LastResumeResult, DateTimeOffset? DeletedAtUtc, Guid? ParentId = null, BookmarkColor Color = BookmarkColor.Default, bool FolderExpanded = false)
+{
+ public bool IsFolder => Target.Kind == TargetKind.BookmarkFolder;
+}
+public sealed record FolderDropCommit(Bookmark? CreatedFolder, IReadOnlyList<Bookmark> ChangedItems);
 public sealed record CaptureCommit(Bookmark Bookmark, bool ExistingNotePreserved, bool RestoredDeleted);
 public sealed record SearchResults(IReadOnlyList<Bookmark> Items, bool HasMore);
 /// <summary>Sticker position and expanded size in 96-DPI logical units relative to the monitor working area, with the parent relationship at placement time.</summary>
@@ -23,6 +27,10 @@ public interface IBookmarkRepository : IDisposable {
  void SaveStickerLayout(StickerLayout layout) => throw new BookmarkException(ResultCode.InvalidRequest);
  void SetParent(Guid id, Guid? parentId) => throw new BookmarkException(ResultCode.InvalidRequest);
  void SetColor(Guid id, BookmarkColor color) => throw new BookmarkException(ResultCode.InvalidRequest);
+ Bookmark CreateFolder(string name, Guid? parentId = null) => throw new BookmarkException(ResultCode.InvalidRequest);
+ void RenameFolder(Guid id, string name) => throw new BookmarkException(ResultCode.InvalidRequest);
+ void SetFolderExpanded(Guid id, bool expanded) => throw new BookmarkException(ResultCode.InvalidRequest);
+ FolderDropCommit DropOnto(Guid id, Guid targetId) => throw new BookmarkException(ResultCode.InvalidRequest);
  Bookmark? Get(Guid id);
  void UpdateNote(Guid id, string note);
  void SoftDelete(Guid id);

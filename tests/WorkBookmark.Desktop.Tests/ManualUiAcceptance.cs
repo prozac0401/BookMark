@@ -224,6 +224,10 @@ internal static class ManualUiAcceptance
         public void SaveStickerLayout(StickerLayout layout) => inner.SaveStickerLayout(layout);
         public void SetParent(Guid id, Guid? parentId) => inner.SetParent(id, parentId);
         public void SetColor(Guid id, BookmarkColor color) => inner.SetColor(id, color);
+        public Bookmark CreateFolder(string name, Guid? parentId = null) => inner.CreateFolder(name, parentId);
+        public void RenameFolder(Guid id, string name) => inner.RenameFolder(id, name);
+        public void SetFolderExpanded(Guid id, bool expanded) => inner.SetFolderExpanded(id, expanded);
+        public FolderDropCommit DropOnto(Guid id, Guid targetId) => inner.DropOnto(id, targetId);
         public void UpdateNote(Guid id, string note) => inner.UpdateNote(id, note);
         public void SoftDelete(Guid id) => inner.SoftDelete(id);
         public void Restore(Guid id) => inner.Restore(id);

@@ -7,11 +7,15 @@ namespace WorkBookmark.App.UI;
 internal sealed class RecentForm : Form
 {
     private readonly ImeTextBox _search = new() { PlaceholderText = "이름 · 경로/URL · 시트 · 메모 검색" };
+    private readonly Button _newFolder = new() { Text = "새 폴더", AccessibleName = "최상위 책갈피 폴더 만들기" };
     private readonly ListBox _items = new() { DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 92, IntegralHeight = false, BorderStyle = BorderStyle.None };
     private readonly Label _status = new() { ForeColor = UiStyle.Muted };
     private readonly LinkLabel _cancel = new() { Text = "요청 중단", AutoSize = true, Visible = false };
     private readonly ContextMenuStrip _menu = new();
     private readonly ToolStripMenuItem _colorMenu;
+    private readonly ToolStripMenuItem _folderToggleMenu;
+    private readonly ToolStripMenuItem _createFolderMenu;
+    private readonly ToolStripMenuItem _renameFolderMenu;
     private readonly ToolTip _tooltip = new();
     private readonly System.Windows.Forms.Timer _searchTimer = new() { Interval = 180 };
     private readonly Func<string, Task<SearchResults>> _load;
@@ -37,6 +41,9 @@ internal sealed class RecentForm : Form
     public event Action<Bookmark>? RelinkRequested;
     public event Action<Bookmark, Guid?>? ParentChangeRequested;
     public event Action<Bookmark, BookmarkColor>? ColorChangeRequested;
+    public event Action<Bookmark>? FolderToggleRequested;
+    public event Action<Guid?>? CreateFolderRequested;
+    public event Action<Bookmark>? RenameFolderRequested;
     public event Action? CancelRequested;
     public Bookmark? Selected => _items.SelectedItem as Bookmark;
     public RecentForm(Func<string, Task<SearchResults>> load)
@@ -45,18 +52,21 @@ internal sealed class RecentForm : Form
         Text = "최근 책갈피 · 업무 책갈피";
         FormBorderStyle = FormBorderStyle.FixedToolWindow;
         ClientSize = new Size(660, 562);
-        _search.SetBounds(16, 16, 628, 28);
+        _search.SetBounds(16, 16, 520, 28);
+        _newFolder.SetBounds(548, 15, 96, 30);
         _items.SetBounds(16, 58, 628, 460);
         _items.BackColor = BackColor;
         _items.AllowDrop = true;
         _status.SetBounds(16, 528, 520, 26);
         _status.AllowDrop = true;
         _cancel.Location = new Point(558, 528);
-        Controls.AddRange([_search, _items, _status, _cancel]);
+        Controls.AddRange([_search, _newFolder, _items, _status, _cancel]);
         _items.DrawItem += DrawBookmark;
         Shown += (_, _) => _items.ItemHeight = (int)Math.Round(92 * _items.DeviceDpi / 96F);
         _items.DpiChangedAfterParent += (_, _) => _items.ItemHeight = (int)Math.Round(92 * _items.DeviceDpi / 96F);
-        _items.SelectedIndexChanged += (_, _) => _tooltip.SetToolTip(_items, Selected is { } selected ? $"{selected.Target.Path}\n저장: {selected.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm:ss}\n다른 항목 위에 끌어 놓으면 하위 책갈피로 이동합니다." : "");
+        _items.SelectedIndexChanged += (_, _) => _tooltip.SetToolTip(_items, Selected is { } selected ? selected.IsFolder
+            ? $"{selected.DisplayName}\n책갈피 폴더 · 클릭하여 열기/닫기\n항목을 끌어 놓으면 이 폴더에 넣습니다."
+            : $"{selected.Target.Path}\n저장: {selected.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm:ss}\n폴더 위에 놓으면 이동 · 일반 항목 위에 놓으면 새 폴더로 묶기" : "");
         _items.MouseDown += ItemsMouseDown;
         _items.MouseMove += ItemsMouseMove;
         _items.MouseUp += ItemsMouseUp;
@@ -71,14 +81,33 @@ internal sealed class RecentForm : Form
         _search.TextChanged += (_, _) => { _searchTimer.Stop(); _searchTimer.Start(); };
         _searchTimer.Tick += async (_, _) => { _searchTimer.Stop(); await ReloadAsync(); };
         _cancel.LinkClicked += (_, _) => CancelRequested?.Invoke();
+        _newFolder.Click += (_, _) => CreateFolderRequested?.Invoke(null);
         var note = new ToolStripMenuItem("메모", null, (_, _) => { if (Selected is { } value) NoteRequested?.Invoke(value); });
-        var copy = new ToolStripMenuItem("전체 경로/URL 복사", null, (_, _) => { if (Selected is { } value) try { Clipboard.SetText(value.Target.Path); } catch { _status.Text = "클립보드에 복사하지 못했습니다."; } });
+        var copy = new ToolStripMenuItem("전체 경로/URL 복사", null, (_, _) => { if (Selected is { IsFolder: false } value) try { Clipboard.SetText(value.Target.Path); } catch { _status.Text = "클립보드에 복사하지 못했습니다."; } });
         var delete = new ToolStripMenuItem("목록에서 지우기", null, (_, _) => { if (Selected is { } value) DeleteRequested?.Invoke(value); });
-        var relink = new ToolStripMenuItem("위치 다시 지정", null, (_, _) => { if (Selected is { } value) RelinkRequested?.Invoke(value); });
+        var relink = new ToolStripMenuItem("위치 다시 지정", null, (_, _) => { if (Selected is { IsFolder: false } value) RelinkRequested?.Invoke(value); });
         var detach = new ToolStripMenuItem("최상위로 꺼내기", null, (_, _) => { if (Selected is { } value) RequestParentChange(value.Id, null); });
         _colorMenu = BookmarkColors.CreateMenu(() => Selected, (bookmark, color) => ColorChangeRequested?.Invoke(bookmark, color));
-        _menu.Items.AddRange([note, copy, _colorMenu, detach, new ToolStripSeparator(), delete, relink]);
-        _menu.Opening += (_, e) => { if (Selected is null) e.Cancel = true; BookmarkColors.UpdateMenu(_colorMenu, Selected); detach.Enabled = Selected?.ParentId is not null; relink.Visible = Selected?.LastResumeResult == ResultCode.TargetUnavailable && Selected.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(Selected.Target); copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사"; _keepOpen = true; };
+        _folderToggleMenu = new ToolStripMenuItem("폴더 열기", null, (_, _) => { if (Selected is { IsFolder: true } value) ToggleBranch(value); });
+        _createFolderMenu = new ToolStripMenuItem("새 폴더 만들기", null, (_, _) => CreateFolderRequested?.Invoke(Selected is { IsFolder: true } folder ? folder.Id : null));
+        _renameFolderMenu = new ToolStripMenuItem("폴더 이름 바꾸기", null, (_, _) => { if (Selected is { IsFolder: true } value) RenameFolderRequested?.Invoke(value); });
+        _menu.Items.AddRange([_folderToggleMenu, _createFolderMenu, _renameFolderMenu, note, copy, _colorMenu, detach, new ToolStripSeparator(), delete, relink]);
+        _menu.Opening += (_, _) =>
+        {
+            bool folder = Selected?.IsFolder == true;
+            _folderToggleMenu.Visible = _renameFolderMenu.Visible = folder;
+            _folderToggleMenu.Text = Selected?.FolderExpanded == true ? "폴더 닫기" : "폴더 열기";
+            _createFolderMenu.Text = folder ? "하위 폴더 만들기" : "새 폴더 만들기";
+            note.Visible = Selected is not null && !folder;
+            copy.Visible = Selected is not null && !folder;
+            delete.Visible = detach.Visible = _colorMenu.Visible = Selected is not null;
+            BookmarkColors.UpdateMenu(_colorMenu, Selected);
+            detach.Enabled = Selected?.ParentId is not null;
+            relink.Visible = Selected is { IsFolder: false, LastResumeResult: ResultCode.TargetUnavailable } value &&
+                value.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(value.Target);
+            copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사";
+            _keepOpen = true;
+        };
         _menu.Closed += (_, _) => _keepOpen = false;
         _items.ContextMenuStrip = _menu;
         Deactivate += (_, _) => { if (!_keepOpen && !_menu.Visible) Hide(); };
@@ -134,7 +163,7 @@ internal sealed class RecentForm : Form
     {
         _changes[value.Id] = (++_changeRevision, value);
         int index = _bookmarks.FindIndex(item => item.Id == value.Id);
-        bool restoredParent = index < 0 && value.DeletedAtUtc is null && _bookmarks.Any(item => item.ParentId == value.Id);
+        bool restoredParent = index < 0 && value.DeletedAtUtc is null && (value.IsFolder || _bookmarks.Any(item => item.ParentId == value.Id));
         if (restoredParent)
         {
             index = _bookmarks.Count;
@@ -151,11 +180,36 @@ internal sealed class RecentForm : Form
             Guid? parent = value.ParentId;
             while (parent is { } parentId && seen.Add(parentId))
             {
-                _collapsed.Remove(parentId);
-                parent = _bookmarks.FirstOrDefault(item => item.Id == parentId)?.ParentId;
+                var ancestor = _bookmarks.FirstOrDefault(item => item.Id == parentId);
+                if (ancestor?.IsFolder != true) _collapsed.Remove(parentId);
+                parent = ancestor?.ParentId;
             }
         }
         ProjectItems(Selected?.Id);
+    }
+    public void ApplyFolderChanges(IReadOnlyList<Bookmark> values)
+    {
+        Guid? selected = Selected?.Id;
+        Guid? createdFolder = null;
+        foreach (var value in values)
+        {
+            _changes[value.Id] = (++_changeRevision, value);
+            int index = _bookmarks.FindIndex(item => item.Id == value.Id);
+            if (value.DeletedAtUtc is not null)
+            {
+                if (index >= 0) _bookmarks.RemoveAt(index);
+                _displaySequence.Remove(value.Id);
+                _collapsed.Remove(value.Id);
+            }
+            else if (index >= 0) _bookmarks[index] = value;
+            else
+            {
+                _bookmarks.Add(value);
+                _displaySequence[value.Id] = value.CaptureSequence;
+                if (value.IsFolder) createdFolder ??= value.Id;
+            }
+        }
+        ProjectItems(createdFolder ?? selected);
     }
     public void Remove(Guid id)
     {
@@ -171,6 +225,13 @@ internal sealed class RecentForm : Form
     {
         string query = _search.Text.Trim();
         bool searching = query.Length > 0;
+        // Virtual folder visibility is shared, committed data. Local expansion
+        // remains only for legacy ordinary parents while old snapshots refresh.
+        foreach (var folder in _bookmarks.Where(item => item.IsFolder))
+        {
+            if (folder.FolderExpanded) _collapsed.Remove(folder.Id);
+            else _collapsed.Add(folder.Id);
+        }
         var byId = _bookmarks.ToDictionary(item => item.Id);
         HashSet<Guid>? included = null;
         int matches = 0;
@@ -198,13 +259,19 @@ internal sealed class RecentForm : Form
             _items.Items.Clear();
             foreach (var row in projected) _items.Items.Add(row.Bookmark);
             int index = selected.HasValue ? Array.FindIndex(projected, row => row.Bookmark.Id == selected.Value) : -1;
+            var visited = new HashSet<Guid>();
+            while (index < 0 && selected is { } hidden && visited.Add(hidden) && byId.TryGetValue(hidden, out var current) && current.ParentId is { } parent)
+            {
+                selected = parent;
+                index = Array.FindIndex(projected, row => row.Bookmark.Id == parent);
+            }
             _items.SelectedIndex = index >= 0 ? index : (_items.Items.Count > 0 ? 0 : -1);
         }
         finally { _items.EndUpdate(); }
         BookmarkColors.UpdateMenu(_colorMenu, Selected);
-        _normalStatus = _bookmarks.Count == 0 ? "책갈피가 없습니다. 작업 창에서 저장 단축키를 눌러 주세요."
-            : searching ? $"검색 결과 {matches}개 · 상위 항목 함께 표시 · Enter로 이어가기"
-            : $"전체 {_bookmarks.Count}개 · 끌어서 하위로 · ▸ 접기/펼치기 · 클릭 이어가기";
+        _normalStatus = _bookmarks.Count == 0 ? "새 폴더를 만들거나 작업 창에서 책갈피를 저장해 주세요."
+            : searching ? $"검색 결과 {matches}개 · 상위 폴더 함께 표시"
+            : $"전체 {_bookmarks.Count}개 · 끌어서 폴더로 묶기 · 폴더 클릭: 열기/닫기";
         _status.Text = _normalStatus;
         _items.Invalidate();
     }
@@ -221,26 +288,37 @@ internal sealed class RecentForm : Form
     }
     private void ToggleBranch(Bookmark bookmark)
     {
-        if (!_rows.TryGetValue(bookmark.Id, out var row) || !row.HasChildren) return;
+        if (!_rows.TryGetValue(bookmark.Id, out var row) || !bookmark.IsFolder && !row.HasChildren) return;
         if (!string.IsNullOrWhiteSpace(_search.Text))
         {
             _status.Text = "검색 중에는 일치하는 항목의 상위 경로가 펼쳐집니다.";
             return;
         }
+        if (bookmark.IsFolder)
+        {
+            _status.Text = bookmark.FolderExpanded ? "폴더를 닫는 중…" : "폴더를 여는 중…";
+            FolderToggleRequested?.Invoke(bookmark);
+            return;
+        }
         if (!_collapsed.Add(bookmark.Id)) _collapsed.Remove(bookmark.Id);
         ProjectItems(bookmark.Id);
+    }
+    private void ActivateBookmark(Bookmark bookmark)
+    {
+        if (bookmark.IsFolder) ToggleBranch(bookmark);
+        else ResumeRequested?.Invoke(bookmark);
     }
     private void ItemsMouseDown(object? sender, MouseEventArgs e)
     {
         int index = _items.IndexFromPoint(e.Location);
         if (index >= 0) _items.SelectedIndex = index;
-        if (e.Button == MouseButtons.Right) { _keepOpen = true; return; }
+        if (e.Button == MouseButtons.Right) { if (index < 0) _items.ClearSelected(); _keepOpen = true; return; }
         if (e.Button != MouseButtons.Left) return;
         _suppressClick = false;
         _dragOrigin = null;
         _dragId = null;
         if (index < 0 || Selected is not { } item) return;
-        if (_rows.TryGetValue(item.Id, out var row) && row.HasChildren && ExpanderBounds(index, row.Depth).Contains(e.Location))
+        if (_rows.TryGetValue(item.Id, out var row) && (item.IsFolder || row.HasChildren) && ExpanderBounds(index, row.Depth).Contains(e.Location))
         {
             _suppressClick = true;
             ToggleBranch(item);
@@ -259,7 +337,7 @@ internal sealed class RecentForm : Form
         _dragging = true;
         _keepOpen = true;
         _dropHint = true;
-        _status.Text = "항목 위: 하위로 이동 · 빈 곳/이 안내줄: 최상위로 이동";
+        _status.Text = "폴더 위: 넣기 · 일반 항목 위: 새 폴더 · 빈 곳: 꺼내기";
         try { _items.DoDragDrop(new DataObject(DragFormat, id.ToString()), DragDropEffects.Move); }
         finally
         {
@@ -275,7 +353,7 @@ internal sealed class RecentForm : Form
         int index = _items.IndexFromPoint(e.Location);
         if (e.Button == MouseButtons.Left && !_suppressClick && !_dragging && index >= 0 &&
             _items.Items[index] is Bookmark item && _dragId == item.Id)
-            ResumeRequested?.Invoke(item);
+            ActivateBookmark(item);
         _dragOrigin = null;
         _dragId = null;
     }
@@ -302,8 +380,10 @@ internal sealed class RecentForm : Form
         e.Effect = allowed ? DragDropEffects.Move : DragDropEffects.None;
         _dropTargetId = allowed ? parentId : null;
         _status.BackColor = allowed && parentId is null ? Color.FromArgb(220, 238, 232) : BackColor;
+        Bookmark? destination = parentId is { } parent ? _bookmarks.FirstOrDefault(item => item.Id == parent) : null;
         _status.Text = allowed ? parentId is null ? "놓으면 최상위 책갈피로 이동합니다."
-            : $"‘{_bookmarks.First(item => item.Id == parentId).DisplayName}’의 하위로 이동합니다."
+            : destination?.IsFolder == true ? $"‘{destination.DisplayName}’ 폴더에 넣습니다."
+            : $"‘{destination?.DisplayName}’ 항목과 새 폴더로 묶습니다."
             : "현재 위치이거나 자기 자신/하위 항목이라 이동할 수 없습니다.";
         _items.Invalidate();
     }
@@ -320,9 +400,9 @@ internal sealed class RecentForm : Form
         ClearDropTarget();
         if (DragId(e) is { } id) RequestParentChange(id, null);
     }
-    private bool CanRequestParentChange(Guid id, Guid? parentId) =>
-        _bookmarks.FirstOrDefault(item => item.Id == id) is { } value && value.ParentId != parentId &&
-        BookmarkTree.CanReparent(_bookmarks, id, parentId);
+    private bool CanRequestParentChange(Guid id, Guid? parentId) => parentId is { } target
+        ? BookmarkTree.CanDropOnto(_bookmarks, id, target)
+        : _bookmarks.FirstOrDefault(item => item.Id == id) is { ParentId: not null } && BookmarkTree.CanReparent(_bookmarks, id, null);
     private void RequestParentChange(Guid id, Guid? parentId)
     {
         if (!CanRequestParentChange(id, parentId)) return;
@@ -341,10 +421,15 @@ internal sealed class RecentForm : Form
     protected override bool ProcessCmdKey(ref Message message, Keys keyData)
     {
         if (keyData == Keys.Escape && !_search.IsComposing) { Hide(); return true; }
+        if (_newFolder.Focused && keyData is Keys.Enter or Keys.Space)
+        {
+            _newFolder.PerformClick();
+            return true;
+        }
         if (keyData == Keys.Enter)
         {
             if (_search.IgnoreSubmit) return base.ProcessCmdKey(ref message, keyData);
-            if (Selected is { } value) ResumeRequested?.Invoke(value);
+            if (Selected is { } value) ActivateBookmark(value);
             return true;
         }
         if (keyData is Keys.Up or Keys.Down && !_search.IsComposing)
@@ -356,8 +441,8 @@ internal sealed class RecentForm : Form
         {
             if (_rows.TryGetValue(selected.Id, out var row))
             {
-                if (keyData == Keys.Left && row.HasChildren && !_collapsed.Contains(selected.Id)) ToggleBranch(selected);
-                else if (keyData == Keys.Right && row.HasChildren && _collapsed.Contains(selected.Id)) ToggleBranch(selected);
+                if (keyData == Keys.Left && (selected.IsFolder || row.HasChildren) && !_collapsed.Contains(selected.Id)) ToggleBranch(selected);
+                else if (keyData == Keys.Right && (selected.IsFolder || row.HasChildren) && _collapsed.Contains(selected.Id)) ToggleBranch(selected);
                 else if (keyData == Keys.Left && selected.ParentId is { } parent)
                 {
                     for (int index = 0; index < _items.Items.Count; index++)
@@ -387,7 +472,7 @@ internal sealed class RecentForm : Form
         int depth = row?.Depth ?? 0;
         int indent = Scale(28 + Math.Min(depth, 14) * 20);
         var top = new Rectangle(e.Bounds.X + indent, e.Bounds.Y + Scale(8), e.Bounds.Width - indent - Scale(10), Scale(24));
-        if (row?.HasChildren == true)
+        if (bookmark.IsFolder || row?.HasChildren == true)
             TextRenderer.DrawText(e.Graphics, _collapsed.Contains(bookmark.Id) && string.IsNullOrWhiteSpace(_search.Text) ? "▸" : "▾",
                 Font, ExpanderBounds(e.Index, depth), UiStyle.Accent, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
         if (depth > 0)
@@ -399,10 +484,24 @@ internal sealed class RecentForm : Form
         }
         string date = RelativeTime(bookmark.CapturedAtUtc);
         string title = bookmark.DisplayName + (bookmark.Target.HadUnsavedChanges == true ? "  • 저장 당시 미저장 변경" : "");
-        TextRenderer.DrawText(e.Graphics, title, Font, new Rectangle(top.X, top.Y, top.Width - Scale(106), top.Height), UiStyle.Ink, TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+        int titleInset = 0;
+        if (bookmark.IsFolder)
+        {
+            titleInset = Scale(25);
+            using var paper = new SolidBrush(Color.FromArgb(244, 209, 126));
+            using var outline = new Pen(Color.FromArgb(158, 116, 43));
+            var icon = new Rectangle(top.X + Scale(2), top.Y + Scale(7), Scale(18), Scale(13));
+            e.Graphics.FillRectangle(paper, icon.X, icon.Y - Scale(4), Scale(8), Scale(5));
+            e.Graphics.FillRectangle(paper, icon);
+            e.Graphics.DrawRectangle(outline, icon);
+        }
+        TextRenderer.DrawText(e.Graphics, title, Font, new Rectangle(top.X + titleInset, top.Y, top.Width - titleInset - Scale(106), top.Height), UiStyle.Ink, TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
         TextRenderer.DrawText(e.Graphics, date, Font, new Rectangle(top.Right - Scale(102), top.Y, Scale(102), top.Height), UiStyle.Muted, TextFormatFlags.Right | TextFormatFlags.NoPrefix);
-        TextRenderer.DrawText(e.Graphics, UiStyle.Location(bookmark), Font, new Rectangle(top.X, top.Y + Scale(27), top.Width, Scale(23)), UiStyle.Muted, TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
-        TextRenderer.DrawText(e.Graphics, bookmark.Note, Font, new Rectangle(top.X, top.Y + Scale(52), top.Width, Scale(23)), UiStyle.Accent, TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+        string location = bookmark.IsFolder
+            ? $"책갈피 폴더 · {_bookmarks.Count(item => item.ParentId == bookmark.Id)}개 항목 · {(bookmark.FolderExpanded ? "열림" : "닫힘")}" : UiStyle.Location(bookmark);
+        TextRenderer.DrawText(e.Graphics, location, Font, new Rectangle(top.X, top.Y + Scale(27), top.Width, Scale(23)), UiStyle.Muted, TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+        TextRenderer.DrawText(e.Graphics, bookmark.IsFolder ? "클릭하여 열기/닫기 · 항목을 끌어 넣을 수 있습니다." : bookmark.Note,
+            Font, new Rectangle(top.X, top.Y + Scale(52), top.Width, Scale(23)), UiStyle.Accent, TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
         using var line = new Pen(Color.FromArgb(226, 232, 229));
         e.Graphics.DrawLine(line, e.Bounds.Left + Scale(8), e.Bounds.Bottom - 1, e.Bounds.Right - Scale(8), e.Bounds.Bottom - 1);
         if (dropTarget || selected && bookmark.Color != BookmarkColor.Default)

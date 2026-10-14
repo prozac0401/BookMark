@@ -61,6 +61,7 @@ public static partial class PathPolicy
     public static CapturedTarget Validate(CapturedTarget target)
     {
         ArgumentNullException.ThrowIfNull(target);
+        if (target.Kind == TargetKind.BookmarkFolder) throw Invalid();
         if (target.Kind == TargetKind.NotepadSnapshot) return NotepadSnapshotPolicy.Validate(target);
         if (target.TextContent is not null || target.TextSelectionEnd is not null || target.SnapshotTitle is not null) throw Invalid();
         if (target.Kind == TargetKind.WebPage) return BrowserProtocol.ValidateTarget(target);

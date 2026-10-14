@@ -27,7 +27,7 @@ internal static class Program
         });
         await Check("D11 all-resumes-share-input-without-cancelling-open", async () =>
         {
-            foreach (var kind in Enum.GetValues<TargetKind>())
+            foreach (var kind in Enum.GetValues<TargetKind>().Where(kind => kind != TargetKind.BookmarkFolder))
             {
                 var request = Request(Operation.Resume) with { MonitorInput = true, Target = new(kind, @"C:\fixture\report.txt") };
                 Assert(FrameProtocol.IsValid(request, DateTimeOffset.UtcNow), "Input signal rejected for " + kind);
@@ -37,6 +37,7 @@ internal static class Program
             }
             Assert(!FrameProtocol.IsValid(Request() with { MonitorInput = true }, DateTimeOffset.UtcNow), "Resume monitor accepted for capture.");
             Assert(!FrameProtocol.IsValid(Request(Operation.ValidateRelink) with { MonitorInput = true }, DateTimeOffset.UtcNow), "Resume monitor accepted for relink validation.");
+            Assert(!FrameProtocol.IsValid(Request(Operation.Resume) with { Target = new(TargetKind.BookmarkFolder, "") }, DateTimeOffset.UtcNow), "Linkless folder accepted as an external resume target.");
         });
         await Check("D11 oversized-and-truncated-frames", async () =>
         {
@@ -53,7 +54,7 @@ internal static class Program
         {
             using var client = Client("ok"); var request = Request();
             var result = await client.RunAsync(request);
-            Assert(result.RequestId == request.RequestId && result.Code == ResultCode.Captured && result.Target is not null, "Valid DTO not accepted.");
+            Assert(result.RequestId == request.RequestId && result.Code == ResultCode.Captured && result.Target is not null, $"Valid DTO not accepted: {result.Code}; target present: {result.Target is not null}.");
         });
         await Check("D04 wrong-request-id-rejected", async () =>
         {

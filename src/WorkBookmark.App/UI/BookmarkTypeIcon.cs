@@ -106,6 +106,7 @@ internal static class BookmarkTypeIcon
     public static Task<Bitmap> CreateAsync(CapturedTarget target, int pixelSize)
     {
         ValidateSize(pixelSize);
+        if (target.Kind == TargetKind.BookmarkFolder) return Task.FromResult(Create(target, pixelSize));
         int imageList = pixelSize <= 32 ? 0 : pixelSize <= 48 ? 2 : 4;
         bool folder = target.Kind == TargetKind.Folder;
         string extension = ShellExtension(target);
@@ -216,7 +217,7 @@ internal static class BookmarkTypeIcon
 
     private static string Category(CapturedTarget target) => target.Kind switch
     {
-        TargetKind.Folder => "Folder", TargetKind.WebPage => "Web", TargetKind.ExcelCell => "Excel",
+        TargetKind.Folder or TargetKind.BookmarkFolder => "Folder", TargetKind.WebPage => "Web", TargetKind.ExcelCell => "Excel",
         TargetKind.WordPosition => "Word", TargetKind.PowerPointSlide => "PowerPoint", TargetKind.PdfPage => "PDF",
         TargetKind.NotepadPosition or TargetKind.NotepadSnapshot => "Text",
         _ => ShellExtension(target) switch

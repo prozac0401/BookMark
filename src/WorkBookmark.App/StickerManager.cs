@@ -26,10 +26,14 @@ internal sealed class StickerManager : IDisposable
     private Point _moveOrigin;
     private readonly Dictionary<Guid, Point> _subtreeMoveOrigins = [];
     private readonly HashSet<Guid> _layoutOnShow = [];
+    private readonly HashSet<Guid> _folderHidden = [], _newViews = [];
+    private readonly Dictionary<Guid, Guid> _folderOrigins = [];
 
     internal event Action<Bookmark>? ResumeRequested, NoteRequested, DeleteRequested, RelinkRequested;
     internal event Action<Bookmark, Guid?>? ParentChangeRequested;
     internal event Action<Bookmark, BookmarkColor>? ColorChangeRequested;
+    internal event Action<Bookmark>? FolderToggleRequested, RenameFolderRequested;
+    internal event Action<Guid?>? CreateFolderRequested;
     internal event Action? ShowListRequested, SettingsRequested, UndoRequested;
     internal IReadOnlyCollection<StickerForm> Forms => _forms.Values;
     internal bool SnapEnabled { get; set; } = true;
@@ -155,6 +159,9 @@ internal sealed class StickerManager : IDisposable
             // A capture/delete accepted while the read was in flight must not be overwritten.
             if (revision != _revision) return await ShowAllAsync(activate);
             foreach (var layout in loaded.Layouts) _layouts.TryAdd(layout.BookmarkId, layout);
+            foreach (var (folderId, targetId) in _folderOrigins)
+                if (!_layouts.ContainsKey(folderId) && _layouts.TryGetValue(targetId, out var origin))
+                    RememberFolderOrigin(folderId, origin, loaded.Items.FirstOrDefault(item => item.Id == folderId)?.ParentId);
             var active = loaded.Items.Where(item => item.DeletedAtUtc is null).ToArray();
             foreach (var item in active)
                 // Inspect the saved topology before Upsert remembers any newly
@@ -177,17 +184,18 @@ internal sealed class StickerManager : IDisposable
                 if (_forms.TryGetValue(id, out var changed)) Remember(changed);
             }
             _layoutOnShow.Clear();
+            ApplyFolderVisibility(revealAll: true);
             foreach (var item in active.Reverse())
             {
                 var form = _forms[item.Id];
+                if (!form.Visible) continue;
                 EnsureOnScreen(form);
-                form.Show();
                 // Explicit reveal raises the windows without activating each one in turn.
                 SetWindowPos(form.Handle, form.TopMost ? new nint(-1) : nint.Zero, 0, 0, 0, 0, 0x0013);
             }
-            if (activate && active.Length > 0)
+            if (activate && active.FirstOrDefault(item => _forms[item.Id].Visible) is { } selected)
             {
-                var form = _forms[active[0].Id];
+                var form = _forms[selected.Id];
                 form.Activate();
                 form.FocusResume();
             }
@@ -222,6 +230,7 @@ internal sealed class StickerManager : IDisposable
                     LayoutGroup(item.Id);
                     Remember(existing);
                 }
+                ApplyFolderVisibility();
             }
             return;
         }
@@ -234,6 +243,9 @@ internal sealed class StickerManager : IDisposable
         form.NativeMoveCompleted += CompleteMove;
         form.DetachRequested += value => ParentChangeRequested?.Invoke(value, null);
         form.ColorChangeRequested += (value, color) => ColorChangeRequested?.Invoke(value, color);
+        form.FolderToggleRequested += value => FolderToggleRequested?.Invoke(value);
+        form.RenameFolderRequested += value => RenameFolderRequested?.Invoke(value);
+        form.CreateFolderRequested += parentId => CreateFolderRequested?.Invoke(parentId);
         form.ResumeRequested += value => ResumeRequested?.Invoke(value);
         form.NoteRequested += value => NoteRequested?.Invoke(value);
         form.DeleteRequested += value => DeleteRequested?.Invoke(value);
@@ -244,6 +256,7 @@ internal sealed class StickerManager : IDisposable
         form.HideAllRequested += HideAll;
         form.PlacementChanged += Remember;
         _forms.Add(item.Id, form);
+        _newViews.Add(item.Id);
         _applying = true;
         try
         {
@@ -265,7 +278,6 @@ internal sealed class StickerManager : IDisposable
                 form.Bounds = DefaultBounds(screen.WorkingArea, form.DefaultExpandedSize, _forms.Count - 1, form.MinimumSize);
             }
             form.SetBusy(item.Id == _busyBookmarkId);
-            if (!_hidden) form.Show();
         }
         finally { _applying = false; }
         // Also persist automatically assigned initial positions before restart.
@@ -274,18 +286,61 @@ internal sealed class StickerManager : IDisposable
         {
             UpdateHierarchy();
             if (item.ParentId is not null || _forms.Values.Any(value => value.Bookmark.ParentId == item.Id)) LayoutGroup(item.Id);
+            ApplyFolderVisibility();
         }
+    }
+
+    /// <summary>Publish one committed folder operation without exposing its intermediate relationships.</summary>
+    internal void ApplyFolderChanges(IReadOnlyList<Bookmark> changes, Guid? dropTargetId = null)
+    {
+        if (_disposed) return;
+        var changedParents = changes.Where(item => item.DeletedAtUtc is null &&
+            (!_forms.TryGetValue(item.Id, out var old) ? item.ParentId is not null : old.Bookmark.ParentId != item.ParentId))
+            .Select(item => item.Id).ToArray();
+        if (dropTargetId is Guid target)
+        {
+            foreach (var folder in changes.Where(item => item.IsFolder && !_forms.ContainsKey(item.Id) &&
+                         changes.Any(child => child.Id == target && child.ParentId == item.Id)))
+            {
+                _folderOrigins[folder.Id] = target;
+                if (_forms.TryGetValue(target, out var targetForm)) Remember(targetForm);
+                if (_layouts.TryGetValue(target, out var origin))
+                    RememberFolderOrigin(folder.Id, origin, folder.ParentId);
+            }
+        }
+        _refreshingHierarchy = true;
+        try { foreach (var item in changes) Upsert(item); }
+        finally { _refreshingHierarchy = false; }
+        UpdateHierarchy();
+        foreach (Guid id in changedParents)
+        {
+            LayoutGroup(id);
+            if (_forms.TryGetValue(id, out var form)) Remember(form);
+        }
+        ApplyFolderVisibility();
+    }
+
+    private void RememberFolderOrigin(Guid folderId, StickerLayout origin, Guid? parentId)
+    {
+        var layout = origin with { BookmarkId = folderId, ParentId = parentId };
+        _layouts[folderId] = _pending[folderId] = layout;
+        _unsaved.Add(folderId);
+        _saveTimer.Stop();
+        _saveTimer.Start();
     }
 
     internal void Remove(Guid id)
     {
         ++_revision;
         if (!_forms.Remove(id, out var form)) return;
+        _folderHidden.Remove(id);
+        _newViews.Remove(id);
+        _folderOrigins.Remove(id);
         if (ReferenceEquals(_movingForm, form)) ClearMove();
         if (ReferenceEquals(_dropTarget, form)) SetDropTarget(null);
         Remember(form);
         form.Dispose();
-        if (!_refreshingHierarchy) UpdateHierarchy();
+        if (!_refreshingHierarchy) { UpdateHierarchy(); ApplyFolderVisibility(); }
     }
 
     internal void HideAll()
@@ -307,16 +362,44 @@ internal sealed class StickerManager : IDisposable
         if (bookmarkId is { } id && _forms.TryGetValue(id, out var form)) form.SetBusy(true);
     }
 
-    internal void EditNote(Bookmark bookmark, Func<string, Task> saveNote)
+    internal bool EditNote(Bookmark bookmark, Func<string, Task> saveNote)
     {
-        if (!_enabled || _disposed) return;
+        if (!_enabled || _disposed || bookmark.IsFolder) return false;
         Upsert(bookmark);
-        if (!_forms.TryGetValue(bookmark.Id, out var form)) return;
+        if (!_forms.TryGetValue(bookmark.Id, out var form) || !FolderVisibleIds().Contains(bookmark.Id)) return false;
         EnsureOnScreen(form);
         // A note request reveals only its sticker, preserving all other hidden views.
         form.Show();
         form.Activate();
         form.BeginNoteEdit(saveNote);
+        return true;
+    }
+
+    private HashSet<Guid> FolderVisibleIds()
+    {
+        var closed = _forms.Values.Where(form => form.Bookmark.IsFolder && !form.Bookmark.FolderExpanded)
+            .Select(form => form.Bookmark.Id).ToHashSet();
+        return BookmarkTree.Flatten(_forms.Values.Select(form => form.Bookmark), closed).Select(row => row.Bookmark.Id).ToHashSet();
+    }
+
+    private void ApplyFolderVisibility(bool revealAll = false)
+    {
+        var visible = FolderVisibleIds();
+        foreach (var form in _forms.Values)
+        {
+            Guid id = form.Bookmark.Id;
+            bool created = _newViews.Remove(id);
+            if (!visible.Contains(id))
+            {
+                // Remember only windows hidden by the folder. A user-hidden child
+                // should not reappear merely because its ancestor was reopened.
+                if (form.Visible || created || revealAll) _folderHidden.Add(id);
+                form.HideForFolder();
+                continue;
+            }
+            bool restore = _folderHidden.Remove(id);
+            if (_enabled && !_hidden && (revealAll || created || restore)) form.Show();
+        }
     }
 
     private Rectangle SnapMove(StickerForm moving, Rectangle proposed, Keys modifiers)
@@ -351,7 +434,7 @@ internal sealed class StickerManager : IDisposable
         foreach (var row in Tree())
         {
             string? parent = row.Depth > 0 && row.Bookmark.ParentId is Guid id && _forms.TryGetValue(id, out var parentForm)
-                ? string.IsNullOrWhiteSpace(parentForm.Bookmark.Note) ? parentForm.Bookmark.DisplayName : parentForm.Bookmark.Note.Trim()
+                ? parentForm.Bookmark.IsFolder || string.IsNullOrWhiteSpace(parentForm.Bookmark.Note) ? parentForm.Bookmark.DisplayName : parentForm.Bookmark.Note.Trim()
                 : null;
             _forms[row.Bookmark.Id].SetHierarchy(row.Depth, parent, children.GetValueOrDefault(row.Bookmark.Id));
         }
@@ -376,12 +459,12 @@ internal sealed class StickerManager : IDisposable
 
     private StickerForm? FindDropTarget(StickerForm moving, Point cursor, Keys modifiers)
     {
-        if ((modifiers & Keys.Alt) != 0 || moving.IsEditingNote) return null;
+        if ((modifiers & Keys.Alt) != 0 || moving.IsEditingNote || moving.Bookmark.Id == _busyBookmarkId) return null;
         var bookmarks = _forms.Values.Select(form => form.Bookmark).ToArray();
         var candidates = _forms.Values.Where(form => form != moving && form.Visible && !form.IsDisposed &&
-            !form.IsEditingNote && form.Bounds.Contains(cursor) &&
+            !form.IsEditingNote && form.Bookmark.Id != _busyBookmarkId && form.Bounds.Contains(cursor) &&
             form.Bookmark.Id != moving.Bookmark.ParentId &&
-            BookmarkTree.CanReparent(bookmarks, moving.Bookmark.Id, form.Bookmark.Id)).ToArray();
+            BookmarkTree.CanDropOnto(bookmarks, moving.Bookmark.Id, form.Bookmark.Id)).ToArray();
         if (candidates.Length < 2) return candidates.FirstOrDefault();
         // Native z-order decides which of several overlapping stickers receives the drop.
         var byWindow = candidates.ToDictionary(form => form.Handle);

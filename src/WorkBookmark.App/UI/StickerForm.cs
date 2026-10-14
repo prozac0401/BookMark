@@ -36,6 +36,7 @@ internal sealed class StickerForm : Form
     private readonly ToolStripMenuItem _deleteMenu;
     private readonly ToolStripMenuItem _detachMenu;
     private readonly ToolStripMenuItem _colorMenu;
+    private readonly ToolStripMenuItem _noteMenu, _folderToggleMenu, _renameFolderMenu, _createFolderMenu;
     private readonly ToolTip _tooltip = new() { AutoPopDelay = 12000, InitialDelay = 500, ReshowDelay = 100 };
     private readonly Icon _ownedIcon;
     private readonly Font _bodyFont;
@@ -64,6 +65,7 @@ internal sealed class StickerForm : Form
     private bool _dropTarget;
     private string? _parentTitle;
     private int _treeDepth, _childCount;
+    private bool _hidingForFolder;
 
     public Bookmark Bookmark { get; private set; }
     public bool IsCollapsed { get; private set; }
@@ -89,6 +91,8 @@ internal sealed class StickerForm : Form
     public event Action<Bookmark>? RelinkRequested;
     public event Action<Bookmark>? DetachRequested;
     public event Action<Bookmark, BookmarkColor>? ColorChangeRequested;
+    public event Action<Bookmark>? FolderToggleRequested, RenameFolderRequested;
+    public event Action<Guid?>? CreateFolderRequested;
     public event Action? HideAllRequested;
     public event Action? ShowListRequested;
     public event Action? SettingsRequested;
@@ -175,7 +179,7 @@ internal sealed class StickerForm : Form
         _title.TextAlign = ContentAlignment.TopLeft;
         _title.Padding = Padding.Empty;
         _title.Cursor = Cursors.IBeam;
-        _title.Click += (_, _) => RequestNoteEdit();
+        _title.Click += (_, _) => { if (Bookmark.IsFolder) RequestFolderToggle(); else RequestNoteEdit(); };
         _resumeStatus.Font = _smallFont;
         _resumeStatus.UseCompatibleTextRendering = false; // Match the GDI line height used by OnLayout.
         _resumeStatus.ForeColor = Color.FromArgb(138, 80, 43);
@@ -222,8 +226,18 @@ internal sealed class StickerForm : Form
             if (!_busy && !IsEditingNote && Bookmark.ParentId is not null) DetachRequested?.Invoke(Bookmark);
         });
         _colorMenu = BookmarkColors.CreateMenu(() => Bookmark, (value, color) => ColorChangeRequested?.Invoke(value, color), () => !_busy && !_noteSaving);
+        _noteMenu = new ToolStripMenuItem("메모 편집", null, (_, _) => RequestNoteEdit()) { ShortcutKeyDisplayString = "Ctrl+E" };
+        _folderToggleMenu = new ToolStripMenuItem("폴더 열기", null, (_, _) => RequestFolderToggle());
+        _renameFolderMenu = new ToolStripMenuItem("이름 변경", null, (_, _) =>
+        {
+            if (Bookmark.IsFolder && !_busy && !IsEditingNote) RenameFolderRequested?.Invoke(Bookmark);
+        });
+        _createFolderMenu = new ToolStripMenuItem("새 폴더", null, (_, _) =>
+        {
+            if (!_busy && !IsEditingNote) CreateFolderRequested?.Invoke(Bookmark.IsFolder ? Bookmark.Id : Bookmark.ParentId);
+        });
         _menu.Items.AddRange([
-            new ToolStripMenuItem("메모 편집", null, (_, _) => RequestNoteEdit()) { ShortcutKeyDisplayString = "Ctrl+E" },
+            _folderToggleMenu, _renameFolderMenu, _createFolderMenu, _noteMenu,
             _collapseMenu,
             _colorMenu,
             _detachMenu,
@@ -247,7 +261,7 @@ internal sealed class StickerForm : Form
         _resume.ContextMenuStrip = _menu;
         _resumeStatus.ContextMenuStrip = _menu;
         MouseDown += DragHeader;
-        _tooltip.SetToolTip(this, "빈 여백을 드래그하여 이동 · 다른 스티커 위에 놓으면 하위 책갈피로 묶기 · Alt: 자유 이동 · 우클릭: 메뉴");
+        _tooltip.SetToolTip(this, "빈 여백을 드래그하여 이동 · 책갈피 위에 놓으면 새 폴더로 묶기 · 폴더 위에 놓으면 안으로 이동 · Alt: 자유 이동");
         _treeMark.ContextMenuStrip = _menu;
         _header.ContextMenuStrip = _menu;
         _typeIcon.ContextMenuStrip = _menu;
@@ -255,7 +269,7 @@ internal sealed class StickerForm : Form
         _options.Click += (_, _) => _menu.Show(_options, new Point(_options.Width, _options.Height), ToolStripDropDownDirection.BelowLeft);
         _collapse.Click += (_, _) => ToggleCollapsed();
         _delete.Click += (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); };
-        _resume.Click += (_, _) => { if (!_busy && !IsEditingNote) ResumeRequested?.Invoke(Bookmark); };
+        _resume.Click += (_, _) => RequestPrimaryAction();
         Controls.AddRange([_header, _treeMark, _title, _resumeStatus, _noteEditor, _noteStatus, _cancelNote, _delete, _resume]);
         _layoutReady = true;
         UpdateBookmark(bookmark);
@@ -279,6 +293,9 @@ internal sealed class StickerForm : Form
         _kind.Text = IsCollapsed ? title : KindLabel(value.Target.Kind);
         UpdateTypeIcon();
         _title.Text = title;
+        _title.Cursor = value.IsFolder ? Cursors.Hand : Cursors.IBeam;
+        _title.AccessibleName = value.IsFolder ? "폴더 이름 · 열기/닫기" : "책갈피 제목 · 메모 편집";
+        UpdateTreeMark();
         string? issue = value.LastResumeResult switch
         {
             ResultCode.TargetUnavailable => "대상에 접근할 수 없습니다. 다시 확인해 주세요.",
@@ -296,16 +313,18 @@ internal sealed class StickerForm : Form
             _ => ""
         };
         bool empty = string.IsNullOrWhiteSpace(value.Note);
-        string details = title + "\n" + value.DisplayName + "\n" + UiStyle.Location(value) + $"\n저장: {value.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm}";
+        string details = title + (value.IsFolder ? "\n책갈피 폴더 · " + (value.FolderExpanded ? "열림" : "닫힘")
+            : "\n" + value.DisplayName + "\n" + UiStyle.Location(value)) + $"\n저장: {value.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm}";
         if (_parentTitle is not null) details += $"\n상위 책갈피: {_parentTitle} · {_treeDepth}단계";
         if (_childCount > 0) details += $"\n하위 책갈피 {_childCount}개 · 함께 드래그하여 이동";
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
             details += CanRelink(value) ? "\n우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
-        _tooltip.SetToolTip(_title, details + "\n클릭하여 메모 편집 (Ctrl+E)");
+        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 폴더 열기/닫기 · Ctrl+E: 이름 변경" : "\n클릭하여 메모 편집 (Ctrl+E)"));
         _tooltip.SetToolTip(_kind, details + "\n드래그하여 이동");
         _tooltip.SetToolTip(_resumeStatus, issue is null ? "" : issue + "\n" + details);
-        _title.AccessibleDescription = details + (empty ? "\n메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다." : "\n클릭하거나 Ctrl+E로 메모를 편집할 수 있습니다.");
+        _title.AccessibleDescription = details + (value.IsFolder ? "\n클릭하여 폴더 열기/닫기. Ctrl+E로 이름을 변경합니다."
+            : empty ? "\n메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다." : "\n클릭하거나 Ctrl+E로 메모를 편집할 수 있습니다.");
         _resumeStatus.AccessibleDescription = issue;
         RefreshActionState();
         PerformLayout();
@@ -318,10 +337,15 @@ internal sealed class StickerForm : Form
         _treeDepth = depth;
         _parentTitle = parentTitle;
         _childCount = childCount;
-        _treeMark.Text = depth > 0 ? "↳" : "┬";
-        _treeMark.AccessibleName = depth > 0 ? $"{parentTitle}의 하위 책갈피, {depth}단계" : $"하위 책갈피 {childCount}개";
-        _tooltip.SetToolTip(_treeMark, _treeMark.AccessibleName + "\n드래그하면 하위 책갈피도 함께 이동합니다.\n우클릭: 최상위로 꺼내기");
         UpdateBookmark(Bookmark);
+    }
+
+    private void UpdateTreeMark()
+    {
+        _treeMark.Text = Bookmark.IsFolder ? Bookmark.FolderExpanded ? "▾" : "▸" : _treeDepth > 0 ? "↳" : "┬";
+        _treeMark.AccessibleName = Bookmark.IsFolder ? $"책갈피 폴더 · 하위 항목 {_childCount}개 · {(Bookmark.FolderExpanded ? "열림" : "닫힘")}" :
+            _treeDepth > 0 ? $"{_parentTitle}의 하위 책갈피, {_treeDepth}단계" : $"하위 책갈피 {_childCount}개";
+        _tooltip.SetToolTip(_treeMark, _treeMark.AccessibleName + "\n드래그하면 하위 책갈피도 함께 이동합니다.\n우클릭: 폴더와 책갈피 메뉴");
     }
 
     internal void SetDropTarget(bool value)
@@ -329,7 +353,7 @@ internal sealed class StickerForm : Form
         if (_dropTarget == value) return;
         _dropTarget = value;
         ApplyBookmarkColor();
-        AccessibleDescription = value ? "여기에 놓으면 이 책갈피의 하위 항목으로 묶입니다." : null;
+        AccessibleDescription = value ? Bookmark.IsFolder ? "여기에 놓으면 이 폴더 안으로 이동합니다." : "여기에 놓으면 두 항목을 새 폴더로 묶습니다." : null;
         Invalidate(true);
     }
 
@@ -367,7 +391,7 @@ internal sealed class StickerForm : Form
     public void BeginNoteEdit(Func<string, Task> saveNote)
     {
         ArgumentNullException.ThrowIfNull(saveNote);
-        if (IsDisposed || _busy) return;
+        if (IsDisposed || _busy || Bookmark.IsFolder) return;
         if (!IsEditingNote)
         {
             Rectangle restingBounds = Bounds;
@@ -416,14 +440,41 @@ internal sealed class StickerForm : Form
 
     private void RequestNoteEdit()
     {
+        if (Bookmark.IsFolder)
+        {
+            if (!_busy) RenameFolderRequested?.Invoke(Bookmark);
+            return;
+        }
         if (IsEditingNote) _noteEditor.Focus();
         else if (!_busy) NoteRequested?.Invoke(Bookmark);
+    }
+
+    private void RequestFolderToggle()
+    {
+        if (Bookmark.IsFolder && !_busy && !IsEditingNote) FolderToggleRequested?.Invoke(Bookmark);
+    }
+
+    private void RequestPrimaryAction()
+    {
+        if (_busy || IsEditingNote) return;
+        if (Bookmark.IsFolder) RequestFolderToggle();
+        else ResumeRequested?.Invoke(Bookmark);
+    }
+
+    internal void HideForFolder()
+    {
+        // Closing an ancestor retains the editor and its draft. In particular,
+        // do not manufacture a focus-loss save just because the manager hid it.
+        _noteAutoSavePending = false;
+        _hidingForFolder = true;
+        try { Hide(); }
+        finally { _hidingForFolder = false; }
     }
 
     protected override void OnDeactivate(EventArgs e)
     {
         base.OnDeactivate(e);
-        if (!IsEditingNote || _noteSaving || IsDisposed || Disposing) return;
+        if (!IsEditingNote || _noteSaving || _hidingForFolder || IsDisposed || Disposing) return;
         _noteAutoSavePending = true;
         QueueNoteAutoSave();
     }
@@ -542,16 +593,20 @@ internal sealed class StickerForm : Form
         _header.Visible = false;
         _delete.Visible = false;
         _title.Visible = !editing;
-        _treeMark.Visible = !editing && (_treeDepth > 0 || _childCount > 0);
+        _treeMark.Visible = !editing && (Bookmark.IsFolder || _treeDepth > 0 || _childCount > 0);
         _resume.Visible = !IsCollapsed && !editing;
         _resumeStatus.Visible = false;
         _resume.Busy = _busy;
-        _resume.HasIssue = _resumeStatus.Text.Length > 0;
+        _resume.IsFolder = Bookmark.IsFolder;
+        _resume.FolderExpanded = Bookmark.FolderExpanded;
+        _resume.HasIssue = !Bookmark.IsFolder && _resumeStatus.Text.Length > 0;
         _resume.BackColor = _resume.HasIssue && !_busy ? Color.FromArgb(138, 80, 43) : UiStyle.Accent;
         _resume.FlatAppearance.MouseOverBackColor = _resume.HasIssue ? Color.FromArgb(158, 95, 55) : Color.FromArgb(20, 91, 84);
         string shortcutStatus = _busy ? "처리 중…" : _resumeStatus.AccessibleDescription ?? "";
-        _resume.AccessibleDescription = "저장한 작업 위치로 이동 (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : "");
-        _tooltip.SetToolTip(_resume, "바로가기 (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : ""));
+        string action = Bookmark.IsFolder ? Bookmark.FolderExpanded ? "폴더 닫기" : "폴더 열기" : "바로가기";
+        _resume.AccessibleName = action;
+        _resume.AccessibleDescription = (Bookmark.IsFolder ? action : "저장한 작업 위치로 이동") + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : "");
+        _tooltip.SetToolTip(_resume, action + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : ""));
         _resume.Invalidate();
         foreach (Control control in new Control[] { _noteEditor, _noteStatus, _cancelNote })
             control.Visible = editing;
@@ -641,7 +696,7 @@ internal sealed class StickerForm : Form
         _resume.SetBounds(width - gap - actionSize, (rowHeight - actionSize) / 2, actionSize, actionSize);
         int titleHeight = _title.OneLineHeight + Px(2);
         int titleLeft = gap - Px(3);
-        bool treeMarkVisible = _treeDepth > 0 || _childCount > 0;
+        bool treeMarkVisible = Bookmark.IsFolder || _treeDepth > 0 || _childCount > 0;
         _treeMark.SetBounds(Px(3), 0, treeMarkVisible ? Px(18) : 0, rowHeight);
         if (treeMarkVisible) titleLeft += Px(18);
         int titleRight = IsCollapsed ? width - gap + Px(3) : _resume.Left - gap;
@@ -767,12 +822,12 @@ internal sealed class StickerForm : Form
             // is active; these keys must never delete or restore a bookmark.
             return base.ProcessCmdKey(ref message, keyData);
         }
-        if (_title.Focused && (keyData == Keys.Enter || keyData == Keys.Space)) { RequestNoteEdit(); return true; }
+        if (_title.Focused && (keyData == Keys.Enter || keyData == Keys.Space)) { if (Bookmark.IsFolder) RequestFolderToggle(); else RequestNoteEdit(); return true; }
         if (keyData == Keys.Escape) { Hide(); return true; }
         if (keyData == (Keys.Control | Keys.Space)) { ToggleCollapsed(); return true; }
         if (keyData == (Keys.Control | Keys.Z)) { UndoRequested?.Invoke(); return true; }
         if (keyData == (Keys.Control | Keys.E)) { RequestNoteEdit(); return true; }
-        if (keyData == (Keys.Control | Keys.Enter)) { if (!_busy) ResumeRequested?.Invoke(Bookmark); return true; }
+        if (keyData == (Keys.Control | Keys.Enter)) { RequestPrimaryAction(); return true; }
         if (keyData == (Keys.Control | Keys.Delete)) { if (!_busy) DeleteRequested?.Invoke(Bookmark); return true; }
         return base.ProcessCmdKey(ref message, keyData);
     }
@@ -782,6 +837,11 @@ internal sealed class StickerForm : Form
         _collapseMenu.Text = IsCollapsed ? "스티커 펼치기" : "스티커 접기";
         _collapseMenu.Enabled = !IsEditingNote;
         _copyMenu.Text = Bookmark.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사";
+        _copyMenu.Visible = !Bookmark.IsFolder;
+        _noteMenu.Visible = !Bookmark.IsFolder;
+        _folderToggleMenu.Visible = _renameFolderMenu.Visible = Bookmark.IsFolder;
+        _folderToggleMenu.Text = Bookmark.FolderExpanded ? "폴더 닫기" : "폴더 열기";
+        _folderToggleMenu.Enabled = _renameFolderMenu.Enabled = _createFolderMenu.Enabled = !_busy && !IsEditingNote;
         _relinkMenu.Visible = CanRelink(Bookmark);
         _relinkMenu.Enabled = !_busy && !IsEditingNote;
         _undoMenu.Enabled = !IsEditingNote;
@@ -870,12 +930,14 @@ internal sealed class StickerForm : Form
         TargetKind.PdfPage => "PDF",
         TargetKind.WebPage => "웹 페이지",
         TargetKind.Folder => "폴더",
+        TargetKind.BookmarkFolder => "책갈피 폴더",
         TargetKind.NotepadSnapshot or TargetKind.NotepadPosition => "메모장",
         _ => "파일"
     };
 
     private static string PresentationTitle(Bookmark bookmark)
     {
+        if (bookmark.IsFolder) return bookmark.DisplayName;
         if (!string.IsNullOrWhiteSpace(bookmark.Note)) return bookmark.Note.Trim();
         CapturedTarget target = bookmark.Target;
         if (target.Kind == TargetKind.NotepadSnapshot) return bookmark.DisplayName;
@@ -885,7 +947,7 @@ internal sealed class StickerForm : Form
     }
 
     private static bool CanRelink(Bookmark bookmark) => bookmark.LastResumeResult == ResultCode.TargetUnavailable &&
-        bookmark.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(bookmark.Target);
+        !bookmark.IsFolder && bookmark.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(bookmark.Target);
 
     private static void ConfigureButton(Button button, string text, string accessibleName, int tabIndex)
     {
@@ -932,6 +994,10 @@ internal sealed class StickerForm : Form
         internal bool Busy { get; set; }
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         internal bool HasIssue { get; set; }
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        internal bool IsFolder { get; set; }
+        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        internal bool FolderExpanded { get; set; }
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -962,6 +1028,12 @@ internal sealed class StickerForm : Form
                         PointF dot = At(x - 1.5F, 12.5F);
                         e.Graphics.FillEllipse(brush, dot.X, dot.Y, 3 * scale, 3 * scale);
                     }
+                }
+                else if (IsFolder)
+                {
+                    e.Graphics.DrawLines(pen, [At(6, 9), At(12, 9), At(15, 12), At(22, 12), At(22, 22), At(6, 22), At(6, 9)]);
+                    e.Graphics.DrawLine(pen, At(11, 17), At(17, 17));
+                    if (!FolderExpanded) e.Graphics.DrawLine(pen, At(14, 14), At(14, 20));
                 }
                 else if (HasIssue)
                 {

@@ -40,7 +40,8 @@ internal static class UiStyle
             : $" · 메모장 문자 위치 {target.TextOffset + 1}",
         _ => ""
     };
-    public static string Location(Bookmark bookmark) => bookmark.Target.Kind == TargetKind.NotepadSnapshot
+    public static string Location(Bookmark bookmark) => bookmark.IsFolder ? "책갈피 폴더 · 링크 없음"
+        : bookmark.Target.Kind == TargetKind.NotepadSnapshot
         ? PositionLabel(bookmark.Target).Trim(' ', '·') + "   자동 보관한 내용 · 원본 파일 저장 불필요"
         : PositionLabel(bookmark.Target).Trim(' ', '·') + (PositionLabel(bookmark.Target).Length > 0 ? "   " : "") + bookmark.Target.Path;
     public static string Result(ResultCode code) => code switch

@@ -32,6 +32,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private ToastForm? _toast;
     private NoteForm? _note;
     private WebBookmarkForm? _webPage;
+    private FolderNameForm? _folderName;
     private SettingsForm? _settingsForm;
     private DeletedBookmarksForm? _deletedForm;
     private TargetSnapshot? _beforeList;
@@ -74,6 +75,9 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _recent.RelinkRequested += bookmark => _ = RelinkAsync(bookmark);
         _recent.ParentChangeRequested += (bookmark, parentId) => _ = ChangeParentAsync(bookmark, parentId);
         _recent.ColorChangeRequested += (bookmark, color) => _ = ChangeColorAsync(bookmark, color);
+        _recent.FolderToggleRequested += bookmark => _ = ToggleFolderAsync(bookmark);
+        _recent.CreateFolderRequested += parentId => ShowFolderName(parentId);
+        _recent.RenameFolderRequested += bookmark => ShowFolderName(null, bookmark);
         _recent.CancelRequested += CancelOperation;
         _stickers = new StickerManager(
             () => ReadAsync(() => (_repository.ListActive(), _repository.GetStickerLayouts())),
@@ -85,6 +89,9 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _stickers.RelinkRequested += bookmark => _ = RelinkAsync(bookmark);
         _stickers.ParentChangeRequested += (bookmark, parentId) => _ = ChangeParentAsync(bookmark, parentId);
         _stickers.ColorChangeRequested += (bookmark, color) => _ = ChangeColorAsync(bookmark, color);
+        _stickers.FolderToggleRequested += bookmark => _ = ToggleFolderAsync(bookmark);
+        _stickers.CreateFolderRequested += parentId => ShowFolderName(parentId);
+        _stickers.RenameFolderRequested += bookmark => ShowFolderName(null, bookmark);
         _stickers.ShowListRequested += ShowRecent;
         _stickers.SettingsRequested += ShowSettings;
         _stickers.UndoRequested += () => _ = UndoAsync();
@@ -98,6 +105,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _arrangeStickersMenu.DropDownItems.Add("세로로 정렬", null, (_, _) => _ = _stickers.ArrangeAsync(StickerArrangementMode.Vertical));
         menu.Items.Add(_hideStickersMenu); menu.Items.Add(_arrangeStickersMenu);
         menu.Items.Add("웹페이지 URL로 추가…", null, (_, _) => ShowWebBookmark());
+        menu.Items.Add("새 폴더…", null, (_, _) => ShowFolderName(null));
         _undoMenu = new ToolStripMenuItem("삭제 되돌리기", null, (_, _) => _ = UndoAsync()) { Visible = false };
         menu.Items.Add(_undoMenu);
         menu.Items.Add("최근 삭제…", null, (_, _) => ShowDeleted());
@@ -345,6 +353,75 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             return null;
         }
     }
+    private async Task RefreshFolderChangesAsync(IEnumerable<Guid> identities, Guid? dropTargetId = null)
+    {
+        var versions = identities.Distinct().ToDictionary(id => id, _ => ++_bookmarkRefreshVersion);
+        foreach (var entry in versions) _bookmarkRefreshVersions[entry.Key] = entry.Value;
+        try
+        {
+            // A grouping transaction changes several records. Read and publish the
+            // committed group together so neither view briefly invents a root item.
+            var rows = await ReadAsync(() => versions.Keys.Select(id => _repository.Get(id)).OfType<Bookmark>().ToArray());
+            if (_exiting) return;
+            var current = rows.Where(row => _bookmarkRefreshVersions[row.Id] == versions[row.Id]).ToArray();
+            foreach (var row in current)
+            {
+                _bookmarkRefreshVersions[row.Id] = ++_bookmarkRefreshVersion;
+                if (row.DeletedAtUtc is null) ForgetUndo(row.Id);
+            }
+            _recent.ApplyFolderChanges(current);
+            _stickers.ApplyFolderChanges(current, dropTargetId);
+        }
+        catch
+        {
+            DiagnosticLog.Write("folder_view_refresh", ResultCode.PersistenceFailed);
+            if (!_exiting) Notify("폴더는 저장되었습니다. 보기를 새로 열어 변경 내용을 확인해 주세요.");
+        }
+    }
+    private void ShowFolderName(Guid? parentId, Bookmark? folder = null)
+    {
+        if (_exiting) return;
+        if (_folderName is { IsDisposed: false }) { _folderName.Activate(); return; }
+        _folderName = new FolderNameForm(folder?.DisplayName ?? "새 폴더", folder is not null, async name =>
+        {
+            if (folder is null) await CreateFolderAsync(name, parentId);
+            else await RenameFolderAsync(folder, name);
+        });
+        ShowAuxiliary(_folderName);
+    }
+    private async Task<Bookmark> CreateFolderAsync(string name, Guid? parentId)
+    {
+        if (_exiting) throw new BookmarkException(ResultCode.Cancelled);
+        var folder = await ReadAsync(() => _repository.CreateFolder(name, parentId));
+        if (!_exiting) await RefreshFolderChangesAsync([folder.Id]);
+        return folder;
+    }
+    private async Task RenameFolderAsync(Bookmark folder, string name)
+    {
+        if (_exiting || !folder.IsFolder || !_mutatingBookmarks.Add(folder.Id)) throw new BookmarkException(ResultCode.AppBusy);
+        try
+        {
+            await WriteAsync(() => _repository.RenameFolder(folder.Id, name));
+            if (!_exiting) await RefreshBookmarkAsync(folder.Id);
+        }
+        finally { _mutatingBookmarks.Remove(folder.Id); }
+    }
+    private async Task ToggleFolderAsync(Bookmark folder)
+    {
+        if (_exiting || !folder.IsFolder || !_mutatingBookmarks.Add(folder.Id)) return;
+        try
+        {
+            await WriteAsync(() =>
+            {
+                var current = _repository.Get(folder.Id);
+                if (current is not { IsFolder: true, DeletedAtUtc: null }) throw new BookmarkException(ResultCode.TargetUnavailable);
+                _repository.SetFolderExpanded(current.Id, !current.FolderExpanded);
+            });
+            if (!_exiting) await RefreshBookmarkAsync(folder.Id);
+        }
+        catch { if (!_exiting) Notify("폴더의 열림 상태를 저장하지 못했습니다. 다시 눌러 주세요."); }
+        finally { _mutatingBookmarks.Remove(folder.Id); }
+    }
     private void ShowWebBookmark()
     {
         if (_exiting) return;
@@ -379,6 +456,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private void ResumeFromList(Bookmark bookmark)
     {
+        if (bookmark.IsFolder) { _ = ToggleFolderAsync(bookmark); return; }
         if (_operationInFlight || (_lastResumeId == bookmark.Id && Environment.TickCount64 - _lastResumeTick < 1000)) return;
         _lastResumeId = bookmark.Id; _lastResumeTick = Environment.TickCount64;
         _recent.Hide();
@@ -392,6 +470,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private void ResumeFromSticker(Bookmark bookmark)
     {
+        if (bookmark.IsFolder) { _ = ToggleFolderAsync(bookmark); return; }
         if (_operationInFlight || (_lastResumeId == bookmark.Id && Environment.TickCount64 - _lastResumeTick < 1000)) return;
         _lastResumeId = bookmark.Id; _lastResumeTick = Environment.TickCount64;
         // The sticker remains alive. Use its current activation as the input baseline,
@@ -403,6 +482,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private async Task ResumeAsync(Bookmark bookmark, TargetSnapshot? baseline)
     {
+        if (bookmark.IsFolder) { await ToggleFolderAsync(bookmark); return; }
         var id = Guid.NewGuid();
         if (!BeginOperation(id, bookmark.Id)) return;
         ResultCode result = ResultCode.ResumeOutcomeUnknown;
@@ -499,6 +579,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             Bookmark? bookmark = await RefreshBookmarkAsync(id);
             // Hide cancels earlier opens, while a new request after hide remains valid.
             if (bookmark is null || bookmark.DeletedAtUtc is not null || _exiting || hideVersion != _stickers.HideVersion) return;
+            if (bookmark.IsFolder) { ShowFolderName(null, bookmark); return; }
             _recent.Hide();
             async Task SaveNote(string text)
             {
@@ -511,8 +592,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             }
             if (_settings.DisplayMode == BookmarkDisplayMode.Stickers)
             {
-                _stickers.EditNote(bookmark, SaveNote);
-                return;
+                if (_stickers.EditNote(bookmark, SaveNote)) return;
             }
             _note = new NoteForm(bookmark, SaveNote);
             ShowAuxiliary(_note);
@@ -540,11 +620,21 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private async Task ChangeParentAsync(Bookmark bookmark, Guid? parentId)
     {
         if (_exiting || !_mutatingBookmarks.Add(bookmark.Id)) return;
+        if (parentId is Guid targetId && !_mutatingBookmarks.Add(targetId)) { _mutatingBookmarks.Remove(bookmark.Id); return; }
         try
         {
-            await WriteAsync(() => _repository.SetParent(bookmark.Id, parentId));
-            if (_exiting) return;
-            await RefreshBookmarkAsync(bookmark.Id);
+            if (parentId is Guid destination)
+            {
+                var commit = await ReadAsync(() => _repository.DropOnto(bookmark.Id, destination));
+                if (_exiting) return;
+                await RefreshFolderChangesAsync(commit.ChangedItems.Select(item => item.Id), destination);
+                Notify(commit.CreatedFolder is null ? "폴더 안으로 옮겼습니다." : "두 항목을 담은 새 폴더를 만들었습니다. 우클릭으로 이름을 바꿀 수 있습니다.");
+            }
+            else
+            {
+                await WriteAsync(() => _repository.SetParent(bookmark.Id, null));
+                if (!_exiting) await RefreshBookmarkAsync(bookmark.Id);
+            }
         }
         catch (Exception error)
         {
@@ -557,7 +647,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             if (!_exiting) _recent.SetBusy(_operationInFlight, message);
             Notify(message);
         }
-        finally { _mutatingBookmarks.Remove(bookmark.Id); }
+        finally { _mutatingBookmarks.Remove(bookmark.Id); if (parentId is Guid destination) _mutatingBookmarks.Remove(destination); }
     }
     private async Task DeleteAsync(Bookmark bookmark)
     {
@@ -573,7 +663,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             _undoTimer.Stop(); _undoTimer.Start();
             var deleted = await RefreshBookmarkAsync(bookmark.Id);
             if (_exiting || deleted?.DeletedAtUtc is null) return;
-            Notify("책갈피를 목록에서 지웠습니다. 원본 파일은 그대로입니다.", "되돌리기 · 10초", () => _ = UndoAsync(), 10000);
+            Notify(bookmark.IsFolder ? "폴더를 지웠습니다. 안의 항목은 최상위에 남아 있습니다." : "책갈피를 목록에서 지웠습니다. 원본 파일은 그대로입니다.", "되돌리기 · 10초", () => _ = UndoAsync(), 10000);
             if (_deletedForm is { IsDisposed: false }) await _deletedForm.ReloadAsync();
         }
         catch { Notify("목록에서 지우지 못했습니다. 기존 기록은 유지됩니다."); }
@@ -638,6 +728,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private async Task RelinkAsync(Bookmark bookmark)
     {
+        if (bookmark.IsFolder) return;
         if (bookmark.LastResumeResult != ResultCode.TargetUnavailable || bookmark.Target.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot || OfficeLocation.IsWebTarget(bookmark.Target) || _operationInFlight) return;
         _recent.Hide();
         string? path = null;
@@ -780,7 +871,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _exiting = true; _browserServer.Dispose(); _captureInput?.Dispose(); _worker.Cancel(); StartupRegistration.StopWorker();
         _tray.Visible = false; _hotkeys.Dispose(); _undoTimer.Dispose();
         _stickers.Dispose();
-        _toast?.Close(); _note?.Dispose(); _webPage?.Dispose(); _settingsForm?.Dispose(); _deletedForm?.Dispose(); _recent.Dispose();
+        _toast?.Close(); _note?.Dispose(); _webPage?.Dispose(); _folderName?.Dispose(); _settingsForm?.Dispose(); _deletedForm?.Dispose(); _recent.Dispose();
         _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); _trayIcon.Dispose(); _dispatcher.Dispose();
     }
     protected override void ExitThreadCore()

@@ -173,11 +173,11 @@ internal static class StickerStorageChecks
             using var repo = new SqliteBookmarkRepository(database);
             Check(expected.All(row => repo.Get(row.Id) == row) && repo.GetStickerLayouts().Count == 0, "Migration starts with no invented placements or modified bookmarks.");
             Check(Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT IN ('bookmarks','sticker_layouts','sqlite_autoindex_sticker_layouts_1','bookmark_deleted','bookmark_parent') ORDER BY type,name") == unchangedSchema
-                && Rows(database, "SELECT * FROM pragma_table_info('bookmarks') WHERE name NOT IN ('parent_id','color')") == beforeColumns,
+                && Rows(database, "SELECT * FROM pragma_table_info('bookmarks') WHERE name NOT IN ('parent_id','color','folder_expanded')") == beforeColumns,
                 "Existing version 4 bookmark columns, indexes and unrelated schema remain unchanged.");
             using (var db = Open(database))
             {
-                Check(Scalar(db, "PRAGMA user_version") == 7 && Scalar(db, "SELECT value FROM metadata WHERE name='capture_sequence'") == 23,
+                Check(Scalar(db, "PRAGMA user_version") == 8 && Scalar(db, "SELECT value FROM metadata WHERE name='capture_sequence'") == 23,
                     "Version and sequence update independently.");
                 Check(Scalar(db, "SELECT count(*) FROM unrelated_content WHERE value='preserve me'") == 1, "Unrelated user data is preserved.");
             }

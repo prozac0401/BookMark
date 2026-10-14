@@ -37,7 +37,7 @@ internal static class BookmarkColorChecks
             StickerLayout layout;
             using (var repo = new SqliteBookmarkRepository(database))
             {
-                parent = repo.UpsertCapture(Target("parent")).Bookmark;
+                parent = repo.CreateFolder("parent");
                 child = repo.UpsertCapture(Target("child")).Bookmark;
                 Check(parent.Color == BookmarkColor.Default && child.Color == BookmarkColor.Default, "New captures retain the default palette unless explicitly changed.");
                 repo.SetParent(child.Id, parent.Id);
@@ -72,7 +72,7 @@ internal static class BookmarkColorChecks
             Bookmark colored;
             using (var repo = new SqliteBookmarkRepository(database))
             {
-                var parent = repo.UpsertCapture(Target("parent")).Bookmark;
+                var parent = repo.CreateFolder("parent");
                 var child = repo.UpsertCapture(Target("child")).Bookmark;
                 repo.SetParent(child.Id, parent.Id);
                 repo.SetColor(parent.Id, BookmarkColor.Blue);
@@ -138,24 +138,25 @@ internal static class BookmarkColorChecks
             else
             {
                 using var migrated = new SqliteBookmarkRepository(database);
-                Check(expected.All(item => migrated.Get(item.Id) == item), "All version 6 historical and hierarchy fields survive color migration.");
+                Check(expected.All(item => migrated.Get(item.Id)! with { ParentId = item.ParentId } == item), "All original version 6 records survive while relationships gain virtual folder containers.");
             }
             CheckOld(Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single());
             using var repo = new SqliteBookmarkRepository(database);
-            Check(expected.All(item => repo.Get(item.Id) == item)
-                && Rows(database, "SELECT * FROM sticker_layouts ORDER BY bookmark_id") == beforeLayouts
-                && Rows(database, "SELECT * FROM pragma_table_info('bookmarks') WHERE name<>'color'") == beforeColumns
+            Check(expected.All(item => repo.Get(item.Id)! with { ParentId = item.ParentId } == item)
+                && Rows(database, "SELECT * FROM sticker_layouts WHERE bookmark_id IN (SELECT id FROM bookmarks WHERE kind<>9) ORDER BY bookmark_id") == beforeLayouts
+                && Rows(database, "SELECT * FROM pragma_table_info('bookmarks') WHERE name NOT IN ('color','folder_expanded')") == beforeColumns
                 && Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name<>'bookmarks' ORDER BY type,name") == unchangedSchema,
                 "Migration preserves exact sticker geometry, parent snapshots, existing columns, indexes and unrelated schema.");
             Check(repo.GetStickerLayouts().Any(layout => layout.ParentId is not null), "The version 6 fixture exercises nonempty placement parent snapshots.");
             using (var db = Open(database))
             {
-                Check(Scalar(db, "PRAGMA user_version") == 7 && Scalar(db, "SELECT count(*) FROM bookmarks WHERE color=0") == expected.Count,
-                    "Version 7 initializes every existing active and deleted item to the default color.");
+                Check(Scalar(db, "PRAGMA user_version") == 8 && Scalar(db, "SELECT count(*) FROM bookmarks WHERE color<>0") == 0,
+                    "Version 8 initializes every existing active/deleted item and its container to the default color.");
                 Check(Scalar(db, "SELECT count(*) FROM unrelated_content WHERE value='preserve me'") == 1, "Color migration preserves unrelated user content.");
             }
+            var beforeColor = repo.Get(expected[1].Id)!;
             repo.SetColor(expected[1].Id, BookmarkColor.Yellow);
-            Check(repo.Get(expected[1].Id) == expected[1] with { Color = BookmarkColor.Yellow }
+            Check(repo.Get(expected[1].Id) == beforeColor with { Color = BookmarkColor.Yellow }
                 && repo.UpsertCapture(Target("after-upgrade")).Bookmark.CaptureSequence == 24,
                 "Migrated colors are writable without changing historical relationships or capture sequence.");
 
@@ -189,7 +190,7 @@ internal static class BookmarkColorChecks
         }
     }
 
-    private static IReadOnlyList<Bookmark> CreateVersionSix(string database, bool includeBookmarkParent = true, bool includeStickerParent = true)
+    internal static IReadOnlyList<Bookmark> CreateVersionSix(string database, bool includeBookmarkParent = true, bool includeStickerParent = true)
     {
         var rows = StickerStorageChecks.CreateVersionFour(database).ToArray();
         using var db = Open(database);

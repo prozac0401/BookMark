@@ -23,7 +23,8 @@ internal static class ColorIntegrationChecks
         {
             if (operation == "color" && reject) throw new IOException("Injected color commit failure");
         });
-        var parent = repository.UpsertCapture(new CapturedTarget(TargetKind.File, Path.Combine(directory, "부모.txt"))).Bookmark;
+        var parent = repository.CreateFolder("부모 폴더");
+        repository.SetFolderExpanded(parent.Id, true);
         var child = repository.UpsertCapture(new CapturedTarget(TargetKind.File, Path.Combine(directory, "자식.txt"))).Bookmark;
         repository.SetParent(child.Id, parent.Id);
         repository.UpdateNote(child.Id, "색상 변경 전 메모");
