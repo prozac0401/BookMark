@@ -119,6 +119,7 @@ internal sealed class SettingsForm : Form
         var buttons = new FlowLayoutPanel { AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft, WrapContents = false, Margin = Padding.Empty };
         _apply = new Button { Text = "적용 (&A)", AutoSize = true, MinimumSize = new Size(92, 34), Margin = new Padding(0, 0, 10, 0), TabIndex = 0 };
         var close = new Button { Text = "닫기", AutoSize = true, MinimumSize = new Size(92, 34), Margin = Padding.Empty, DialogResult = DialogResult.Cancel, TabIndex = 1 };
+        close.Click += (_, _) => Close();
         _apply.Click += async (_, _) =>
         {
             _apply.Enabled = false;

@@ -47,7 +47,7 @@ internal static class FolderIntegrationChecks
             Sticker(folder.Id).Visible && !Sticker(a.Id).Visible && !Sticker(b.Id).Visible && Sticker(c.Id).Visible,
             "FI02 atomic grouping reaches both views without exposing children of a closed folder");
 
-        Field<Action<Bookmark>>(recent, "FolderToggleRequested")(folder);
+        Field<Action<Bookmark, bool>>(recent, "FolderExpansionRequested")(folder, true);
         PumpUntil(() => repository.Get(folder.Id)!.FolderExpanded && Listed(a.Id) is not null && Sticker(a.Id).Visible);
         assert(Listed(b.Id)!.Color == BookmarkColor.Blue && Current(Sticker(b.Id)).Color == BookmarkColor.Blue,
             "FI03 list folder opening reveals preserved child colors in both views");
@@ -84,7 +84,7 @@ internal static class FolderIntegrationChecks
             !Field<bool>(context, "_operationInFlight") && !Sticker(a.Id).Visible && !Sticker(nested.Id).Visible && !Sticker(b.Id).Visible,
             "FI09 folder activation closes its entire subtree without sending an external resume request or recording a resume");
         fail = true;
-        Pump((Task)Invoke(context, "ToggleFolderAsync", repository.Get(folder.Id)!)!);
+        Pump((Task)Invoke(context, "ToggleFolderAsync", repository.Get(folder.Id)!, null!)!);
         fail = false;
         assert(!repository.Get(folder.Id)!.FolderExpanded && !Current(Sticker(folder.Id)).FolderExpanded && !Listed(folder.Id)!.FolderExpanded,
             "FI10 failed folder-open persistence leaves the folder closed everywhere");
@@ -178,7 +178,7 @@ internal static class FolderIntegrationChecks
         assert(fallback.IsDisposed && repository.Get(nested.Id) == renamedNested && Current(Sticker(nested.Id)) == renamedNested &&
             !Sticker(nested.Id).Visible && !Sticker(b.Id).Visible && !repository.Get(folder.Id)!.FolderExpanded,
             "FI22 saving through the hidden-folder fallback persists its name without changing ancestor closure or child visibility");
-        Pump((Task)Invoke(context, "ToggleFolderAsync", repository.Get(folder.Id)!)!);
+        Pump((Task)Invoke(context, "ToggleFolderAsync", repository.Get(folder.Id)!, null!)!);
         assert(Listed(nested.Id) == renamedNested && Current(Sticker(nested.Id)) == renamedNested && Sticker(nested.Id).Visible,
             "FI23 opening the ancestor later displays the fallback-renamed folder consistently in the list and sticker views");
 

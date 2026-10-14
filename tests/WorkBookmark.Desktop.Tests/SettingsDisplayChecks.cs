@@ -142,8 +142,9 @@ internal static class SettingsDisplayChecks
                 "SET08 settings shows saved Stickers and disabled magnetic alignment choices");
             Field<CheckBox>(form, "_stickerSnap").Checked = true;
             Field<RadioButton>(form, "_listDisplay").Checked = true;
-            form.Close();
-            assert(applied is null,
+            ((Button)form.CancelButton!).PerformClick();
+            Application.DoEvents();
+            assert(form.IsDisposed && applied is null,
                 "SET09 closing settings discards unapplied display and magnetic alignment changes");
         }
     }

@@ -22,11 +22,11 @@ internal sealed class RecentForm : Form
     private readonly List<Bookmark> _bookmarks = [];
     private readonly Dictionary<Guid, long> _displaySequence = [];
     private readonly HashSet<Guid> _collapsed = [];
+    private readonly HashSet<Guid> _searchToggled = [];
     private Dictionary<Guid, BookmarkTreeRow> _rows = [];
     private readonly Dictionary<Guid, (long Revision, Bookmark? Value)> _changes = [];
     private long _changeRevision;
     private int _loadVersion;
-    private bool _keepOpen;
     private Point? _dragOrigin;
     private Guid? _dragId;
     private Guid? _dropTargetId;
@@ -41,7 +41,7 @@ internal sealed class RecentForm : Form
     public event Action<Bookmark>? RelinkRequested;
     public event Action<Bookmark, Guid?>? ParentChangeRequested;
     public event Action<Bookmark, BookmarkColor>? ColorChangeRequested;
-    public event Action<Bookmark>? FolderToggleRequested;
+    public event Action<Bookmark, bool>? FolderExpansionRequested;
     public event Action<Guid?>? CreateFolderRequested;
     public event Action<Bookmark>? RenameFolderRequested;
     public event Action? CancelRequested;
@@ -78,7 +78,7 @@ internal sealed class RecentForm : Form
         _status.DragOver += RootDragOver;
         _status.DragLeave += (_, _) => ClearDropTarget();
         _status.DragDrop += RootDragDrop;
-        _search.TextChanged += (_, _) => { _searchTimer.Stop(); _searchTimer.Start(); };
+        _search.TextChanged += (_, _) => { _searchToggled.Clear(); _searchTimer.Stop(); _searchTimer.Start(); };
         _searchTimer.Tick += async (_, _) => { _searchTimer.Stop(); await ReloadAsync(); };
         _cancel.LinkClicked += (_, _) => CancelRequested?.Invoke();
         _newFolder.Click += (_, _) => CreateFolderRequested?.Invoke(null);
@@ -96,7 +96,7 @@ internal sealed class RecentForm : Form
         {
             bool folder = Selected?.IsFolder == true;
             _folderToggleMenu.Visible = _renameFolderMenu.Visible = folder;
-            _folderToggleMenu.Text = Selected?.FolderExpanded == true ? "폴더 닫기" : "폴더 열기";
+            _folderToggleMenu.Text = Selected is { } selected && !IsBranchCollapsed(selected.Id) ? "폴더 닫기" : "폴더 열기";
             _createFolderMenu.Text = folder ? "하위 폴더 만들기" : "새 폴더 만들기";
             note.Visible = Selected is not null && !folder;
             copy.Visible = Selected is not null && !folder;
@@ -106,11 +106,10 @@ internal sealed class RecentForm : Form
             relink.Visible = Selected is { IsFolder: false, LastResumeResult: ResultCode.TargetUnavailable } value &&
                 value.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(value.Target);
             copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사";
-            _keepOpen = true;
         };
-        _menu.Closed += (_, _) => _keepOpen = false;
         _items.ContextMenuStrip = _menu;
-        Deactivate += (_, _) => { if (!_keepOpen && !_menu.Visible) Hide(); };
+        // Modeless list stays open while folder updates reveal/hide stickers or
+        // another window takes focus. Escape, X and target resume still hide it.
         FormClosing += (_, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
         UiStyle.Position(this);
     }
@@ -250,7 +249,7 @@ internal sealed class RecentForm : Form
         // refresh updates its timestamp. A new reload establishes the latest order.
         var projected = BookmarkTree.Flatten(_bookmarks
             .Where(item => included is null || included.Contains(item.Id))
-            .Select(item => item with { CaptureSequence = _displaySequence.GetValueOrDefault(item.Id, item.CaptureSequence) }), searching ? null : _collapsed)
+            .Select(item => item with { CaptureSequence = _displaySequence.GetValueOrDefault(item.Id, item.CaptureSequence) }), searching ? _collapsed.Where(_searchToggled.Contains).ToHashSet() : _collapsed)
             .Select(row => row with { Bookmark = byId[row.Bookmark.Id] }).ToArray();
         _rows = projected.ToDictionary(row => row.Bookmark.Id);
         _items.BeginUpdate();
@@ -286,18 +285,19 @@ internal sealed class RecentForm : Form
         Rectangle row = _items.GetItemRectangle(index);
         return new Rectangle(row.Left + Scale(4 + Math.Min(depth, 14) * 20), row.Top + Scale(8), Scale(22), Scale(24));
     }
+    private bool IsBranchCollapsed(Guid id) => _collapsed.Contains(id) &&
+        (string.IsNullOrWhiteSpace(_search.Text) || _searchToggled.Contains(id));
     private void ToggleBranch(Bookmark bookmark)
     {
         if (!_rows.TryGetValue(bookmark.Id, out var row) || !bookmark.IsFolder && !row.HasChildren) return;
-        if (!string.IsNullOrWhiteSpace(_search.Text))
-        {
-            _status.Text = "검색 중에는 일치하는 항목의 상위 경로가 펼쳐집니다.";
-            return;
-        }
+        // Search initially exposes matching ancestor paths without saving changes.
+        // Once explicitly toggled, this branch follows its committed state.
+        bool expand = IsBranchCollapsed(bookmark.Id);
+        if (!string.IsNullOrWhiteSpace(_search.Text)) _searchToggled.Add(bookmark.Id);
         if (bookmark.IsFolder)
         {
-            _status.Text = bookmark.FolderExpanded ? "폴더를 닫는 중…" : "폴더를 여는 중…";
-            FolderToggleRequested?.Invoke(bookmark);
+            _status.Text = expand ? "폴더를 여는 중…" : "폴더를 닫는 중…";
+            FolderExpansionRequested?.Invoke(bookmark, expand);
             return;
         }
         if (!_collapsed.Add(bookmark.Id)) _collapsed.Remove(bookmark.Id);
@@ -312,7 +312,7 @@ internal sealed class RecentForm : Form
     {
         int index = _items.IndexFromPoint(e.Location);
         if (index >= 0) _items.SelectedIndex = index;
-        if (e.Button == MouseButtons.Right) { if (index < 0) _items.ClearSelected(); _keepOpen = true; return; }
+        if (e.Button == MouseButtons.Right) { if (index < 0) _items.ClearSelected(); return; }
         if (e.Button != MouseButtons.Left) return;
         _suppressClick = false;
         _dragOrigin = null;
@@ -335,14 +335,12 @@ internal sealed class RecentForm : Form
         if (threshold.Contains(e.Location)) return;
         _suppressClick = true;
         _dragging = true;
-        _keepOpen = true;
         _dropHint = true;
         _status.Text = "폴더 위: 넣기 · 일반 항목 위: 새 폴더 · 빈 곳: 꺼내기";
         try { _items.DoDragDrop(new DataObject(DragFormat, id.ToString()), DragDropEffects.Move); }
         finally
         {
             _dragging = false;
-            _keepOpen = false;
             _dragOrigin = null;
             _dragId = null;
             ClearDropTarget();
@@ -441,8 +439,8 @@ internal sealed class RecentForm : Form
         {
             if (_rows.TryGetValue(selected.Id, out var row))
             {
-                if (keyData == Keys.Left && (selected.IsFolder || row.HasChildren) && !_collapsed.Contains(selected.Id)) ToggleBranch(selected);
-                else if (keyData == Keys.Right && (selected.IsFolder || row.HasChildren) && _collapsed.Contains(selected.Id)) ToggleBranch(selected);
+                if (keyData == Keys.Left && (selected.IsFolder || row.HasChildren) && !IsBranchCollapsed(selected.Id)) ToggleBranch(selected);
+                else if (keyData == Keys.Right && (selected.IsFolder || row.HasChildren) && IsBranchCollapsed(selected.Id)) ToggleBranch(selected);
                 else if (keyData == Keys.Left && selected.ParentId is { } parent)
                 {
                     for (int index = 0; index < _items.Items.Count; index++)
@@ -473,7 +471,7 @@ internal sealed class RecentForm : Form
         int indent = Scale(28 + Math.Min(depth, 14) * 20);
         var top = new Rectangle(e.Bounds.X + indent, e.Bounds.Y + Scale(8), e.Bounds.Width - indent - Scale(10), Scale(24));
         if (bookmark.IsFolder || row?.HasChildren == true)
-            TextRenderer.DrawText(e.Graphics, _collapsed.Contains(bookmark.Id) && string.IsNullOrWhiteSpace(_search.Text) ? "▸" : "▾",
+            TextRenderer.DrawText(e.Graphics, IsBranchCollapsed(bookmark.Id) ? "▸" : "▾",
                 Font, ExpanderBounds(e.Index, depth), UiStyle.Accent, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
         if (depth > 0)
         {
