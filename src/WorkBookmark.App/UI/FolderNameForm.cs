@@ -35,6 +35,7 @@ internal sealed class FolderNameForm : Form
     {
         if (keyData == Keys.Enter)
         {
+            if (_cancel.Focused) { if (!_saving) Close(); return true; }
             if (_name.IgnoreSubmit) return base.ProcessCmdKey(ref message, keyData);
             _ = SaveAsync(); return true;
         }

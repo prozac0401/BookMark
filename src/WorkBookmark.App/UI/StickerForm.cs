@@ -54,6 +54,7 @@ internal sealed class StickerForm : Form
     private bool _noteSaving;
     private bool _noteAutoSavePending;
     private bool _noteAutoSaveQueued;
+    private bool _editingFolderName;
     private Func<string, Task>? _saveNoteCallback;
     private string? _iconIdentity;
     private int _iconSize;
@@ -179,7 +180,8 @@ internal sealed class StickerForm : Form
         _title.TextAlign = ContentAlignment.TopLeft;
         _title.Padding = Padding.Empty;
         _title.Cursor = Cursors.IBeam;
-        _title.Click += (_, _) => { if (Bookmark.IsFolder) RequestFolderToggle(); else RequestNoteEdit(); };
+        _title.Click += (_, _) => RequestNoteEdit();
+        _title.DragRequested += (_, _) => BeginPointerMove();
         _resumeStatus.Font = _smallFont;
         _resumeStatus.UseCompatibleTextRendering = false; // Match the GDI line height used by OnLayout.
         _resumeStatus.ForeColor = Color.FromArgb(138, 80, 43);
@@ -228,10 +230,7 @@ internal sealed class StickerForm : Form
         _colorMenu = BookmarkColors.CreateMenu(() => Bookmark, (value, color) => ColorChangeRequested?.Invoke(value, color), () => !_busy && !_noteSaving);
         _noteMenu = new ToolStripMenuItem("메모 편집", null, (_, _) => RequestNoteEdit()) { ShortcutKeyDisplayString = "Ctrl+E" };
         _folderToggleMenu = new ToolStripMenuItem("폴더 열기", null, (_, _) => RequestFolderToggle());
-        _renameFolderMenu = new ToolStripMenuItem("이름 변경", null, (_, _) =>
-        {
-            if (Bookmark.IsFolder && !_busy && !IsEditingNote) RenameFolderRequested?.Invoke(Bookmark);
-        });
+        _renameFolderMenu = new ToolStripMenuItem("이름 변경", null, (_, _) => RequestNoteEdit()) { ShortcutKeyDisplayString = "F2" };
         _createFolderMenu = new ToolStripMenuItem("새 폴더", null, (_, _) =>
         {
             if (!_busy && !IsEditingNote) CreateFolderRequested?.Invoke(Bookmark.IsFolder ? Bookmark.Id : Bookmark.ParentId);
@@ -293,8 +292,8 @@ internal sealed class StickerForm : Form
         _kind.Text = IsCollapsed ? title : KindLabel(value.Target.Kind);
         UpdateTypeIcon();
         _title.Text = title;
-        _title.Cursor = value.IsFolder ? Cursors.Hand : Cursors.IBeam;
-        _title.AccessibleName = value.IsFolder ? "폴더 이름 · 열기/닫기" : "책갈피 제목 · 메모 편집";
+        _title.Cursor = Cursors.IBeam;
+        _title.AccessibleName = value.IsFolder ? "폴더 이름 · 이름 변경" : "책갈피 제목 · 메모 편집";
         UpdateTreeMark();
         string? issue = value.LastResumeResult switch
         {
@@ -320,11 +319,11 @@ internal sealed class StickerForm : Form
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
             details += CanRelink(value) ? "\n우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
-        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 폴더 열기/닫기 · Ctrl+E: 이름 변경" : "\n클릭하여 메모 편집 (Ctrl+E)"));
+        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 이름 변경 (F2 / Ctrl+E) · 드래그하여 이동\n오른쪽 버튼: 폴더 열기/닫기" : "\n클릭하여 메모 편집 (Ctrl+E) · 드래그하여 이동"));
         _tooltip.SetToolTip(_kind, details + "\n드래그하여 이동");
         _tooltip.SetToolTip(_resumeStatus, issue is null ? "" : issue + "\n" + details);
-        _title.AccessibleDescription = details + (value.IsFolder ? "\n클릭하여 폴더 열기/닫기. Ctrl+E로 이름을 변경합니다."
-            : empty ? "\n메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다." : "\n클릭하거나 Ctrl+E로 메모를 편집할 수 있습니다.");
+        _title.AccessibleDescription = details + (value.IsFolder ? "\n클릭하거나 F2, Ctrl+E로 이름을 변경합니다. 드래그하여 이동합니다. 오른쪽 버튼으로 폴더를 열고 닫습니다."
+            : empty ? "\n메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다. 드래그하여 이동합니다." : "\n클릭하거나 Ctrl+E로 메모를 편집할 수 있습니다. 드래그하여 이동합니다.");
         _resumeStatus.AccessibleDescription = issue;
         RefreshActionState();
         PerformLayout();
@@ -392,6 +391,18 @@ internal sealed class StickerForm : Form
     {
         ArgumentNullException.ThrowIfNull(saveNote);
         if (IsDisposed || _busy || Bookmark.IsFolder) return;
+        BeginTextEdit(saveNote, folderName: false);
+    }
+
+    public void BeginFolderRename(Func<string, Task> saveName)
+    {
+        ArgumentNullException.ThrowIfNull(saveName);
+        if (IsDisposed || _busy || !Bookmark.IsFolder) return;
+        BeginTextEdit(saveName, folderName: true);
+    }
+
+    private void BeginTextEdit(Func<string, Task> saveText, bool folderName)
+    {
         if (!IsEditingNote)
         {
             Rectangle restingBounds = Bounds;
@@ -402,10 +413,17 @@ internal sealed class StickerForm : Form
             _noteRestoreExpandedSize = restingExpandedSize;
             _noteRestoreCollapsed = restingCollapsed;
             _noteEditAnchor = Location;
-            _saveNoteCallback = saveNote;
+            _saveNoteCallback = saveText;
+            _editingFolderName = folderName;
             _noteAutoSavePending = false;
-            _noteEditor.Text = Bookmark.Note;
+            _noteEditor.MaxLength = folderName ? 100 : 500;
+            _noteEditor.AccessibleName = folderName ? "폴더 이름 입력" : "스티커 메모 입력";
+            _noteEditor.AccessibleDescription = $"한 줄, 최대 {_noteEditor.MaxLength}자. 다른 창으로 이동하면 자동저장합니다. Enter로 저장, Esc로 취소합니다.";
+            _noteStatus.AccessibleName = folderName ? "폴더 이름 저장 상태" : "메모 저장 상태";
+            _cancelNote.AccessibleName = folderName ? "폴더 이름 편집 취소" : "스티커 메모 편집 취소";
+            _noteEditor.Text = folderName ? Bookmark.DisplayName : Bookmark.Note;
             _noteEditor.SelectionStart = _noteEditor.TextLength;
+            if (folderName) _noteEditor.SelectAll();
             _noteStatus.Text = "다른 창으로 이동하면 자동저장\nEnter 저장 · Esc 취소";
             _noteStatus.ForeColor = UiStyle.Muted;
             bool changing = _presentationChanging;
@@ -440,13 +458,12 @@ internal sealed class StickerForm : Form
 
     private void RequestNoteEdit()
     {
-        if (Bookmark.IsFolder)
-        {
-            if (!_busy) RenameFolderRequested?.Invoke(Bookmark);
-            return;
-        }
         if (IsEditingNote) _noteEditor.Focus();
-        else if (!_busy) NoteRequested?.Invoke(Bookmark);
+        else if (!_busy)
+        {
+            if (Bookmark.IsFolder) RenameFolderRequested?.Invoke(Bookmark);
+            else NoteRequested?.Invoke(Bookmark);
+        }
     }
 
     private void RequestFolderToggle()
@@ -515,14 +532,22 @@ internal sealed class StickerForm : Form
         Bookmark revisionBeforeSave = Bookmark;
         try
         {
+            if (_editingFolderName) text = BookmarkFolderPolicy.ValidateName(text);
             await _saveNoteCallback!(text);
             if (IsDisposed) return;
             // The callback can publish a newer authoritative revision while this
             // save is awaiting completion. Never replace that row with an older
             // draft; simple callbacks that do not publish still update locally.
-            if (ReferenceEquals(Bookmark, revisionBeforeSave)) Bookmark = Bookmark with { Note = text };
+            if (ReferenceEquals(Bookmark, revisionBeforeSave))
+                Bookmark = _editingFolderName ? Bookmark with { DisplayName = text } : Bookmark with { Note = text };
             RestoreNotePresentation();
             UpdateBookmark(Bookmark);
+        }
+        catch (BookmarkException exception) when (_editingFolderName && exception.Code == ResultCode.InvalidRequest)
+        {
+            if (IsDisposed) return;
+            _noteStatus.Text = "폴더 이름은 1~100자로 입력해 주세요.\nEnter 저장 · Esc 취소";
+            _noteStatus.ForeColor = Color.FromArgb(138, 80, 43);
         }
         catch
         {
@@ -558,6 +583,7 @@ internal sealed class StickerForm : Form
         bool collapsed = _noteRestoreCollapsed;
         Size expanded = _noteRestoreExpandedSize;
         _saveNoteCallback = null;
+        _editingFolderName = false;
         if (resting is null) { RefreshActionState(); return; }
 
         bool changing = _presentationChanging;
@@ -806,6 +832,7 @@ internal sealed class StickerForm : Form
         {
             if (keyData == Keys.Enter || keyData == (Keys.Control | Keys.Enter))
             {
+                if (keyData == Keys.Enter && _cancelNote.Focused) { CancelNoteEdit(); return true; }
                 if (_noteEditor.IgnoreSubmit) return base.ProcessCmdKey(ref message, keyData);
                 _ = SaveNoteAsync();
                 return true;
@@ -822,11 +849,12 @@ internal sealed class StickerForm : Form
             // is active; these keys must never delete or restore a bookmark.
             return base.ProcessCmdKey(ref message, keyData);
         }
-        if (_title.Focused && (keyData == Keys.Enter || keyData == Keys.Space)) { if (Bookmark.IsFolder) RequestFolderToggle(); else RequestNoteEdit(); return true; }
+        if (_title.Focused && (keyData == Keys.Enter || keyData == Keys.Space)) { RequestNoteEdit(); return true; }
         if (keyData == Keys.Escape) { Hide(); return true; }
         if (keyData == (Keys.Control | Keys.Space)) { ToggleCollapsed(); return true; }
         if (keyData == (Keys.Control | Keys.Z)) { UndoRequested?.Invoke(); return true; }
         if (keyData == (Keys.Control | Keys.E)) { RequestNoteEdit(); return true; }
+        if (keyData == Keys.F2 && Bookmark.IsFolder) { RequestNoteEdit(); return true; }
         if (keyData == (Keys.Control | Keys.Enter)) { RequestPrimaryAction(); return true; }
         if (keyData == (Keys.Control | Keys.Delete)) { if (!_busy) DeleteRequested?.Invoke(Bookmark); return true; }
         return base.ProcessCmdKey(ref message, keyData);
@@ -910,9 +938,16 @@ internal sealed class StickerForm : Form
     private void DragHeader(object? sender, MouseEventArgs e)
     {
         if (e.Button != MouseButtons.Left) return;
+        BeginPointerMove();
+    }
 
+    private void BeginPointerMove()
+    {
+        if (IsDisposed) return;
         ReleaseCapture();
-        SendMessage(Handle, 0x00A1, (nint)2, nint.Zero); // WM_NCLBUTTONDOWN / HTCAPTION
+        Point cursor = Cursor.Position;
+        int position = unchecked((int)((uint)(ushort)cursor.X | ((uint)(ushort)cursor.Y << 16)));
+        SendMessage(Handle, 0x00A1, (nint)2, (nint)position); // WM_NCLBUTTONDOWN / HTCAPTION
     }
 
     private void BeginWindowMove()
@@ -1056,6 +1091,77 @@ internal sealed class StickerForm : Form
     private sealed class TitleButton : Button
     {
         private const TextFormatFlags TitleTextFlags = TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.NoPadding;
+        private Point? _pointerDown;
+        private bool _dragging;
+        private bool _suppressPointerClick;
+        internal event EventHandler? DragRequested;
+
+        protected override void WndProc(ref Message message)
+        {
+            // WinForms may dispatch Click before OnMouseUp. Guard the complete
+            // mouse message so a late release after move/cancel cannot edit.
+            if (message.Msg == 0x0202 && _suppressPointerClick)
+            {
+                _suppressPointerClick = false;
+                _pointerDown = null;
+                bool dragging = _dragging;
+                _dragging = true;
+                try { base.WndProc(ref message); }
+                finally { _dragging = dragging; }
+                return;
+            }
+            base.WndProc(ref message);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            _suppressPointerClick = false;
+            _pointerDown = e.Button == MouseButtons.Left ? PointToScreen(e.Location) : null;
+            base.OnMouseDown(e);
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (e.Button != MouseButtons.Left || _pointerDown is not { } origin) return;
+            Size threshold = SystemInformation.DragSize;
+            var clickArea = new Rectangle(origin.X - threshold.Width / 2, origin.Y - threshold.Height / 2,
+                threshold.Width, threshold.Height);
+            if (clickArea.Contains(PointToScreen(e.Location))) return;
+            _pointerDown = null;
+            _suppressPointerClick = true;
+            _dragging = true;
+            try
+            {
+                // Releasing native button capture cancels its pending click.
+                // Keep the click guard throughout the nested window-move loop.
+                Capture = false;
+                DragRequested?.Invoke(this, EventArgs.Empty);
+            }
+            finally { _dragging = false; }
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            _pointerDown = null;
+            bool suppress = _suppressPointerClick;
+            _suppressPointerClick = false;
+            bool dragging = _dragging;
+            if (suppress) _dragging = true;
+            try { base.OnMouseUp(e); }
+            finally { _dragging = dragging; }
+        }
+
+        protected override void OnMouseCaptureChanged(EventArgs e)
+        {
+            _pointerDown = null;
+            base.OnMouseCaptureChanged(e);
+        }
+
+        protected override void OnClick(EventArgs e)
+        {
+            if (!_dragging) base.OnClick(e);
+        }
 
         public int OneLineHeight => MeasureTitleHeight(1);
 

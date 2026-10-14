@@ -96,6 +96,13 @@ internal static class StickerInlineNoteChecks
         assert(!Editing(form) && form.Visible && saves == 2 && Field<Button>(form, "_title").Text == saved && form.Bounds == bounds,
             "STN10 Escape cancels only the inline draft and keeps the saved note and sticker visible");
 
+        Begin(form, persist);
+        editor.Text = "취소 버튼에서 Enter로 버릴 메모";
+        Field<Button>(form, "_cancelNote").Focus();
+        Command(form, Keys.Enter);
+        assert(!Editing(form) && saves == 2 && Field<Button>(form, "_title").Text == saved && form.Bounds == bounds,
+            "STN38 Enter on the focused cancel button cancels an ordinary note draft without writing");
+
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         int delayedSaves = 0;
         Begin(form, _ => { delayedSaves++; return completion.Task; });

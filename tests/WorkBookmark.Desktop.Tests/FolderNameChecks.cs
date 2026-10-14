@@ -43,5 +43,13 @@ internal static class FolderNameChecks
         using var rename = (Form)constructor.Invoke(["자료", true, (Func<string, Task>)(_ => Task.CompletedTask)]);
         assert(rename.Text == "폴더 이름 변경" && ((TextBox)type.GetField("_name", Private)!.GetValue(rename)!).MaxLength == 100,
             "FN06 rename dialog keeps the stored name and folder-specific length limit");
+        int cancelledSaves = 0;
+        using var cancel = (Form)constructor.Invoke(["보존할 이름", true, (Func<string, Task>)(_ => { cancelledSaves++; return Task.CompletedTask; })]);
+        cancel.Show();
+        cancel.Activate();
+        ((Button)type.GetField("_cancel", Private)!.GetValue(cancel)!).Focus();
+        type.GetMethod("ProcessCmdKey", Private)!.Invoke(cancel, [Message.Create(cancel.Handle, 0x0100, 0, 0), Keys.Enter]);
+        assert(cancel.IsDisposed && cancelledSaves == 0,
+            "FN07 Enter on the focused cancel button closes the folder editor without persisting a rename");
     }
 }

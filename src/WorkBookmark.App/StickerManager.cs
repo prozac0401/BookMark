@@ -364,15 +364,28 @@ internal sealed class StickerManager : IDisposable
 
     internal bool EditNote(Bookmark bookmark, Func<string, Task> saveNote)
     {
-        if (!_enabled || _disposed || bookmark.IsFolder) return false;
-        Upsert(bookmark);
-        if (!_forms.TryGetValue(bookmark.Id, out var form) || !FolderVisibleIds().Contains(bookmark.Id)) return false;
-        EnsureOnScreen(form);
-        // A note request reveals only its sticker, preserving all other hidden views.
-        form.Show();
-        form.Activate();
+        if (bookmark.IsFolder || PrepareInlineEdit(bookmark) is not { } form) return false;
         form.BeginNoteEdit(saveNote);
         return true;
+    }
+
+    internal bool RenameFolder(Bookmark bookmark, Func<string, Task> saveName)
+    {
+        if (!bookmark.IsFolder || PrepareInlineEdit(bookmark) is not { } form) return false;
+        form.BeginFolderRename(saveName);
+        return true;
+    }
+
+    private StickerForm? PrepareInlineEdit(Bookmark bookmark)
+    {
+        if (!_enabled || _disposed) return null;
+        Upsert(bookmark);
+        if (!_forms.TryGetValue(bookmark.Id, out var form) || !FolderVisibleIds().Contains(bookmark.Id)) return null;
+        EnsureOnScreen(form);
+        // Editing reveals only its sticker, preserving all other hidden views.
+        form.Show();
+        form.Activate();
+        return form;
     }
 
     private HashSet<Guid> FolderVisibleIds()

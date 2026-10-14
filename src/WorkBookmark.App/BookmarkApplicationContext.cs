@@ -32,7 +32,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private ToastForm? _toast;
     private NoteForm? _note;
     private WebBookmarkForm? _webPage;
-    private FolderNameForm? _folderName;
+    private readonly Dictionary<(Guid? FolderId, Guid? ParentId), FolderNameForm> _folderNameEditors = [];
     private SettingsForm? _settingsForm;
     private DeletedBookmarksForm? _deletedForm;
     private TargetSnapshot? _beforeList;
@@ -91,7 +91,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _stickers.ColorChangeRequested += (bookmark, color) => _ = ChangeColorAsync(bookmark, color);
         _stickers.FolderToggleRequested += bookmark => _ = ToggleFolderAsync(bookmark);
         _stickers.CreateFolderRequested += parentId => ShowFolderName(parentId);
-        _stickers.RenameFolderRequested += bookmark => ShowFolderName(null, bookmark);
+        _stickers.RenameFolderRequested += bookmark => _ = EditNoteAsync(bookmark.Id);
         _stickers.ShowListRequested += ShowRecent;
         _stickers.SettingsRequested += ShowSettings;
         _stickers.UndoRequested += () => _ = UndoAsync();
@@ -381,13 +381,20 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     private void ShowFolderName(Guid? parentId, Bookmark? folder = null)
     {
         if (_exiting) return;
-        if (_folderName is { IsDisposed: false }) { _folderName.Activate(); return; }
-        _folderName = new FolderNameForm(folder?.DisplayName ?? "새 폴더", folder is not null, async name =>
+        var key = (folder?.Id, folder is null ? parentId : null);
+        if (_folderNameEditors.TryGetValue(key, out var existing) && !existing.IsDisposed)
+        {
+            existing.Activate();
+            return;
+        }
+        var editor = new FolderNameForm(folder?.DisplayName ?? "새 폴더", folder is not null, async name =>
         {
             if (folder is null) await CreateFolderAsync(name, parentId);
             else await RenameFolderAsync(folder, name);
         });
-        ShowAuxiliary(_folderName);
+        _folderNameEditors[key] = editor;
+        editor.FormClosed += (_, _) => _folderNameEditors.Remove(key);
+        ShowAuxiliary(editor);
     }
     private async Task<Bookmark> CreateFolderAsync(string name, Guid? parentId)
     {
@@ -579,7 +586,17 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             Bookmark? bookmark = await RefreshBookmarkAsync(id);
             // Hide cancels earlier opens, while a new request after hide remains valid.
             if (bookmark is null || bookmark.DeletedAtUtc is not null || _exiting || hideVersion != _stickers.HideVersion) return;
-            if (bookmark.IsFolder) { ShowFolderName(null, bookmark); return; }
+            if (bookmark.IsFolder)
+            {
+                if (_settings.DisplayMode == BookmarkDisplayMode.Stickers &&
+                    _stickers.RenameFolder(bookmark, name => RenameFolderAsync(bookmark, name)))
+                {
+                    _recent.Hide();
+                    return;
+                }
+                ShowFolderName(null, bookmark);
+                return;
+            }
             _recent.Hide();
             async Task SaveNote(string text)
             {
@@ -597,7 +614,7 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             _note = new NoteForm(bookmark, SaveNote);
             ShowAuxiliary(_note);
         }
-        catch { Notify("메모를 읽을 수 없습니다. 기존 기록은 유지됩니다."); }
+        catch { Notify("편집할 책갈피를 읽을 수 없습니다. 기존 기록은 유지됩니다."); }
         finally { if (_openingNoteHideVersion == hideVersion) _openingNote = false; }
     }
     private async Task ChangeColorAsync(Bookmark bookmark, BookmarkColor color)
@@ -871,7 +888,10 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         _exiting = true; _browserServer.Dispose(); _captureInput?.Dispose(); _worker.Cancel(); StartupRegistration.StopWorker();
         _tray.Visible = false; _hotkeys.Dispose(); _undoTimer.Dispose();
         _stickers.Dispose();
-        _toast?.Close(); _note?.Dispose(); _webPage?.Dispose(); _folderName?.Dispose(); _settingsForm?.Dispose(); _deletedForm?.Dispose(); _recent.Dispose();
+        _toast?.Close(); _note?.Dispose(); _webPage?.Dispose();
+        foreach (var editor in _folderNameEditors.Values.ToArray()) editor.Dispose();
+        _folderNameEditors.Clear();
+        _settingsForm?.Dispose(); _deletedForm?.Dispose(); _recent.Dispose();
         _tray.ContextMenuStrip?.Dispose(); _tray.Dispose(); _trayIcon.Dispose(); _dispatcher.Dispose();
     }
     protected override void ExitThreadCore()

@@ -22,7 +22,7 @@ internal static class FolderIntegrationChecks
         bool fail = false;
         using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"), operation =>
         {
-            if (fail && operation != "sticker_layout") throw new IOException("Injected folder write failure");
+            if (fail && operation != "sticker-layout") throw new IOException("Injected folder write failure");
         });
         var a = repository.UpsertCapture(new CapturedTarget(TargetKind.File, Path.Combine(directory, "기획.txt"))).Bookmark;
         var b = repository.UpsertCapture(new CapturedTarget(TargetKind.WebPage, "https://example.invalid/research", PageTitle: "시장 조사")).Bookmark;
@@ -103,13 +103,130 @@ internal static class FolderIntegrationChecks
         assert(repository.Get(folder.Id)!.Color == BookmarkColor.Purple && !Sticker(a.Id).Visible && Listed(a.Id) is null && repository.Get(a.Id)!.ParentId == folder.Id,
             "FI14 restoring the closed folder restores membership, color and child visibility without losing targets");
 
+        // The earlier checks deliberately exercise both views while configured for list mode.
+        // Switch this fixture's routing to sticker mode without writing system startup settings.
+        typeof(BookmarkApplicationContext).GetField("_settings", Private)!.SetValue(context,
+            Field<UserSettings>(context, "_settings") with { DisplayMode = BookmarkDisplayMode.Stickers });
+        repository.UpdateNote(folder.Id, "이름 편집으로 바뀌면 안 되는 폴더 메모");
+        Pump((Task)Invoke(context, "RefreshBookmarkAsync", folder.Id)!);
+        var folderBeforeRename = repository.Get(folder.Id)!;
+        var folderSticker = Sticker(folder.Id);
+        var folderWindow = folderSticker.Handle;
+        var folderBounds = folderSticker.Bounds;
+
+        // Start at the real sticker event so manager forwarding and application routing
+        // must provide the inline editor's persistence callback.
+        Field<Action<Bookmark>>(folderSticker, "RenameFolderRequested")(folderBeforeRename);
+        PumpUntil(() => Editing(folderSticker) && !Field<bool>(context, "_openingNote"));
+        var nameEditor = Field<TextBox>(folderSticker, "_noteEditor");
+        assert(nameEditor.Text == folderBeforeRename.DisplayName && nameEditor.MaxLength == 100 && nameEditor.Visible &&
+            folderSticker.Handle == folderWindow && NameDialog(folder.Id) is not { IsDisposed: false } &&
+            !Sticker(a.Id).Visible && !Sticker(nested.Id).Visible,
+            "FI15 the sticker rename event opens its own 100-character inline name editor without a separate window or revealing closed-folder children");
+        nameEditor.Text = "스티커에서 변경한 폴더";
+        Pump((Task)Invoke(folderSticker, "SaveNoteAsync")!);
+        var renamedFolder = folderBeforeRename with { DisplayName = "스티커에서 변경한 폴더" };
+        assert(repository.Get(folder.Id) == renamedFolder && Current(folderSticker) == renamedFolder && Listed(folder.Id) == renamedFolder &&
+            !Editing(folderSticker) && folderSticker.Handle == folderWindow && folderSticker.Bounds == folderBounds,
+            "FI16 inline folder-name save commits to SQLite and both views while preserving note, history, color, closure and normal geometry");
+
+        Field<Action<Bookmark>>(folderSticker, "RenameFolderRequested")(renamedFolder);
+        PumpUntil(() => Editing(folderSticker) && !Field<bool>(context, "_openingNote"));
+        nameEditor.Text = "실패 후 재시도할 이름";
+        fail = true;
+        try { Pump((Task)Invoke(folderSticker, "SaveNoteAsync")!); }
+        finally { fail = false; }
+        assert(Editing(folderSticker) && !nameEditor.ReadOnly && nameEditor.Text == "실패 후 재시도할 이름" &&
+            repository.Get(folder.Id) == renamedFolder && Current(folderSticker) == renamedFolder && Listed(folder.Id) == renamedFolder &&
+            Field<Label>(folderSticker, "_noteStatus").Text.Contains("저장", StringComparison.Ordinal),
+            "FI17 failed inline folder rename retains the editable draft and reports failure without publishing uncommitted names to either view");
+        Pump((Task)Invoke(folderSticker, "SaveNoteAsync")!);
+        var retriedFolder = renamedFolder with { DisplayName = "실패 후 재시도할 이름" };
+        assert(repository.Get(folder.Id) == retriedFolder && Current(folderSticker) == retriedFolder && Listed(folder.Id) == retriedFolder &&
+            !Editing(folderSticker) && folderSticker.Bounds == folderBounds,
+            "FI18 retry commits the retained folder-name draft through the original application callback and restores normal placement");
+
+        Field<Action<Bookmark>>(folderSticker, "RenameFolderRequested")(retriedFolder);
+        PumpUntil(() => Editing(folderSticker) && !Field<bool>(context, "_openingNote"));
+        nameEditor.Text = "취소할 이름";
+        Field<Button>(folderSticker, "_cancelNote").PerformClick();
+        Application.DoEvents();
+        assert(!Editing(folderSticker) && repository.Get(folder.Id) == retriedFolder && Current(folderSticker) == retriedFolder &&
+            Listed(folder.Id) == retriedFolder && folderSticker.Bounds == folderBounds && !Sticker(nested.Id).Visible,
+            "FI19 cancelling inline folder rename discards only the draft and preserves both committed views and closed-folder visibility");
+
+        // A rename request may target an existing sticker hidden under a closed ancestor.
+        // It must use the normal name dialog rather than bypass the ancestor's visibility.
+        var nestedBeforeRename = repository.Get(nested.Id)!;
+        Field<Action<Bookmark>>(manager, "RenameFolderRequested")(nestedBeforeRename);
+        PumpUntil(() => NameDialog(nested.Id) is { IsDisposed: false, Visible: true } && !Field<bool>(context, "_openingNote"));
+        var fallback = NameDialog(nested.Id)!;
+        assert(Field<TextBox>(fallback, "_name").Text == nestedBeforeRename.DisplayName && !Editing(Sticker(nested.Id)) &&
+            !Sticker(nested.Id).Visible && !Sticker(b.Id).Visible && !repository.Get(folder.Id)!.FolderExpanded,
+            "FI20 renaming a folder hidden beneath a closed ancestor falls back to the name dialog without revealing its sticker or descendants");
+        Field<TextBox>(fallback, "_name").Text = "숨겨진 폴더 취소";
+        Field<Button>(fallback, "_cancel").PerformClick();
+        assert(fallback.IsDisposed && repository.Get(nested.Id) == nestedBeforeRename && !Sticker(nested.Id).Visible,
+            "FI21 cancelling the hidden-folder fallback leaves its name, expansion and membership unchanged");
+
+        Field<Action<Bookmark>>(manager, "RenameFolderRequested")(nestedBeforeRename);
+        PumpUntil(() => NameDialog(nested.Id) is { IsDisposed: false, Visible: true } && !Field<bool>(context, "_openingNote"));
+        fallback = NameDialog(nested.Id)!;
+        Field<TextBox>(fallback, "_name").Text = "숨겨진 자료 이름 변경";
+        Pump((Task)Invoke(fallback, "SaveAsync")!);
+        var renamedNested = nestedBeforeRename with { DisplayName = "숨겨진 자료 이름 변경" };
+        assert(fallback.IsDisposed && repository.Get(nested.Id) == renamedNested && Current(Sticker(nested.Id)) == renamedNested &&
+            !Sticker(nested.Id).Visible && !Sticker(b.Id).Visible && !repository.Get(folder.Id)!.FolderExpanded,
+            "FI22 saving through the hidden-folder fallback persists its name without changing ancestor closure or child visibility");
+        Pump((Task)Invoke(context, "ToggleFolderAsync", repository.Get(folder.Id)!)!);
+        assert(Listed(nested.Id) == renamedNested && Current(Sticker(nested.Id)) == renamedNested && Sticker(nested.Id).Visible,
+            "FI23 opening the ancestor later displays the fallback-renamed folder consistently in the list and sticker views");
+
+        // List requests use independent modeless dialogs even when stickers are available.
+        // Reopening one folder must never reuse another folder's draft or commit callback.
+        var outerBeforeDialogs = repository.Get(folder.Id)!;
+        Field<Action<Bookmark>>(recent, "RenameFolderRequested")(outerBeforeDialogs);
+        var outerDialog = NameDialog(folder.Id)!;
+        Field<TextBox>(outerDialog, "_name").Text = "첫 번째 폴더 초안";
+        Field<Action<Bookmark>>(recent, "RenameFolderRequested")(renamedNested);
+        var nestedDialog = NameDialog(nested.Id)!;
+        Field<TextBox>(nestedDialog, "_name").Text = "두 번째 폴더 초안";
+        assert(!ReferenceEquals(outerDialog, nestedDialog) && outerDialog.Visible && nestedDialog.Visible &&
+            Field<TextBox>(outerDialog, "_name").Text == "첫 번째 폴더 초안" &&
+            Field<TextBox>(nestedDialog, "_name").Text == "두 번째 폴더 초안" &&
+            repository.Get(folder.Id) == outerBeforeDialogs && repository.Get(nested.Id) == renamedNested,
+            "FI24 requesting two different folder names keeps independent modeless drafts without committing either one");
+        Field<Action<Bookmark>>(recent, "RenameFolderRequested")(outerBeforeDialogs);
+        assert(ReferenceEquals(NameDialog(folder.Id), outerDialog) && ReferenceEquals(NameDialog(nested.Id), nestedDialog) &&
+            Field<TextBox>(outerDialog, "_name").Text == "첫 번째 폴더 초안" &&
+            Field<TextBox>(nestedDialog, "_name").Text == "두 번째 폴더 초안",
+            "FI25 requesting the same folder again reuses only that folder's editor and preserves both unsaved drafts");
+        Pump((Task)Invoke(nestedDialog, "SaveAsync")!);
+        var nestedAfterDialogs = renamedNested with { DisplayName = "두 번째 폴더 초안" };
+        assert(nestedDialog.IsDisposed && NameDialog(nested.Id) is null && !outerDialog.IsDisposed &&
+            Field<TextBox>(outerDialog, "_name").Text == "첫 번째 폴더 초안" && repository.Get(folder.Id) == outerBeforeDialogs &&
+            repository.Get(nested.Id) == nestedAfterDialogs && Listed(nested.Id) == nestedAfterDialogs && Current(Sticker(nested.Id)) == nestedAfterDialogs,
+            "FI26 saving the second dialog renames only its own folder in SQLite and both views while retaining the first draft");
+        Pump((Task)Invoke(outerDialog, "SaveAsync")!);
+        var outerAfterDialogs = outerBeforeDialogs with { DisplayName = "첫 번째 폴더 초안" };
+        assert(outerDialog.IsDisposed && NameDialog(folder.Id) is null && repository.Get(folder.Id) == outerAfterDialogs &&
+            Listed(folder.Id) == outerAfterDialogs && Current(folderSticker) == outerAfterDialogs && repository.Get(nested.Id) == nestedAfterDialogs,
+            "FI27 saving the first retained dialog uses its original folder callback without changing the second folder");
+
         Task Change(Bookmark item, Guid? target) => (Task)Invoke(context, "ChangeParentAsync", item, target)!;
         Bookmark? Listed(Guid id) => list.Items.Cast<Bookmark>().FirstOrDefault(item => item.Id == id);
         Form[] Forms() => ((System.Collections.IEnumerable)manager.GetType().GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
         Form Sticker(Guid id) => Forms().Single(form => Current(form).Id == id);
+        Form? NameDialog(Guid? folderId, Guid? parentId = null)
+        {
+            var editors = Field<System.Collections.IDictionary>(context, "_folderNameEditors");
+            var key = (folderId, parentId);
+            return editors.Contains(key) ? (Form)editors[key]! : null;
+        }
     }
 
     private static Bookmark Current(Form form) => (Bookmark)form.GetType().GetProperty("Bookmark")!.GetValue(form)!;
+    private static bool Editing(Form form) => (bool)form.GetType().GetProperty("IsEditingNote")!.GetValue(form)!;
     private static T Field<T>(object owner, string name) => (T)owner.GetType().GetField(name, Private)!.GetValue(owner)!;
     private static object? Invoke(object owner, string name, params object?[] args) => owner.GetType().GetMethod(name, Private)!.Invoke(owner, args);
     private static void Pump(Task task) { PumpUntil(() => task.IsCompleted); task.GetAwaiter().GetResult(); }

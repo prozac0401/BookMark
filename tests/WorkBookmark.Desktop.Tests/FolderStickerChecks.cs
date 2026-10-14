@@ -58,20 +58,20 @@ internal static class FolderStickerChecks
             Field<Button>(f, "_title").PerformClick();
             Field<Button>(f, "_resume").PerformClick();
             Command(f, Keys.Control | Keys.Enter);
-            assert(toggles == 3 && resumes == 0 && !BookmarkFor(f).FolderExpanded && !a.Visible,
-                "FS04 folder title, action and keyboard activation request a persisted toggle and never resume a worker target");
+            assert(toggles == 2 && renames == 1 && resumes == 0 && !BookmarkFor(f).FolderExpanded && !a.Visible,
+                "FS04 a folder title requests editing while its action and Ctrl+Enter request a persisted toggle without resuming a worker");
             Call(f, "SetBusy", true);
             Field<Button>(f, "_title").PerformClick();
             Command(f, Keys.Control | Keys.Enter);
             Call(f, "UpdateMenu");
             Field<ToolStripMenuItem>(f, "_renameFolderMenu").PerformClick();
-            assert(toggles == 3 && resumes == 0 && renames == 0,
+            assert(toggles == 2 && resumes == 0 && renames == 1,
                 "FS05 busy folder actions cannot toggle, rename, or resume");
             Call(f, "SetBusy", false);
             Call(f, "UpdateMenu");
             Field<ToolStripMenuItem>(f, "_renameFolderMenu").PerformClick();
             Field<ToolStripMenuItem>(f, "_createFolderMenu").PerformClick();
-            assert(renames == 1 && createdParent == folder.Id && !Field<ToolStripMenuItem>(f, "_copyMenu").Visible &&
+            assert(renames == 2 && createdParent == folder.Id && !Field<ToolStripMenuItem>(f, "_copyMenu").Visible &&
                 !Field<ToolStripMenuItem>(f, "_noteMenu").Visible,
                 "FS06 virtual-folder menus route rename/create and omit nonexistent path and note actions");
             Field<Button>(d, "_resume").PerformClick();
@@ -165,6 +165,171 @@ internal static class FolderStickerChecks
         finally { Cursor.Position = cursorBefore; }
         LateReadCheck(assert);
         PersistenceCheck(assert);
+        RenameChecks(assert);
+        TitleGestureChecks(assert);
+    }
+
+    private static void RenameChecks(Action<bool, string> assert)
+    {
+        var folder = Folder("이름을 바꿀 폴더", 1) with { FolderExpanded = true };
+        var child = Item("이동할 하위 자료", 2) with { ParentId = folder.Id };
+        Bookmark[] items = [folder, child];
+        object manager = Create(() => items);
+        using var lifetime = (IDisposable)manager;
+        Pump((Task)Call(manager, "SetEnabledAsync", true, false)!);
+        var f = Forms(manager).Single(form => BookmarkFor(form).Id == folder.Id);
+        var c = Forms(manager).Single(form => BookmarkFor(form).Id == child.Id);
+        f.Location = Screen.FromControl(f).WorkingArea.Location + new Size(70, 80);
+        Rectangle bounds = f.Bounds;
+        nint window = f.Handle;
+        int writes = 0;
+        bool fail = false;
+        Func<string, Task> save = name =>
+        {
+            writes++;
+            if (fail) return Task.FromException(new IOException("Injected folder rename failure."));
+            folder = BookmarkFor(f) with { DisplayName = name };
+            items = [folder, child];
+            Call(manager, "Upsert", folder);
+            return Task.CompletedTask;
+        };
+        On(manager, "RenameFolderRequested", (Action<Bookmark>)(value => Call(manager, "RenameFolder", value, save)));
+        Field<Button>(f, "_title").PerformClick();
+        var editor = Field<TextBox>(f, "_noteEditor");
+        assert(Property<bool>(f, "IsEditingNote") && f.Handle == window && editor.Text == folder.DisplayName &&
+            editor.MaxLength == 100 && editor.SelectionLength == folder.DisplayName.Length && editor.Visible && editor.Focused &&
+            Property<Rectangle>(f, "PlacementBounds") == bounds && BookmarkFor(f).FolderExpanded,
+            "FS23 clicking a folder title opens the same inline editor with its selected name and preserves normal placement and expansion");
+
+        editor.Text = "   ";
+        Pump((Task)Call(f, "SaveNoteAsync")!);
+        assert(writes == 0 && Property<bool>(f, "IsEditingNote") && editor.Text == "   " && !editor.ReadOnly &&
+            Field<Label>(f, "_noteStatus").Text.Contains("1~100", StringComparison.Ordinal),
+            "FS24 an invalid folder name is rejected before persistence and retains the editable draft with validation feedback");
+        fail = true;
+        editor.Text = "저장 실패 후 보존할 이름";
+        Pump((Task)Call(f, "SaveNoteAsync")!);
+        folder = folder with { Color = BookmarkColor.Purple }; items = [folder, child];
+        Call(manager, "Upsert", folder);
+        Call(f, "BeginFolderRename", (Func<string, Task>)(_ => throw new InvalidOperationException("Cannot replace an active draft callback.")));
+        assert(writes == 1 && Property<bool>(f, "IsEditingNote") && editor.Text == "저장 실패 후 보존할 이름" && !editor.ReadOnly &&
+            BookmarkFor(f).Color == BookmarkColor.Purple && Field<Label>(f, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal),
+            "FS25 failed rename, color refresh and repeated editing preserve the original draft and save callback");
+
+        fail = false;
+        var delta = new Size(19, 13);
+        f.Location += delta;
+        editor.Text = "  변경한 폴더 이름  ";
+        Command(f, Keys.Enter);
+        assert(writes == 2 && !Property<bool>(f, "IsEditingNote") && BookmarkFor(f).DisplayName == "변경한 폴더 이름" &&
+            BookmarkFor(f).Note == folder.Note && f.Bounds == new Rectangle(bounds.Location + delta, bounds.Size) &&
+            Field<Button>(f, "_title").Text == "변경한 폴더 이름" && BookmarkFor(f).FolderExpanded,
+            "FS26 Enter retries a normalized folder rename without changing its note, expansion, or moved normal geometry");
+        bounds = f.Bounds;
+        Command(f, Keys.F2);
+        editor.Text = "취소할 이름";
+        Command(f, Keys.Escape);
+        assert(writes == 2 && !Property<bool>(f, "IsEditingNote") && f.Visible && f.Bounds == bounds &&
+            BookmarkFor(f).DisplayName == "변경한 폴더 이름",
+            "FS27 F2 opens folder editing and Escape cancels only the draft while restoring the normal sticker");
+        Command(f, Keys.F2);
+        editor.Text = "취소 버튼에서 Enter";
+        Field<Button>(f, "_cancelNote").Focus();
+        Command(f, Keys.Enter);
+        assert(writes == 2 && !Property<bool>(f, "IsEditingNote") && BookmarkFor(f).DisplayName == "변경한 폴더 이름" && f.Bounds == bounds,
+            "FS37 Enter on the focused inline cancel button cancels the folder draft instead of saving it");
+
+        using var other = new Form { Text = "Folder rename focus check", ShowInTaskbar = false };
+        other.Controls.Add(new TextBox { Dock = DockStyle.Top });
+        other.Show();
+        Command(f, Keys.Control | Keys.E);
+        editor.Text = "자동저장할 이름";
+        other.Activate(); other.Controls[0].Focus();
+        Call(f, "OnDeactivate", EventArgs.Empty);
+        PumpUntil(() => !Property<bool>(f, "IsEditingNote"));
+        assert(writes == 3 && BookmarkFor(f).DisplayName == "자동저장할 이름" && f.Bounds == bounds && other.ContainsFocus,
+            "FS28 leaving folder inline editing automatically persists its name without stealing focus or changing geometry");
+
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Call(f, "BeginFolderRename", (Func<string, Task>)(_ => completion.Task));
+        editor.Text = "이전 저장 요청";
+        Task pending = (Task)Call(f, "SaveNoteAsync")!;
+        folder = BookmarkFor(f) with { DisplayName = "나중에 확정된 이름" }; items = [folder, child];
+        Call(manager, "Upsert", folder);
+        completion.SetResult(); Pump(pending);
+        assert(BookmarkFor(f).DisplayName == "나중에 확정된 이름" && !Property<bool>(f, "IsEditingNote") && f.Bounds == bounds,
+            "FS29 a delayed rename completion cannot overwrite a newer authoritative folder name");
+
+        int moves = 0;
+        On(manager, "ParentChangeRequested", (Action<Bookmark, Guid?>)((_, _) => moves++));
+        Point original = f.Location, childOriginal = c.Location;
+        SendMessage(f.Handle, 0x0231, 0, 0);
+        MoveRectangle(f, original + new Size(31, 21));
+        f.Location = original; // Native Esc cancels the modal move by restoring this origin.
+        SendMessage(f.Handle, 0x0232, 0, 0);
+        assert(f.Location == original && c.Location == childOriginal && moves == 0 && BookmarkFor(f).DisplayName == folder.DisplayName,
+            "FS30 cancelling a folder native move restores its descendants without a drop, rename, or toggle");
+    }
+
+    private static void TitleGestureChecks(Action<bool, string> assert)
+    {
+        Type sticker = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.UI.StickerForm")!;
+        Type titleType = sticker.GetNestedType("TitleButton", BindingFlags.NonPublic)!;
+        using var host = new Form { Text = "Sticker title pointer checks", ShowInTaskbar = false, StartPosition = FormStartPosition.Manual,
+            Location = Screen.PrimaryScreen!.WorkingArea.Location + new Size(100, 100), ClientSize = new Size(280, 90), TopMost = true };
+        var title = (Button)Activator.CreateInstance(titleType, true)!;
+        title.FlatStyle = FlatStyle.Flat;
+        title.UseVisualStyleBackColor = false;
+        title.Text = "클릭 편집 · 드래그 이동"; title.Bounds = new Rectangle(20, 20, 240, 32);
+        host.Controls.Add(title); host.Show(); host.Activate();
+        Application.DoEvents();
+        int clicks = 0, drags = 0;
+        bool captureReleased = false;
+        title.Click += (_, _) => clicks++;
+        On(title, "DragRequested", (EventHandler)((_, _) =>
+        {
+            drags++;
+            captureReleased = !title.Capture;
+            title.PerformClick(); // Any click delivered by the nested native move loop must be suppressed.
+        }));
+        // Synthetic WM_MOUSEMOVE reads the real global MouseButtons state, and
+        // WinForms' click hit-test requires the interactive input desktop. Feed
+        // component move events explicitly; retain real capture/down/up messages
+        // to exercise the product's release guard without injecting OS input.
+        title.PerformClick();
+        assert(clicks == 1 && drags == 0, "FS31 a title component activation invokes editing exactly once without starting a move");
+        Pointer(title, 0x0201, 1, 20, 12);
+        Call(title, "OnMouseMove", new MouseEventArgs(MouseButtons.Left, 0, 21, 13, 0));
+        bool jitterRetainedCapture = title.Capture;
+        title.Capture = false;
+        title.PerformClick();
+        assert(clicks == 2 && drags == 0 && jitterRetainedCapture,
+            "FS32 component pointer jitter within the system threshold keeps capture and leaves title editing available");
+        Pointer(title, 0x0201, 1, 20, 12);
+        Call(title, "OnMouseMove", new MouseEventArgs(MouseButtons.Left, 0, 20 + SystemInformation.DragSize.Width + 8, 12, 0));
+        // Model a late native BN_CLICKED while WM_LBUTTONUP is being processed.
+        // The reflected command reaches Button.OnClick regardless of desktop
+        // hit-testing, so this specifically verifies the complete message guard.
+        MouseEventHandler lateClick = (_, _) => SendMessage(title.Handle, 0x2111, 0, 0);
+        title.MouseUp += lateClick;
+        Pointer(title, 0x0202, 0, 25, 12);
+        title.MouseUp -= lateClick;
+        assert(drags == 1 && captureReleased && clicks == 2,
+            "FS33 a component drag releases capture and suppresses nested activation plus a reflected click inside native WM_LBUTTONUP");
+        title.PerformClick();
+        Pointer(title, 0x0201, 1, 20, 12);
+        title.PerformClick();
+        title.Capture = false;
+        assert(clicks == 4 && drags == 1, "FS34 accessibility activation and a fresh title component gesture remain editable after dragging");
+        Pointer(title, 0x0201, 1, 20, 12);
+        title.Capture = false;
+        Call(title, "OnMouseMove", new MouseEventArgs(MouseButtons.Left, 0, 20 + SystemInformation.DragSize.Width + 8, 12, 0));
+        Pointer(title, 0x0202, 0, 20, 12);
+        assert(clicks == 4 && drags == 1, "FS35 native capture loss cancels the pending component gesture without editing or dragging");
+        Pointer(title, 0x0204, 2, 20, 12);
+        Call(title, "OnMouseMove", new MouseEventArgs(MouseButtons.Right, 0, 20 + SystemInformation.DragSize.Width + 8, 12, 0));
+        Pointer(title, 0x0205, 0, 20, 12);
+        assert(clicks == 4 && drags == 1, "FS36 right-button component gestures remain available for the context menu and never start a move");
     }
 
     private static void LateReadCheck(Action<bool, string> assert)
@@ -252,6 +417,10 @@ internal static class FolderStickerChecks
         rows = [folder, child, nested, deep];
         Call(manager, "ApplyFolderChanges", new[] { nested }, null!);
         Draw("folders-nested-open.png");
+        Call(root, "BeginFolderRename", (Func<string, Task>)(_ => Task.CompletedTask));
+        Field<TextBox>(root, "_noteEditor").Text = "신규 서비스 기획 · 자료 정리";
+        Draw("folder-rename.png");
+        Call(root, "CancelNoteEdit");
         void Draw(string filename)
         {
             var visible = Forms(manager).Where(form => form.Visible).ToArray();
@@ -259,7 +428,7 @@ internal static class FolderStickerChecks
             using var image = new Bitmap(area.Width + 40, area.Height + 40);
             using var graphics = Graphics.FromImage(image);
             graphics.Clear(Color.FromArgb(238, 241, 242));
-            foreach (var form in visible)
+            foreach (var form in visible.OrderBy(form => Property<bool>(form, "IsEditingNote")))
             {
                 using var card = new Bitmap(form.Width, form.Height);
                 form.DrawToBitmap(card, new Rectangle(Point.Empty, card.Size));
@@ -294,6 +463,11 @@ internal static class FolderStickerChecks
     private static void NativeDrop(Form form, Point location)
     {
         SendMessage(form.Handle, 0x0231, 0, 0);
+        MoveRectangle(form, location);
+        SendMessage(form.Handle, 0x0232, 0, 0);
+    }
+    private static void MoveRectangle(Form form, Point location)
+    {
         nint pointer = Marshal.AllocHGlobal(Marshal.SizeOf<NativeRectangle>());
         try
         {
@@ -304,7 +478,16 @@ internal static class FolderStickerChecks
             form.Bounds = Rectangle.FromLTRB(result.Left, result.Top, result.Right, result.Bottom);
         }
         finally { Marshal.FreeHGlobal(pointer); }
-        SendMessage(form.Handle, 0x0232, 0, 0);
+    }
+    private static void Pointer(Control control, uint message, int buttons, int x, int y)
+    {
+        SendMessage(control.Handle, message, buttons, unchecked((nint)((uint)(ushort)x | ((uint)(ushort)y << 16))));
+    }
+    private static void PumpUntil(Func<bool> predicate)
+    {
+        var timer = Stopwatch.StartNew();
+        while (!predicate() && timer.Elapsed < TimeSpan.FromSeconds(3)) { Application.DoEvents(); Thread.Yield(); }
+        if (!predicate()) throw new TimeoutException("Folder inline editor did not settle.");
     }
     private static void Pump(Task task)
     {
