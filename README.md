@@ -2,17 +2,17 @@
 
 Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·Chrome·네이버 Whale 웹페이지를 로컬에 남기는 트레이 도구입니다.
 
-**0.2.13: 폴더와 일반 스티커를 같은 방식으로 편집하고 이동합니다.** 제목을 클릭하거나 **Ctrl+E**를 누르면 그 스티커 안에서 폴더 이름·메모를 편집합니다. 제목을 누른 채 일정 거리 이상 끌면 스티커를 이동합니다. 폴더는 **오른쪽 버튼 / Ctrl+Enter**로 자식을 펼치거나 숨깁니다. 목록은 기존처럼 폴더 클릭·Enter로 열고 닫습니다.
+**0.2.14: 목록에서 폴더를 펼쳐도 목록이 닫히지 않도록 수정했습니다.** 새로 표시되는 스티커가 목록의 초점을 빼앗는 경로를 막고, 설정의 **닫기 / Esc**가 미적용 변경을 저장하지 않고 창을 닫도록 수정했습니다. 검색 중에는 일치 항목의 상위 경로를 임시로 펼치며, 검색을 지우면 저장된 폴더 상태로 돌아갑니다.
 
-**[0.2.13 릴리스 다운로드](https://github.com/prozac0401/BookMark/releases/tag/v0.2.13)** · [변경 사항과 검증 범위](docs/release-notes-v0.2.13.md) · [설치 및 사용 매뉴얼](docs/user-manual.ko.md) · [빠른 시작](docs/quick-start.ko.md)
+**[0.2.14 MSI 다운로드](https://github.com/prozac0401/BookMark/releases/download/v0.2.14/WorkBookmark-0.2.14-win-x64.msi)** · [전체 배포 파일](https://github.com/prozac0401/BookMark/releases/tag/v0.2.14) · [변경 사항과 검증 범위](docs/release-notes-v0.2.14.md) · [설치 및 사용 매뉴얼](docs/user-manual.ko.md) · [빠른 시작](docs/quick-start.ko.md)
 
-배포 파일은 MSI·포터블 ZIP·Source.zip·SourceSnapshot.json·검증 JSON·SHA256SUMS.txt의 6종입니다. 패키지는 서명되지 않았습니다. 최종 MSI 검사 결과는 첨부 검증 JSON, 소스 기준은 SourceSnapshot.json, 파일 지문은 SHA256SUMS.txt에서 확인합니다. 실제 UI 조작·설치 시험과 자동검사의 범위는 [이번 릴리스 안내](docs/release-notes-v0.2.13.md)에 구분합니다.
+배포 파일은 MSI·포터블 ZIP·Source.zip·SourceSnapshot.json·검증 JSON·SHA256SUMS.txt의 6종입니다. 패키지는 서명되지 않았습니다. 최종 MSI 검사 결과는 첨부 검증 JSON, 소스 기준은 SourceSnapshot.json, 파일 지문은 SHA256SUMS.txt에서 확인합니다. 실제 UI 조작·설치 시험과 자동검사의 범위는 [이번 릴리스 안내](docs/release-notes-v0.2.14.md)에 구분합니다.
 
-0.2.12에서 도입한 링크 없는 폴더를 계속 사용합니다. B를 폴더 A 위에 놓으면 A 안으로 이동하고, 일반 스티커 A 위에 놓으면 둘을 담는 새 폴더를 만듭니다. 스티커와 목록은 같은 구조·색상·열림 상태를 공유합니다. **0.2.13은 0.2.12의 DB v8을 그대로 사용하며 스키마 변경이 없습니다.** 0.2.11 이하의 DB는 `.bak` 백업 후 v8로 이전합니다. 0.2.11 이하로 복귀할 때는 이전 전 백업이 필요합니다. [백업 안내](docs/user-manual.ko.md#maintenance)를 참고하세요.
+0.2.12에서 도입한 링크 없는 폴더를 계속 사용합니다. B를 폴더 A 위에 놓으면 A 안으로 이동하고, 일반 스티커 A 위에 놓으면 둘을 담는 새 폴더를 만듭니다. 스티커와 목록은 같은 구조·색상·열림 상태를 공유합니다. **0.2.14는 0.2.12의 DB v8을 그대로 사용하며 스키마 변경이 없습니다.** 0.2.11 이하의 DB는 `.bak` 백업 후 v8로 이전합니다. 0.2.11 이하로 복귀할 때는 이전 전 백업이 필요합니다. [백업 안내](docs/user-manual.ko.md#maintenance)를 참고하세요.
 
 일반 책갈피는 메모가 있으면 메모가 스티커 제목이 됩니다. 폴더 이름은 최대 **100자**, 메모는 최대 **500자**이며 다른 창으로 이동하면 자동 저장합니다. **Enter**로 바로 저장하거나 **취소 / Esc**로 되돌릴 수 있습니다. 기존 표시·숨김 토글, 자석 정렬, 한 줄 스티커와 0.2.10 메모 회귀 수정도 포함합니다.
 
-이전 검증 기록은 [0.2.12](docs/release-notes-v0.2.12.md), [0.2.11](docs/release-notes-v0.2.11.md), [0.2.10](docs/release-notes-v0.2.10.md), [0.2.9](docs/release-notes-v0.2.9.md), [Whale 사용자 확인](docs/stable-release-20261005.md)에 보존합니다.
+이전 검증 기록은 [0.2.14-test.2](docs/release-notes-v0.2.14-test.2.md), [0.2.13](docs/release-notes-v0.2.13.md), [0.2.12](docs/release-notes-v0.2.12.md), [0.2.11](docs/release-notes-v0.2.11.md), [0.2.10](docs/release-notes-v0.2.10.md), [0.2.9](docs/release-notes-v0.2.9.md), [Whale 사용자 확인](docs/stable-release-20261005.md)에 보존합니다.
 
 ![WorkBookmark 아이콘과 설치 화면 디자인](docs/evidence/branding-2026-09-22/branding-preview.png)
 
@@ -30,9 +30,11 @@ Windows 빌드·자동검사와 실제 환경별 확인 결과는 [검증 보고
 
 ## 실행
 
-**0.2.3 이하를 사용자 지정 경로에 설치했다면 기존 MSI와 원래 INSTALLFOLDER를 지정해 먼저 제거한 뒤 새로 설치하세요.** 기본 경로 설치는 일반 업데이트를 확인했습니다. [설치 경로 이행 안내](docs/windows-installer.ko.md)를 먼저 확인하세요.
+**0.2.3 이하를 사용자 지정 경로에 설치했다면 기존 MSI와 원래 INSTALLFOLDER를 지정해 먼저 제거한 뒤 새로 설치하세요.** 기본 경로의 일반 업데이트는 이전 릴리스에서 확인했습니다. 이번 릴리스의 검증 범위는 위 릴리스 안내를 참고하세요. [설치 경로 이행 안내](docs/windows-installer.ko.md)를 먼저 확인하세요.
 
-[0.2.13 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.13)의 `WorkBookmark-0.2.13-win-x64.msi`는 기본 경로의 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치하는 방식입니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
+[0.2.14 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.14)의 `WorkBookmark-0.2.14-win-x64.msi`는 기본 경로의 이전 MSI 설치를 자동 제거하고 현재 사용자에게 새 버전을 설치하는 방식입니다. 책갈피와 설정은 유지됩니다. 설치 완료 화면의 **업무 책갈피 실행**은 기본 선택되어 있으며, 바로 실행하지 않으려면 선택을 해제한 뒤 마칩니다. 시작 메뉴에서도 실행할 수 있습니다. Windows 로그인 시 자동 실행은 설정에서 끌 수 있습니다. 제어판 ‘프로그램 제거’ 또는 Windows ‘설치된 앱’에서 제거할 수 있으며 책갈피 데이터는 유지됩니다. 관리자 권한과 SDK 설치는 필요하지 않습니다.
+
+**0.2.14-test.2 등 포터블 시험판이 실행 중이면 MSI 설치 전에 트레이 → 종료로 완전히 종료하세요.** 같은 Windows 사용자 계정에서는 `%LOCALAPPDATA%\WorkBookmark`의 기존 책갈피·설정을 이어서 사용합니다. 포터블 실행 폴더는 자동 제거하지 않습니다.
 
 포터블 사용은 self-contained win-x64 ZIP을 **폴더 전체**로 압축 해제하고 `WorkBookmark.exe`를 실행합니다. 트레이 메뉴에서 종료할 수 있습니다.
 
@@ -48,7 +50,7 @@ Windows 빌드·자동검사와 실제 환경별 확인 결과는 [검증 보고
 
 0.2.0은 데이터 형식을 v5로 갱신하고 변경 전 `.bak` 백업을 남깁니다. **0.1.7은 갱신된 DB를 읽을 수 없습니다.** 구버전 복귀에는 업그레이드 전 백업 복원이 필요합니다. [백업·업데이트 안내](docs/user-manual.ko.md#maintenance)를 확인하세요.
 
-0.2.12부터 폴더·열림 상태·색상 저장에 DB v8을 사용하며, 0.2.13에는 스키마 변경이 없습니다. 0.2.11의 v7 DB, 0.2.0~0.2.10의 v5 DB와 트리 개발 단계의 v6 DB에서 갱신할 수 있습니다. 0.2.9에서 추가한 자석 정렬 선택 항목 `StickerSnapEnabled`를 유지하며, 항목이 없는 기존 설정은 기본값인 켜짐으로 읽습니다. 설정 파일 버전과 표시 규칙 버전은 유지하고, 0.2.5 이후 선택한 모드와 사용자 크기를 다시 초기화하지 않습니다.
+0.2.12부터 폴더·열림 상태·색상 저장에 DB v8을 사용하며, 0.2.14에는 스키마 변경이 없습니다. 0.2.11의 v7 DB, 0.2.0~0.2.10의 v5 DB와 트리 개발 단계의 v6 DB에서 갱신할 수 있습니다. 0.2.9에서 추가한 자석 정렬 선택 항목 `StickerSnapEnabled`를 유지하며, 항목이 없는 기존 설정은 기본값인 켜짐으로 읽습니다. 설정 파일 버전과 표시 규칙 버전은 유지하고, 0.2.5 이후 선택한 모드와 사용자 크기를 다시 초기화하지 않습니다.
 
 ## 소스에서 빌드
 
