@@ -56,7 +56,7 @@ internal static class StickerFormChecks
         form.PerformLayout();
         var resume = Field<Button>(form, "_resume");
         var minimumTitle = Field<Button>(form, "_title");
-        assert(minimumTitle.Right <= resume.Left && minimumTitle.Height >= TextHeight(minimumTitle, "가Ag") &&
+        assert(resume.Right <= minimumTitle.Left && minimumTitle.Height >= TextHeight(minimumTitle, "가Ag") &&
             minimumTitle.Height < TextHeight(minimumTitle, "가Ag\n가Ag") &&
             form.ClientRectangle.Contains(minimumTitle.Bounds) && form.ClientRectangle.Contains(resume.Bounds) &&
             resume.Size == new Size(Px(form, 28), Px(form, 28)) &&
@@ -98,8 +98,8 @@ internal static class StickerFormChecks
         form.Show();
         form.PerformLayout();
         var status = Field<Label>(form, "_resumeStatus");
-        assert(!status.Visible && form.Size == minimum && minimumTitle.Right <= resume.Left &&
-            form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([minimumTitle, resume]) &&
+        assert(!status.Visible && form.Size == minimum && resume.Right <= minimumTitle.Left &&
+            form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([minimumTitle, resume, Field<Control>(form, "_resizeGrip")]) &&
             Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("접근할 수 없습니다", StringComparison.Ordinal) == true,
             "STK13 failed resume keeps only the title and shortcut icon without adding a row or enlarging the sticker");
         assert(defaultClientSize == new Size(Px(form, 260), Px(form, 36)) &&
@@ -115,11 +115,11 @@ internal static class StickerFormChecks
             Field<ToolTip>(form, "_tooltip").GetToolTip(title)?.Contains(sample.Target.Path, StringComparison.Ordinal) == true &&
             Get<Bookmark>(form, "Bookmark") == titled,
             "STK15 note titles hide duplicate target details while retaining tooltips and stored data");
-        assert(form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([title, Field<Button>(form, "_resume")]) &&
+        assert(form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([title, Field<Button>(form, "_resume"), Field<Control>(form, "_resizeGrip")]) &&
             (GetWindowLong(form.Handle, -16) & 0x00C00000) == 0 && form.ContextMenuStrip is not null &&
             resume.AccessibleName == "바로가기" && resume.Text != "이어가기" &&
             Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("바로가기", StringComparison.Ordinal) == true,
-            "STK20 normal stickers show only title and the accessible shortcut icon, with caption removed and a context menu available");
+            "STK20 normal stickers show title, accessible left shortcut icon and resize grip, with caption removed and a context menu available");
         ShortcutGlyphRemainsVisible(form, resume, title, assert);
         var menu = Field<ContextMenuStrip>(form, "_menu");
         var deleteItem = menu.Items.OfType<ToolStripMenuItem>().Single(item => item.Text == "책갈피 지우기");
@@ -129,9 +129,9 @@ internal static class StickerFormChecks
             "STK21 the context menu deletes the same bookmark while persisted placement remains the normal size");
         Apply(form, true, true);
         assert(title.Visible && title.Text == titled.Note.Trim() && !Field<Button>(form, "_resume").Visible &&
-            form.Controls.Cast<Control>().Where(control => control.Visible).SequenceEqual([title]) &&
+            form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([title, Field<Control>(form, "_resizeGrip")]) &&
             Get<bool>(form, "PlacementIsCollapsed"),
-            "STK16 collapsed stickers show only their memo-first title and retain the collapsed placement");
+            "STK16 collapsed stickers show their memo-first title and resize grip and retain the collapsed placement");
         Apply(form, false, true);
 
         var fallbackCases = new[]
@@ -151,7 +151,7 @@ internal static class StickerFormChecks
         string longNote = string.Concat(Enumerable.Repeat("긴 메모에서 전체 내용을 확인하고 다음 작업으로 이어갑니다. ", 20));
         Invoke(form, "UpdateBookmark", sample with { Note = longNote });
         assert(title.Text == longNote.Trim() && title.AutoEllipsis && title.TabStop && title.CanSelect &&
-            title.Right <= resume.Left &&
+            resume.Right <= title.Left &&
             Field<ToolTip>(form, "_tooltip").GetToolTip(title)?.Contains(longNote.Trim(), StringComparison.Ordinal) == true,
             "STK18 long notes remain keyboard reachable in one-line bounds with complete tooltip text");
         edited = null;

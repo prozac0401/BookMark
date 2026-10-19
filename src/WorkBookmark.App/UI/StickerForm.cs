@@ -28,6 +28,7 @@ internal sealed class StickerForm : Form
     private readonly Button _cancelNote = new();
     private readonly Button _delete = new();
     private readonly ShortcutButton _resume = new();
+    private readonly ResizeGrip _resizeGrip = new();
     private readonly ContextMenuStrip _menu = new();
     private readonly ToolStripMenuItem _collapseMenu;
     private readonly ToolStripMenuItem _relinkMenu;
@@ -62,6 +63,8 @@ internal sealed class StickerForm : Form
     private bool _iconLookupStarted;
     private bool _nativeMoving;
     private bool _insideSizeMove;
+    private Size _nativeSizeMoveSize;
+    private bool _selected;
     private Point _nativeMoveOrigin;
     private bool _dropTarget;
     private string? _parentTitle;
@@ -250,8 +253,9 @@ internal sealed class StickerForm : Form
         _title.AutoEllipsis = true;
         _title.TextAlign = ContentAlignment.TopLeft;
         _title.Padding = Padding.Empty;
-        _title.Cursor = Cursors.IBeam;
+        _title.Cursor = Cursors.SizeAll;
         _title.Click += (_, _) => RequestNoteEdit();
+        _title.DoubleClick += (_, _) => RequestNoteEdit();
         _title.DragRequested += (_, _) => BeginPointerMove();
         _resumeStatus.Font = _smallFont;
         _resumeStatus.UseCompatibleTextRendering = false; // Match the GDI line height used by OnLayout.
@@ -331,7 +335,7 @@ internal sealed class StickerForm : Form
         _resume.ContextMenuStrip = _menu;
         _resumeStatus.ContextMenuStrip = _menu;
         MouseDown += DragHeader;
-        _tooltip.SetToolTip(this, "빈 여백을 드래그하여 이동 · 책갈피 위에 놓으면 새 폴더로 묶기 · 폴더 위에 놓으면 안으로 이동 · Alt: 자유 이동");
+        _tooltip.SetToolTip(this, "클릭하여 선택 · 드래그하여 이동 · Shift+드래그: 폴더로 묶기/넣기 · Alt: 자유 이동");
         _treeMark.ContextMenuStrip = _menu;
         _header.ContextMenuStrip = _menu;
         _typeIcon.ContextMenuStrip = _menu;
@@ -340,7 +344,15 @@ internal sealed class StickerForm : Form
         _collapse.Click += (_, _) => ToggleCollapsed();
         _delete.Click += (_, _) => { if (!_busy && !IsEditingNote) DeleteRequested?.Invoke(Bookmark); };
         _resume.Click += (_, _) => RequestPrimaryAction();
-        Controls.AddRange([_header, _treeMark, _title, _resumeStatus, _noteEditor, _noteStatus, _cancelNote, _delete, _resume]);
+        _resizeGrip.AccessibleName = "스티커 크기 조절";
+        _resizeGrip.AccessibleRole = AccessibleRole.Grip;
+        _resizeGrip.TabStop = false;
+        _resizeGrip.MouseDown += (_, e) =>
+        {
+            if (e.Button == MouseButtons.Left) BeginPointerResize();
+        };
+        _tooltip.SetToolTip(_resizeGrip, "드래그하여 크기 조절 · 접힌 스티커는 너비 조절");
+        Controls.AddRange([_header, _treeMark, _title, _resumeStatus, _noteEditor, _noteStatus, _cancelNote, _delete, _resume, _resizeGrip]);
         _layoutReady = true;
         UpdateBookmark(bookmark);
         ApplyPresentation(false, false);
@@ -363,7 +375,7 @@ internal sealed class StickerForm : Form
         _kind.Text = IsCollapsed ? title : KindLabel(value.Target.Kind);
         UpdateTypeIcon();
         _title.Text = title;
-        _title.Cursor = Cursors.IBeam;
+        _title.Cursor = Cursors.SizeAll;
         _title.AccessibleName = value.IsFolder ? "폴더 이름 · 이름 변경" : "책갈피 제목 · 메모 편집";
         UpdateTreeMark();
         string? issue = value.LastResumeResult switch
@@ -390,11 +402,11 @@ internal sealed class StickerForm : Form
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
             details += CanRelink(value) ? "\n우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
-        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 이름 변경 (F2 / Ctrl+E) · 드래그하여 이동\n오른쪽 버튼: 폴더 열기/닫기" : "\n클릭하여 메모 편집 (Ctrl+E) · 드래그하여 이동"));
+        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 선택 · 드래그하여 이동 · 더블클릭/F2로 이름 변경\n왼쪽 버튼: 폴더 열기/닫기" : "\n클릭하여 선택 · 드래그하여 이동 · 더블클릭/F2로 메모 편집") + "\nShift+드래그: 폴더로 묶기/넣기 · Alt: 자유 이동");
         _tooltip.SetToolTip(_kind, details + "\n드래그하여 이동");
         _tooltip.SetToolTip(_resumeStatus, issue is null ? "" : issue + "\n" + details);
-        _title.AccessibleDescription = details + (value.IsFolder ? "\n클릭하거나 F2, Ctrl+E로 이름을 변경합니다. 드래그하여 이동합니다. 오른쪽 버튼으로 폴더를 열고 닫습니다."
-            : empty ? "\n메모가 없습니다. 클릭하거나 Ctrl+E로 추가할 수 있습니다. 드래그하여 이동합니다." : "\n클릭하거나 Ctrl+E로 메모를 편집할 수 있습니다. 드래그하여 이동합니다.");
+        _title.AccessibleDescription = details + "\n한 번 클릭하여 선택하고 드래그하여 이동합니다. 더블클릭 또는 F2, Ctrl+E로 " +
+            (value.IsFolder ? "이름을 변경합니다. 왼쪽 버튼으로 폴더를 열고 닫습니다." : empty ? "메모를 추가합니다." : "메모를 편집합니다.");
         _resumeStatus.AccessibleDescription = issue;
         RefreshActionState();
         PerformLayout();
@@ -432,7 +444,7 @@ internal sealed class StickerForm : Form
         var palette = BookmarkColors.Get(Bookmark.Color);
         Color paper = _dropTarget ? Color.FromArgb(209, 235, 225) : palette.Paper;
         BackColor = paper;
-        foreach (Control control in new Control[] { _header, _typeIcon, _kind, _treeMark, _title, _resumeStatus, _noteEditor, _noteStatus, _collapse, _options, _cancelNote, _delete })
+        foreach (Control control in new Control[] { _header, _typeIcon, _kind, _treeMark, _title, _resumeStatus, _noteEditor, _noteStatus, _collapse, _options, _cancelNote, _delete, _resizeGrip })
             control.BackColor = paper;
         foreach (Button button in new Button[] { _title, _collapse, _options, _cancelNote, _delete })
         {
@@ -447,8 +459,8 @@ internal sealed class StickerForm : Form
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
-        if (!_dropTarget) return;
-        using var pen = new Pen(UiStyle.Accent, Math.Max(2, Px(2)));
+        if (!_dropTarget && !_selected) return;
+        using var pen = new Pen(UiStyle.Accent, _dropTarget ? Math.Max(2, Px(2)) : Math.Max(1, Px(1)));
         e.Graphics.DrawRectangle(pen, 1, 1, Math.Max(0, ClientSize.Width - 3), Math.Max(0, ClientSize.Height - 3));
     }
 
@@ -479,7 +491,7 @@ internal sealed class StickerForm : Form
             Rectangle restingBounds = Bounds;
             Size restingExpandedSize = ExpandedSize;
             bool restingCollapsed = IsCollapsed;
-            bool needsSpace = ClientSize.Height < Px(160);
+            bool needsSpace = ClientSize.Height < Px(96);
             _noteRestoreBounds = restingBounds;
             _noteRestoreExpandedSize = restingExpandedSize;
             _noteRestoreCollapsed = restingCollapsed;
@@ -495,7 +507,7 @@ internal sealed class StickerForm : Form
             _noteEditor.Text = folderName ? Bookmark.DisplayName : Bookmark.Note;
             _noteEditor.SelectionStart = _noteEditor.TextLength;
             if (folderName) _noteEditor.SelectAll();
-            _noteStatus.Text = "다른 창으로 이동하면 자동저장\nEnter 저장 · Esc 취소";
+            _noteStatus.Text = "Enter 저장 · Esc 취소 · 자동저장";
             _noteStatus.ForeColor = UiStyle.Muted;
             bool changing = _presentationChanging;
             _presentationChanging = true;
@@ -506,7 +518,7 @@ internal sealed class StickerForm : Form
                 SetMinimumSize();
                 if (needsSpace)
                 {
-                    Height = Math.Max(Height, SizeFromClientSize(new Size(ClientSize.Width, Px(170))).Height);
+                    Height = Math.Max(Height, SizeFromClientSize(new Size(ClientSize.Width, Px(96))).Height);
                     // This automatic correction is not a user move. Only movement
                     // after the final anchor contributes to the persisted placement.
                     Rectangle area = Screen.FromRectangle(restingBounds).WorkingArea;
@@ -561,6 +573,8 @@ internal sealed class StickerForm : Form
 
     protected override void OnDeactivate(EventArgs e)
     {
+        _selected = false;
+        Invalidate();
         base.OnDeactivate(e);
         if (!IsEditingNote || _noteSaving || _hidingForFolder || IsDisposed || Disposing) return;
         _noteAutoSavePending = true;
@@ -569,6 +583,8 @@ internal sealed class StickerForm : Form
 
     protected override void OnActivated(EventArgs e)
     {
+        _selected = true;
+        Invalidate();
         _noteAutoSavePending = false;
         base.OnActivated(e);
     }
@@ -617,13 +633,13 @@ internal sealed class StickerForm : Form
         catch (BookmarkException exception) when (_editingFolderName && exception.Code == ResultCode.InvalidRequest)
         {
             if (IsDisposed) return;
-            _noteStatus.Text = "폴더 이름은 1~100자로 입력해 주세요.\nEnter 저장 · Esc 취소";
+            _noteStatus.Text = "폴더 이름은 1~100자로 입력해 주세요.";
             _noteStatus.ForeColor = Color.FromArgb(138, 80, 43);
         }
         catch
         {
             if (IsDisposed) return;
-            _noteStatus.Text = "저장하지 못했습니다.\n입력은 유지됩니다. Enter로 재시도";
+            _noteStatus.Text = "저장하지 못했습니다. Enter로 재시도";
             _noteStatus.ForeColor = Color.FromArgb(138, 80, 43);
         }
         finally
@@ -666,8 +682,8 @@ internal sealed class StickerForm : Form
             IsCollapsed = collapsed;
             _expandedSize = expanded;
             SetMinimumSize();
-            // User resizing during editing is temporary, just like the automatic
-            // expansion. User movement is retained, excluding the initial clamp.
+            // Automatic editor expansion is temporary. Explicit native resizing
+            // updates the resting size, while movement excludes the initial clamp.
             Bounds = new Rectangle(placement.Location, resting.Value.Size);
             RefreshActionState();
         }
@@ -705,6 +721,7 @@ internal sealed class StickerForm : Form
         _resume.AccessibleDescription = (Bookmark.IsFolder ? action : "저장한 작업 위치로 이동") + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : "");
         _tooltip.SetToolTip(_resume, action + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : ""));
         _resume.Invalidate();
+        _resizeGrip.Cursor = IsCollapsed ? Cursors.SizeWE : Cursors.SizeNWSE;
         foreach (Control control in new Control[] { _noteEditor, _noteStatus, _cancelNote })
             control.Visible = editing;
     }
@@ -773,7 +790,7 @@ internal sealed class StickerForm : Form
     {
         MaximumSize = Size.Empty;
         MinimumSize = SizeFromClientSize(new Size(Px(MinimumClientSize.Width),
-            IsCollapsed ? Px(36) : IsEditingNote ? Px(160) : Px(MinimumClientSize.Height)));
+            IsCollapsed ? Px(36) : IsEditingNote ? Px(96) : Px(MinimumClientSize.Height)));
         // A zero width with a nonzero maximum height is a real width limit in
         // WinForms; it would also shrink MinimumSize and collapse the note to 42px.
         MaximumSize = IsCollapsed
@@ -790,22 +807,24 @@ internal sealed class StickerForm : Form
         if (!_layoutReady) return;
         int gap = Px(6), width = ClientSize.Width;
         int rowHeight = Px(DefaultClientSize.Height), actionSize = Px(28);
-        _resume.SetBounds(width - gap - actionSize, (rowHeight - actionSize) / 2, actionSize, actionSize);
+        _resume.SetBounds(gap, (rowHeight - actionSize) / 2, actionSize, actionSize);
         int titleHeight = _title.OneLineHeight + Px(2);
-        int titleLeft = gap - Px(3);
+        int titleLeft = IsCollapsed ? gap - Px(3) : _resume.Right + gap;
         bool treeMarkVisible = Bookmark.IsFolder || _treeDepth > 0 || _childCount > 0;
-        _treeMark.SetBounds(Px(3), 0, treeMarkVisible ? Px(18) : 0, rowHeight);
+        _treeMark.SetBounds(titleLeft, 0, treeMarkVisible ? Px(18) : 0, rowHeight);
         if (treeMarkVisible) titleLeft += Px(18);
-        int titleRight = IsCollapsed ? width - gap + Px(3) : _resume.Left - gap;
+        int gripSize = Px(14);
+        _resizeGrip.SetBounds(width - gripSize - Px(2), ClientSize.Height - gripSize - Px(2), gripSize, gripSize);
+        int titleRight = width - gripSize - Px(4);
         _title.SetBounds(titleLeft, Math.Max(0, (rowHeight - titleHeight) / 2), Math.Max(0, titleRight - titleLeft), titleHeight);
         // Failures belong to the shortcut icon and its tooltip, never a second row.
         _resumeStatus.Bounds = Rectangle.Empty;
         int bottom = ClientSize.Height - Px(8);
         _delete.SetBounds(Px(4), bottom - Px(28), Px(60), Px(28));
         _cancelNote.Bounds = _delete.Bounds;
-        _noteEditor.SetBounds(gap, Px(12), width - gap * 2, _noteEditor.PreferredHeight);
-        int noteStatusTop = _noteEditor.Bottom + Px(6);
-        _noteStatus.SetBounds(gap, noteStatusTop, width - gap * 2, Math.Max(0, _cancelNote.Top - Px(8) - noteStatusTop));
+        _noteEditor.SetBounds(gap, Px(8), width - gap * 2, _noteEditor.PreferredHeight);
+        int noteStatusTop = _noteEditor.Bottom + Px(4);
+        _noteStatus.SetBounds(gap, noteStatusTop, width - gap * 2, Math.Max(0, _cancelNote.Top - Px(2) - noteStatusTop));
         Invalidate();
     }
 
@@ -814,13 +833,13 @@ internal sealed class StickerForm : Form
         if (message.Msg == 0x0231) // WM_ENTERSIZEMOVE also occurs for resizing.
         {
             _insideSizeMove = true;
+            _nativeSizeMoveSize = Size;
             _nativeMoving = false;
             _nativeMoveOrigin = Location;
         }
         // WM_MOVING supplies the proposed screen rectangle before Windows moves
         // the window. Correct that rectangle so native dragging stays smooth.
-        if (message.Msg == 0x0216 && message.LParam != nint.Zero &&
-            !_presentationChanging && AdjustMoveBounds is { } adjust)
+        if (message.Msg == 0x0216 && message.LParam != nint.Zero && !_presentationChanging)
         {
             if (!_nativeMoving)
             {
@@ -828,7 +847,8 @@ internal sealed class StickerForm : Form
                 _nativeMoving = true;
             }
             var bounds = Marshal.PtrToStructure<MovingRectangle>(message.LParam);
-            var snapped = adjust(Rectangle.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom), ModifierKeys);
+            var proposed = Rectangle.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
+            var snapped = AdjustMoveBounds?.Invoke(proposed, ModifierKeys) ?? proposed;
             Marshal.StructureToPtr(new MovingRectangle
             {
                 Left = snapped.Left, Top = snapped.Top, Right = snapped.Right, Bottom = snapped.Bottom
@@ -855,6 +875,16 @@ internal sealed class StickerForm : Form
         base.OnResizeEnd(e);
         if (!_presentationChanging)
         {
+            if (_insideSizeMove && !_nativeMoving && IsEditingNote && _noteRestoreBounds is { } resting)
+            {
+                bool widthChanged = Width != _nativeSizeMoveSize.Width;
+                bool heightChanged = Height != _nativeSizeMoveSize.Height;
+                _noteRestoreBounds = new Rectangle(resting.Location, new Size(
+                    widthChanged ? Width : resting.Width, heightChanged ? Height : resting.Height));
+                _noteRestoreExpandedSize = new Size(widthChanged ? Width : _noteRestoreExpandedSize.Width,
+                    heightChanged ? Height : _noteRestoreExpandedSize.Height);
+                if (heightChanged) _noteRestoreCollapsed = false;
+            }
             if (!IsCollapsed && !IsEditingNote) _expandedSize = Size;
             PlacementChanged?.Invoke(this);
         }
@@ -864,6 +894,7 @@ internal sealed class StickerForm : Form
     {
         double scale = (double)e.DeviceDpiNew / e.DeviceDpiOld;
         Size ScaleSize(Size value) => new((int)Math.Round(value.Width * scale), (int)Math.Round(value.Height * scale));
+        if (_insideSizeMove) _nativeSizeMoveSize = ScaleSize(_nativeSizeMoveSize);
         Rectangle? resting = _noteRestoreBounds;
         Point restoreOffset = resting.HasValue
             ? new Point(PlacementBounds.Left - Left, PlacementBounds.Top - Top) : Point.Empty;
@@ -926,7 +957,7 @@ internal sealed class StickerForm : Form
         if (keyData == (Keys.Control | Keys.Space)) { ToggleCollapsed(); return true; }
         if (keyData == (Keys.Control | Keys.Z)) { UndoRequested?.Invoke(); return true; }
         if (keyData == (Keys.Control | Keys.E)) { RequestNoteEdit(); return true; }
-        if (keyData == Keys.F2 && Bookmark.IsFolder) { RequestNoteEdit(); return true; }
+        if (keyData == Keys.F2) { RequestNoteEdit(); return true; }
         if (keyData == (Keys.Control | Keys.Enter)) { RequestPrimaryAction(); return true; }
         if (keyData == (Keys.Control | Keys.Delete)) { if (!_busy) DeleteRequested?.Invoke(Bookmark); return true; }
         return base.ProcessCmdKey(ref message, keyData);
@@ -1022,6 +1053,16 @@ internal sealed class StickerForm : Form
         SendMessage(Handle, 0x00A1, (nint)2, (nint)position); // WM_NCLBUTTONDOWN / HTCAPTION
     }
 
+    private void BeginPointerResize()
+    {
+        if (IsDisposed) return;
+        Activate();
+        ReleaseCapture();
+        Point cursor = Cursor.Position;
+        int position = unchecked((int)((uint)(ushort)cursor.X | ((uint)(ushort)cursor.Y << 16)));
+        SendMessage(Handle, 0x00A1, (nint)(IsCollapsed ? 11 : 17), (nint)position); // HTRIGHT / HTBOTTOMRIGHT
+    }
+
     private void BeginWindowMove()
     {
         if (IsDisposed) return;
@@ -1090,6 +1131,21 @@ internal sealed class StickerForm : Form
             _smallFont.Dispose();
             _noteFont.Dispose();
             _bodyFont.Dispose();
+        }
+    }
+
+    private sealed class ResizeGrip : Control
+    {
+        internal ResizeGrip() => SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer, true);
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            float scale = DeviceDpi / 96F;
+            using var pen = new Pen(UiStyle.Muted, Math.Max(1, scale));
+            for (int inset = 3; inset <= 9; inset += 3)
+                e.Graphics.DrawLine(pen, Width - inset * scale, Height - 2 * scale,
+                    Width - 2 * scale, Height - inset * scale);
         }
     }
 
@@ -1166,10 +1222,23 @@ internal sealed class StickerForm : Form
         private Point? _pointerDown;
         private bool _dragging;
         private bool _suppressPointerClick;
+        private bool _pointerClick;
+        private bool _processingPointer;
         internal event EventHandler? DragRequested;
 
         protected override void WndProc(ref Message message)
         {
+            if (message.Msg == 0x0203) // A Button does not normally expose native double clicks.
+            {
+                _pointerDown = null;
+                // Opening the editor hides this button, so the second release
+                // can go to the editor. Never leave pointer-only state latched.
+                _pointerClick = false;
+                _suppressPointerClick = true;
+                if (!_dragging) OnDoubleClick(EventArgs.Empty);
+                message.Result = nint.Zero;
+                return;
+            }
             // WinForms may dispatch Click before OnMouseUp. Guard the complete
             // mouse message so a late release after move/cancel cannot edit.
             if (message.Msg == 0x0202 && _suppressPointerClick)
@@ -1179,15 +1248,19 @@ internal sealed class StickerForm : Form
                 bool dragging = _dragging;
                 _dragging = true;
                 try { base.WndProc(ref message); }
-                finally { _dragging = dragging; }
+                finally { _dragging = dragging; _pointerClick = false; }
                 return;
             }
-            base.WndProc(ref message);
+            bool processing = _processingPointer;
+            if (message.Msg is 0x0201 or 0x0202) _processingPointer = true;
+            try { base.WndProc(ref message); }
+            finally { _processingPointer = processing; }
         }
 
         protected override void OnMouseDown(MouseEventArgs e)
         {
             _suppressPointerClick = false;
+            _pointerClick = e.Button == MouseButtons.Left;
             _pointerDown = e.Button == MouseButtons.Left ? PointToScreen(e.Location) : null;
             base.OnMouseDown(e);
         }
@@ -1221,18 +1294,22 @@ internal sealed class StickerForm : Form
             bool dragging = _dragging;
             if (suppress) _dragging = true;
             try { base.OnMouseUp(e); }
-            finally { _dragging = dragging; }
+            finally { _dragging = dragging; _pointerClick = false; }
         }
 
         protected override void OnMouseCaptureChanged(EventArgs e)
         {
             _pointerDown = null;
+            _pointerClick = false;
             base.OnMouseCaptureChanged(e);
         }
 
         protected override void OnClick(EventArgs e)
         {
-            if (!_dragging) base.OnClick(e);
+            if (_dragging) return;
+            // Pointer clicks select; keyboard and accessibility invocation edit.
+            if (_pointerClick || _processingPointer) { Focus(); return; }
+            base.OnClick(e);
         }
 
         public int OneLineHeight => MeasureTitleHeight(1);

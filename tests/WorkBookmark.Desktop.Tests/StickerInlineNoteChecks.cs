@@ -41,9 +41,9 @@ internal static class StickerInlineNoteChecks
         var editor = Field<TextBox>(form, "_noteEditor");
         var editingBounds = form.Bounds;
         assert(Editing(form) && form.Handle == window && form.Location == bounds.Location && form.Width == bounds.Width &&
-            form.ClientSize.Height == Px(form, 170) && Placement(form) == bounds && !PlacementCollapsed(form) &&
+            form.ClientSize.Height == Px(form, 96) && Placement(form) == bounds && !PlacementCollapsed(form) &&
             editor.Parent == form && editor.Visible && editor.Focused,
-            "STN01 clicking the compact title temporarily enlarges only its height in the same window and preserves placement");
+            "STN01 activating the compact title temporarily enlarges only its height in the same window and preserves placement");
         assert(editor.Text == sample.Note && !editor.Multiline && editor.MaxLength == 500 &&
             !form.Controls.OfType<Button>().Any(button => button.Text.StartsWith("저장", StringComparison.Ordinal)) &&
             Field<Button>(form, "_cancelNote").Visible && !Field<Button>(form, "_resume").Visible,
@@ -124,12 +124,12 @@ internal static class StickerInlineNoteChecks
         assert(editor.Bottom < Field<Button>(form, "_cancelNote").Top &&
             Field<Label>(form, "_noteStatus").Top > editor.Bottom &&
             Field<Label>(form, "_noteStatus").Bottom < Field<Button>(form, "_cancelNote").Top &&
-            Field<Label>(form, "_noteStatus").Height >= Field<Label>(form, "_noteStatus").Font.Height * 2 &&
+            Field<Label>(form, "_noteStatus").Height >= TextRenderer.MeasureText(Field<Label>(form, "_noteStatus").Text, Field<Label>(form, "_noteStatus").Font).Height &&
             editor.Right <= form.ClientSize.Width && Field<Button>(form, "_cancelNote").Bottom < form.ClientSize.Height,
             "STN13 inline editor and feedback remain inside the minimum sticker bounds");
         assert(form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals(
-            [editor, Field<Label>(form, "_noteStatus"), Field<Button>(form, "_cancelNote")]) && Placement(form) == bounds,
-            "STN14 temporary editing shows only editor, feedback and cancel without replacing the normal placement");
+            [editor, Field<Label>(form, "_noteStatus"), Field<Button>(form, "_cancelNote"), Field<Control>(form, "_resizeGrip")]) && Placement(form) == bounds,
+            "STN14 temporary editing shows editor, feedback, cancel and resize grip without replacing the normal placement");
 
         Command(form, Keys.Escape);
         var laterCommit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -211,7 +211,7 @@ internal static class StickerInlineNoteChecks
         PumpUntil(() => writes == 2 && !Field<bool>(form, "_noteSaving"));
         assert(Editing(form) && !editor.ReadOnly && editor.Text == "자동저장 실패 후 재시도할 초안" &&
             Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal) && other.ContainsFocus &&
-            form.ClientSize.Height == Px(form, 170) && Placement(form) == normalBounds,
+            form.ClientSize.Height == Px(form, 96) && Placement(form) == normalBounds,
             "STN18 automatic save failure retains an editable draft and feedback without stealing focus");
         rejectWrite = false;
         form.Activate();
@@ -293,11 +293,11 @@ internal static class StickerInlineNoteChecks
         form.ClientSize = new Size(Px(form, 240), Px(form, 36));
         var narrow = form.Bounds;
         Begin(form, _ => Task.CompletedTask);
-        assert(form.Width == narrow.Width && form.ClientSize.Height == Px(form, 170) && Placement(form) == narrow,
+        assert(form.Width == narrow.Width && form.ClientSize.Height == Px(form, 96) && Placement(form) == narrow,
             "STN32 a narrow compact sticker keeps its chosen width while only its editing height expands");
         form.Size += new Size(Px(form, 30), Px(form, 20));
         StickerType.GetMethod("OnResizeEnd", Instance)!.Invoke(form, [EventArgs.Empty]);
-        assert(Placement(form) == narrow, "STN33 resizing while editing changes only the temporary editor geometry");
+        assert(Placement(form) == narrow, "STN33 programmatic resizing while editing changes only the temporary editor geometry");
         Command(form, Keys.Escape);
         assert(form.Bounds == narrow, "STN34 cancelling restores the original narrow size after a temporary resize");
         form.ClientSize = new Size(Px(form, 260), Px(form, 36));

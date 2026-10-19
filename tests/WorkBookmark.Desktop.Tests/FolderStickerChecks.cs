@@ -132,9 +132,9 @@ internal static class FolderStickerChecks
                 drops++; droppedChild = child.Id; droppedTarget = target;
             }));
             Cursor.Position = Center(d);
-            NativeDrop(c, d.Location + new Size(7, 3));
+            NativeDrop(manager, c, d.Location + new Size(7, 3));
             assert(drops == 1 && droppedChild == loose.Id && droppedTarget == disk.Id && BookmarkFor(c).ParentId is null,
-                "FS15 dropping on an ordinary sticker requests atomic folder grouping without an optimistic parent change");
+                "FS15 Shift-dropping on an ordinary sticker requests atomic folder grouping without an optimistic parent change");
             Rectangle targetBounds = d.Bounds;
             var grouped = Folder("새 폴더", 7);
             disk = disk with { ParentId = grouped.Id }; loose = loose with { ParentId = grouped.Id };
@@ -150,9 +150,9 @@ internal static class FolderStickerChecks
                 "FS17 opening a newly grouped folder reveals its organized children without another layout");
             grouped = grouped with { FolderExpanded = false }; Publish(grouped);
             Cursor.Position = Center(f);
-            NativeDrop(h, f.Location + new Size(7, 3));
+            NativeDrop(manager, h, f.Location + new Size(7, 3));
             assert(drops == 2 && droppedChild == grouped.Id && droppedTarget == folder.Id &&
-                BookmarkFor(h).ParentId is null && Call(manager, "FindDropTarget", f, Center(a), Keys.None) is null,
+                BookmarkFor(h).ParentId is null && Call(manager, "FindDropTarget", f, Center(a), Keys.Shift) is null,
                 "FS18 a folder can be dropped into another folder while ancestor-to-descendant drops remain invalid");
             grouped = grouped with { ParentId = folder.Id }; Publish(grouped);
             assert(h.Visible && !c.Visible && !d.Visible && BookmarkFor(f).FolderExpanded,
@@ -320,16 +320,16 @@ internal static class FolderStickerChecks
         Pointer(title, 0x0201, 1, 20, 12);
         title.PerformClick();
         title.Capture = false;
-        assert(clicks == 4 && drags == 1, "FS34 accessibility activation and a fresh title component gesture remain editable after dragging");
+        assert(clicks == 3 && drags == 1, "FS34 accessibility activation remains editable and a fresh pointer gesture only selects after dragging");
         Pointer(title, 0x0201, 1, 20, 12);
         title.Capture = false;
         Call(title, "OnMouseMove", new MouseEventArgs(MouseButtons.Left, 0, 20 + SystemInformation.DragSize.Width + 8, 12, 0));
         Pointer(title, 0x0202, 0, 20, 12);
-        assert(clicks == 4 && drags == 1, "FS35 native capture loss cancels the pending component gesture without editing or dragging");
+        assert(clicks == 3 && drags == 1, "FS35 native capture loss cancels the pending component gesture without editing or dragging");
         Pointer(title, 0x0204, 2, 20, 12);
         Call(title, "OnMouseMove", new MouseEventArgs(MouseButtons.Right, 0, 20 + SystemInformation.DragSize.Width + 8, 12, 0));
         Pointer(title, 0x0205, 0, 20, 12);
-        assert(clicks == 4 && drags == 1, "FS36 right-button component gestures remain available for the context menu and never start a move");
+        assert(clicks == 3 && drags == 1, "FS36 right-button component gestures remain available for the context menu and never start a move");
     }
 
     private static void LateReadCheck(Action<bool, string> assert)
@@ -460,11 +460,19 @@ internal static class FolderStickerChecks
     private static void On(object value, string name, Delegate handler) => value.GetType().GetEvent(name, Private | BindingFlags.Public)!.GetAddMethod(true)!.Invoke(value, [handler]);
     private static Point Center(Form form) => new(form.Left + form.Width / 2, form.Top + form.Height / 2);
     private static void Command(Form form, Keys keys) => Call(form, "ProcessCmdKey", Message.Create(form.Handle, 0x0100, 0, 0), keys);
-    private static void NativeDrop(Form form, Point location)
+    private static void NativeDrop(object manager, Form form, Point location)
     {
-        SendMessage(form.Handle, 0x0231, 0, 0);
-        MoveRectangle(form, location);
-        SendMessage(form.Handle, 0x0232, 0, 0);
+        var property = form.GetType().GetProperty("AdjustMoveBounds", Private)!;
+        var adjust = (Func<Rectangle, Keys, Rectangle>)property.GetValue(form)!;
+        property.SetValue(form, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, Keys.Shift)));
+        try
+        {
+            SendMessage(form.Handle, 0x0231, 0, 0);
+            MoveRectangle(form, location);
+            Call(manager, "FinishMove", form, true, Cursor.Position, Keys.Shift);
+            SendMessage(form.Handle, 0x0232, 0, 0);
+        }
+        finally { property.SetValue(form, adjust); }
     }
     private static void MoveRectangle(Form form, Point location)
     {

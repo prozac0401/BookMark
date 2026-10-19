@@ -48,10 +48,11 @@ internal static class StickerTreeChecks
 
             Cursor.Position = Center(a);
             SendMessage(b.Handle, 0x0231, 0, 0);
-            Rectangle drop = SendMoving(b, new Rectangle(a.Location + new Size(8, 4), b.Size));
+            Rectangle drop = SendMoving(b, new Rectangle(a.Location + new Size(8, 4), b.Size), Keys.Shift);
             assert(Field<bool>(a, "_dropTarget") && drop.Location == a.Location + new Size(8, 4),
                 "STR02 a valid parent highlights and accepts overlap ahead of magnetic snapping");
             b.Bounds = drop;
+            Call(manager, "FinishMove", b, true, Cursor.Position, Keys.Shift);
             SendMessage(b.Handle, 0x0232, 0, 0);
             assert(requested == 1 && requestedChild == child.Id && requestedParent == parent.Id &&
                 BookmarkFor(b).ParentId is null && !Field<bool>(a, "_dropTarget"),
@@ -69,12 +70,12 @@ internal static class StickerTreeChecks
             items = [parent, child, grandchild, separate];
             Call(manager, "Upsert", grandchild);
             assert(c.Left > b.Left && c.Top > b.Bottom &&
-                Call(manager, "FindDropTarget", a, Center(c), Keys.None) is null &&
-                Call(manager, "FindDropTarget", b, Center(a), Keys.None) is null &&
-                Call(manager, "FindDropTarget", d, Center(a), Keys.Alt) is null,
+                Call(manager, "FindDropTarget", a, Center(c), Keys.Shift) is null &&
+                Call(manager, "FindDropTarget", b, Center(a), Keys.Shift) is null &&
+                Call(manager, "FindDropTarget", d, Center(a), Keys.Shift | Keys.Alt) is null,
                 "STR05 nested children indent and reject cycles, unchanged parents, and Alt grouping");
             c.Hide();
-            assert(Call(manager, "FindDropTarget", d, Center(c), Keys.None) is null,
+            assert(Call(manager, "FindDropTarget", d, Center(c), Keys.Shift) is null,
                 "STR06 hidden stickers cannot receive a drop");
 
             Point oldA = a.Location, oldB = b.Location, oldC = c.Location;
@@ -138,8 +139,61 @@ internal static class StickerTreeChecks
 
             LayoutChecks(assert);
             PersistenceChecks(assert);
+            DropIntentChecks(assert);
         }
         finally { Cursor.Position = cursorBefore; }
+    }
+
+    private static void DropIntentChecks(Action<bool, string> assert)
+    {
+        var items = new[] { Sample("놓을 위치", 1), Sample("이동할 항목", 2), Sample("다른 위치", 3) };
+        object manager = Create(() => items);
+        using var lifetime = (IDisposable)manager;
+        Pump((Task)Call(manager, "SetEnabledAsync", true, false)!);
+        var forms = Forms(manager).ToDictionary(form => BookmarkFor(form).Id);
+        Form target = forms[items[0].Id], moving = forms[items[1].Id], other = forms[items[2].Id];
+        Rectangle area = Screen.FromControl(target).WorkingArea;
+        target.Location = area.Location + new Size(60, 60);
+        other.Location = target.Location + new Size(0, target.Height + 100);
+        Point origin = target.Location + new Size(target.Width + 100, 0);
+        int requested = 0;
+        Guid? requestedTarget = null;
+        ManagerType.GetEvent("ParentChangeRequested", Private)!.GetAddMethod(true)!.Invoke(manager,
+            [(Action<Bookmark, Guid?>)((_, parent) => { requested++; requestedTarget = parent; })]);
+
+        bool Gesture(Keys preview, Keys release, Point? releaseAt = null)
+        {
+            moving.Location = origin;
+            Cursor.Position = Center(target);
+            SendMessage(moving.Handle, 0x0231, 0, 0);
+            moving.Bounds = SendMoving(moving, new Rectangle(target.Location + new Size(7, 3), moving.Size), preview);
+            bool highlighted = Field<bool>(target, "_dropTarget");
+            Call(manager, "FinishMove", moving, true, releaseAt ?? Cursor.Position, release);
+            SendMessage(moving.Handle, 0x0232, 0, 0);
+            return highlighted;
+        }
+
+        foreach (bool snap in new[] { false, true })
+        {
+            ManagerType.GetProperty("SnapEnabled", Private)!.SetValue(manager, snap);
+            int before = requested;
+            assert(!Gesture(Keys.None, Keys.None) && requested == before && BookmarkFor(moving).ParentId is null &&
+                moving.Location == target.Location + new Size(7, 3),
+                $"STR22 snap={snap}: an ordinary overlapping drag only changes placement without a grouping preview or request");
+            assert(Gesture(Keys.Shift, Keys.Shift) && requested == before + 1 && requestedTarget == items[0].Id &&
+                !Field<bool>(target, "_dropTarget") && BookmarkFor(moving).ParentId is null,
+                $"STR23 snap={snap}: holding Shift groups only the previewed target and waits for the authoritative update");
+            before = requested;
+            assert(!Gesture(Keys.Shift | Keys.Alt, Keys.Shift | Keys.Alt) && requested == before &&
+                moving.Location == target.Location + new Size(7, 3),
+                $"STR24 snap={snap}: Alt vetoes grouping even when Shift is also held");
+            assert(!Gesture(Keys.None, Keys.Shift) && requested == before,
+                $"STR25 snap={snap}: pressing Shift only at release cannot create an unpreviewed group");
+            assert(Gesture(Keys.Shift, Keys.None) && requested == before && !Field<bool>(target, "_dropTarget"),
+                $"STR26 snap={snap}: releasing Shift before the drop cancels its preview and grouping");
+            assert(Gesture(Keys.Shift, Keys.Shift, Center(other)) && requested == before,
+                $"STR27 snap={snap}: a release over a different unpreviewed target cannot group either card");
+        }
     }
 
     internal static void Render(string directory)
@@ -304,8 +358,12 @@ internal static class StickerTreeChecks
         }
         finally { property.SetValue(form, adjust); }
     }
-    private static Rectangle SendMoving(Form form, Rectangle proposed)
+    private static Rectangle SendMoving(Form form, Rectangle proposed, Keys? modifiers = null)
     {
+        var property = form.GetType().GetProperty("AdjustMoveBounds", Private)!;
+        var adjust = (Func<Rectangle, Keys, Rectangle>)property.GetValue(form)!;
+        if (modifiers is Keys keys)
+            property.SetValue(form, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, keys)));
         nint pointer = Marshal.AllocHGlobal(Marshal.SizeOf<NativeRectangle>());
         try
         {
@@ -314,7 +372,7 @@ internal static class StickerTreeChecks
             var result = Marshal.PtrToStructure<NativeRectangle>(pointer);
             return Rectangle.FromLTRB(result.Left, result.Top, result.Right, result.Bottom);
         }
-        finally { Marshal.FreeHGlobal(pointer); }
+        finally { Marshal.FreeHGlobal(pointer); property.SetValue(form, adjust); }
     }
     private static void Pump(Task task)
     {

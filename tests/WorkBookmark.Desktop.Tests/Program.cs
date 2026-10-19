@@ -19,7 +19,7 @@ internal static class Program
     {
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component";
+        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--sticker-interaction-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -37,6 +37,7 @@ internal static class Program
     }
     private static void Run(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--preview-sticker-interactions") { StickerInteractionChecks.Preview(); return; }
         if (args.Length == 3 && args[0] == "--manual-ui") { ManualUiAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--manual-note-regressions") { ManualUiAcceptance.Run(args[1], args[2], noteRegressions: true); return; }
         if (args.Length == 3 && args[0] == "--manual-tree-colors") { ManualUiAcceptance.RunTreeColors(args[1], args[2]); return; }
@@ -45,6 +46,12 @@ internal static class Program
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
+        if (args.Length == 1 && args[0] == "--sticker-interaction-only")
+        {
+            StickerInteractionChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} sticker interaction component checks passed. Physical pointer and Korean IME input remain separate manual checks.");
+            return;
+        }
         if (args.Length == 1 && args[0] is "--show-focus-only" or "--show-focus-component")
         {
             StickerShowFocusChecks.Run(Assert, requireForeground: args[0] == "--show-focus-only");
@@ -108,6 +115,7 @@ internal static class Program
         string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-UiQa-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(data);
         SettingsDisplayChecks.Run(Path.Combine(data, "display-settings"), Assert);
         StickerFormChecks.Run(Assert);
+        StickerInteractionChecks.Run(Assert);
         StickerInlineNoteChecks.Run(Assert);
         BookmarkTypeIconChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
@@ -217,6 +225,7 @@ internal static class Program
         Directory.CreateDirectory(data);
         SettingsDisplayChecks.Run(Path.Combine(data, "display-settings"), Assert);
         StickerFormChecks.Run(Assert);
+        StickerInteractionChecks.Run(Assert);
         StickerInlineNoteChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
         StickerVisibilityChecks.Run(Path.Combine(data, "sticker-visibility"), Assert);

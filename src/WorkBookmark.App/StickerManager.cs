@@ -472,7 +472,10 @@ internal sealed class StickerManager : IDisposable
 
     private StickerForm? FindDropTarget(StickerForm moving, Point cursor, Keys modifiers)
     {
-        if ((modifiers & Keys.Alt) != 0 || moving.IsEditingNote || moving.Bookmark.Id == _busyBookmarkId) return null;
+        // Placement and hierarchy changes are separate gestures in either snap
+        // mode. Overlapping a card while moving must never silently group it.
+        if ((modifiers & Keys.Shift) == 0 || (modifiers & Keys.Alt) != 0 ||
+            moving.IsEditingNote || moving.Bookmark.Id == _busyBookmarkId) return null;
         var bookmarks = _forms.Values.Select(form => form.Bookmark).ToArray();
         var candidates = _forms.Values.Where(form => form != moving && form.Visible && !form.IsDisposed &&
             !form.IsEditingNote && form.Bookmark.Id != _busyBookmarkId && form.Bounds.Contains(cursor) &&
@@ -501,7 +504,10 @@ internal sealed class StickerManager : IDisposable
             if (_forms.TryGetValue(id, out var form)) form.Location = origin + delta;
     }
 
-    private void CompleteMove(StickerForm moving, bool moved)
+    private void CompleteMove(StickerForm moving, bool moved) =>
+        FinishMove(moving, moved, Cursor.Position, Control.ModifierKeys);
+
+    private void FinishMove(StickerForm moving, bool moved, Point cursor, Keys modifiers)
     {
         if (!ReferenceEquals(_movingForm, moving)) return;
         // Windows restores the source to its initial location on Esc. Follow its
@@ -509,8 +515,11 @@ internal sealed class StickerManager : IDisposable
         MoveDescendants(moving.Location);
         // Individual note/list reveals can be visible while hide-all remains
         // the policy for other stickers. Actual visibility decides drop eligibility.
-        StickerForm? target = moved && _enabled && moving.Visible
-            ? FindDropTarget(moving, Cursor.Position, Control.ModifierKeys) : null;
+        // Commit only the target already highlighted during this gesture, and
+        // revalidate it at release. A late modifier or cursor change cannot
+        // create an unpreviewed folder, while releasing Shift cancels grouping.
+        StickerForm? target = moved && _enabled && moving.Visible && _dropTarget is not null &&
+            ReferenceEquals(_dropTarget, FindDropTarget(moving, cursor, modifiers)) ? _dropTarget : null;
         var changed = _subtreeMoveOrigins.Keys.Append(moving.Bookmark.Id).ToArray();
         ClearMove();
         foreach (Guid id in changed)
