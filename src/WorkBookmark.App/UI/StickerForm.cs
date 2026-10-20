@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -12,8 +11,6 @@ internal sealed class StickerForm : Form
 {
     public static readonly Size DefaultClientSize = new(260, 36);
     public static readonly Size MinimumClientSize = new(240, 36);
-    // Match the 8-DIP corners of the Windows 11 sticker window.
-    private const int CornerRadius = 8;
 
     private static readonly Color Paper = Color.FromArgb(255, 253, 245);
     private static readonly Color Rule = Color.FromArgb(226, 225, 213);
@@ -21,7 +18,7 @@ internal sealed class StickerForm : Form
     private readonly Panel _header = new();
     private readonly PictureBox _typeIcon = new();
     private readonly Label _kind = new();
-    private readonly Label _treeMark = new();
+    private readonly StickerHierarchyMark _treeMark = new();
     private readonly Button _collapse = new();
     private readonly Button _options = new();
     private readonly TitleButton _title = new();
@@ -30,7 +27,7 @@ internal sealed class StickerForm : Form
     private readonly Label _noteStatus = new();
     private readonly Button _cancelNote = new();
     private readonly Button _delete = new();
-    private readonly ShortcutButton _resume = new();
+    private readonly StickerActionButton _resume = new();
     private readonly ResizeGrip _resizeGrip = new();
     private readonly ContextMenuStrip _menu = new();
     private readonly ToolStripMenuItem _collapseMenu;
@@ -426,7 +423,7 @@ internal sealed class StickerForm : Form
 
     private void UpdateTreeMark()
     {
-        _treeMark.Text = Bookmark.IsFolder ? Bookmark.FolderExpanded ? "▾" : "▸" : _treeDepth > 0 ? "↳" : "┬";
+        _treeMark.Text = Bookmark.IsFolder ? _childCount > 99 ? "99+" : _childCount.ToString(CultureInfo.InvariantCulture) : _treeDepth > 0 ? "↳" : "┬";
         _treeMark.AccessibleName = Bookmark.IsFolder ? $"책갈피 폴더 · 하위 항목 {_childCount}개 · {(Bookmark.FolderExpanded ? "열림" : "닫힘")}" :
             _treeDepth > 0 ? $"{_parentTitle}의 하위 책갈피, {_treeDepth}단계" : $"하위 책갈피 {_childCount}개";
         _tooltip.SetToolTip(_treeMark, _treeMark.AccessibleName + "\n드래그하면 하위 책갈피도 함께 이동합니다.\n우클릭: 폴더와 책갈피 메뉴");
@@ -703,13 +700,19 @@ internal sealed class StickerForm : Form
         _resume.IsFolder = Bookmark.IsFolder;
         _resume.FolderExpanded = Bookmark.FolderExpanded;
         _resume.HasIssue = !Bookmark.IsFolder && _resumeStatus.Text.Length > 0;
-        _resume.BackColor = _resume.HasIssue && !_busy ? Color.FromArgb(138, 80, 43) : UiStyle.Accent;
-        _resume.FlatAppearance.MouseOverBackColor = _resume.HasIssue ? Color.FromArgb(158, 95, 55) : Color.FromArgb(20, 91, 84);
+        _resume.BackColor = Bookmark.IsFolder ? Color.FromArgb(233, 237, 252)
+            : _resume.HasIssue && !_busy ? Color.FromArgb(151, 89, 39) : UiStyle.Accent;
+        _resume.ForeColor = Bookmark.IsFolder ? Color.FromArgb(69, 84, 142) : Color.White;
+        _resume.FlatAppearance.MouseOverBackColor = Bookmark.IsFolder ? Color.FromArgb(219, 226, 248)
+            : _resume.HasIssue ? Color.FromArgb(135, 75, 31) : Color.FromArgb(20, 97, 89);
+        _resume.FlatAppearance.MouseDownBackColor = Bookmark.IsFolder ? Color.FromArgb(204, 214, 242)
+            : _resume.HasIssue ? Color.FromArgb(115, 63, 26) : Color.FromArgb(16, 80, 74);
         string shortcutStatus = _busy ? "처리 중…" : _resumeStatus.AccessibleDescription ?? "";
         string action = Bookmark.IsFolder ? Bookmark.FolderExpanded ? "폴더 닫기" : "폴더 열기" : "바로가기";
         _resume.AccessibleName = action;
-        _resume.AccessibleDescription = (Bookmark.IsFolder ? action : "저장한 작업 위치로 이동") + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : "");
-        _tooltip.SetToolTip(_resume, action + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : ""));
+        string purpose = Bookmark.IsFolder ? Bookmark.FolderExpanded ? "자식 스티커 접기" : "자식 스티커 펼치기" : "북마크 위치로 이동";
+        _resume.AccessibleDescription = purpose + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : "");
+        _tooltip.SetToolTip(_resume, purpose + " · " + action + " (Ctrl+Enter)" + (shortcutStatus.Length > 0 ? "\n" + shortcutStatus : ""));
         _resume.Invalidate();
         _resizeGrip.Cursor = IsCollapsed ? Cursors.SizeWE : Cursors.SizeNWSE;
         foreach (Control control in new Control[] { _noteEditor, _noteStatus, _cancelNote })
@@ -801,8 +804,8 @@ internal sealed class StickerForm : Form
         int titleHeight = _title.OneLineHeight + Px(2);
         int titleLeft = IsCollapsed ? gap - Px(3) : _resume.Right + gap;
         bool treeMarkVisible = Bookmark.IsFolder || _treeDepth > 0 || _childCount > 0;
-        _treeMark.SetBounds(titleLeft, 0, treeMarkVisible ? Px(18) : 0, rowHeight);
-        if (treeMarkVisible) titleLeft += Px(18);
+        _treeMark.SetBounds(titleLeft, 0, treeMarkVisible ? Px(Bookmark.IsFolder ? 22 : 18) : 0, rowHeight);
+        if (treeMarkVisible) titleLeft += _treeMark.Width;
         int gripSize = Px(14);
         _resizeGrip.SetBounds(width - gripSize - Px(2), ClientSize.Height - gripSize - Px(2), gripSize, gripSize);
         int titleRight = width - gripSize - Px(4);
@@ -1145,103 +1148,6 @@ internal sealed class StickerForm : Form
             for (int inset = 3; inset <= 9; inset += 3)
                 e.Graphics.DrawLine(pen, Width - inset * scale, Height - 2 * scale,
                     Width - 2 * scale, Height - inset * scale);
-        }
-    }
-
-    // Draw the action without a font-dependent arrow glyph, retaining native
-    // button focus, keyboard activation and accessible naming.
-    private sealed class ShortcutButton : Button
-    {
-        protected override void OnSizeChanged(EventArgs e)
-        {
-            base.OnSizeChanged(e);
-            UpdateRoundedRegion();
-        }
-
-        protected override void OnDpiChangedAfterParent(EventArgs e)
-        {
-            base.OnDpiChangedAfterParent(e);
-            UpdateRoundedRegion();
-        }
-
-        private void UpdateRoundedRegion()
-        {
-            if (Width <= 0 || Height <= 0) return;
-            float diameter = Math.Min(CornerRadius * 2 * DeviceDpi / 96F, Math.Min(Width, Height));
-            using var path = new GraphicsPath();
-            path.AddArc(0, 0, diameter, diameter, 180, 90);
-            path.AddArc(Width - diameter, 0, diameter, diameter, 270, 90);
-            path.AddArc(Width - diameter, Height - diameter, diameter, diameter, 0, 90);
-            path.AddArc(0, Height - diameter, diameter, diameter, 90, 90);
-            path.CloseFigure();
-            Region? previous = Region;
-            Region = new Region(path);
-            previous?.Dispose();
-        }
-
-        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        internal bool Busy { get; set; }
-        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        internal bool HasIssue { get; set; }
-        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        internal bool IsFolder { get; set; }
-        [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        internal bool FolderExpanded { get; set; }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-            var buttonState = e.Graphics.Save();
-            // Print/bitmap rendering does not apply the child window's region.
-            // Paint its cut-out corners as paper and clip native state painting too.
-            using (var paper = new SolidBrush(Parent?.BackColor ?? SystemColors.Control))
-                e.Graphics.FillRectangle(paper, ClientRectangle);
-            if (Region is { } rounded) e.Graphics.SetClip(rounded, CombineMode.Intersect);
-            base.OnPaint(e);
-            // Flat-button hover painting may leave a background exclusion clip.
-            // Restore the original drawing region before adding the icon.
-            e.Graphics.Restore(buttonState);
-            var state = e.Graphics.Save();
-            try
-            {
-                e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-                float scale = DeviceDpi / 96F;
-                float left = (ClientSize.Width - 28 * scale) / 2;
-                float top = (ClientSize.Height - 28 * scale) / 2;
-                PointF At(float x, float y) => new(left + x * scale, top + y * scale);
-                using var brush = new SolidBrush(ForeColor);
-                using var pen = new Pen(ForeColor, 1.8F * scale)
-                {
-                    StartCap = System.Drawing.Drawing2D.LineCap.Round,
-                    EndCap = System.Drawing.Drawing2D.LineCap.Round,
-                    LineJoin = System.Drawing.Drawing2D.LineJoin.Round
-                };
-                if (Busy)
-                {
-                    foreach (int x in new[] { 8, 14, 20 })
-                    {
-                        PointF dot = At(x - 1.5F, 12.5F);
-                        e.Graphics.FillEllipse(brush, dot.X, dot.Y, 3 * scale, 3 * scale);
-                    }
-                }
-                else if (IsFolder)
-                {
-                    e.Graphics.DrawLines(pen, [At(6, 9), At(12, 9), At(15, 12), At(22, 12), At(22, 22), At(6, 22), At(6, 9)]);
-                    e.Graphics.DrawLine(pen, At(11, 17), At(17, 17));
-                    if (!FolderExpanded) e.Graphics.DrawLine(pen, At(14, 14), At(14, 20));
-                }
-                else if (HasIssue)
-                {
-                    e.Graphics.DrawLine(pen, At(14, 7), At(14, 16));
-                    PointF dot = At(12.5F, 20);
-                    e.Graphics.FillEllipse(brush, dot.X, dot.Y, 3 * scale, 3 * scale);
-                }
-                else
-                {
-                    e.Graphics.DrawLine(pen, At(8, 20), At(20, 8));
-                    e.Graphics.DrawLines(pen, [At(9, 8), At(20, 8), At(20, 19)]);
-                }
-            }
-            finally { e.Graphics.Restore(state); }
         }
     }
 

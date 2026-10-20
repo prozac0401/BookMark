@@ -1,0 +1,3 @@
+Native control capture: 96 DPI (100% Windows display scaling).
+Columns show original device pixels, then nearest-neighbor 2x and 3x pixel enlargements. They do not simulate other Windows DPI settings.
+States are invoked on the real button without moving the shared pointer. Busy shows the progress indicator.

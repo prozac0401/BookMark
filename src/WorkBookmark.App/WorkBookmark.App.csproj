@@ -9,6 +9,7 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="Assets/FluentSystemIcons.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="Assets/WorkBookmark.ico" LogicalName="WorkBookmark.Assets.WorkBookmark.ico" />
     <EmbeddedResource Include="Assets/WorkBookmark.Tray.ico" LogicalName="WorkBookmark.Assets.WorkBookmark.Tray.ico" />
     <ProjectReference Include="../WorkBookmark.Core/WorkBookmark.Core.csproj" />

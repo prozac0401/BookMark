@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -118,9 +119,10 @@ internal static class StickerFormChecks
         assert(form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([title, Field<Button>(form, "_resume"), Field<Control>(form, "_resizeGrip")]) &&
             (GetWindowLong(form.Handle, -16) & 0x00C00000) == 0 && form.ContextMenuStrip is not null &&
             resume.AccessibleName == "바로가기" && resume.Text != "이어가기" &&
-            Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("바로가기", StringComparison.Ordinal) == true,
+            Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("북마크 위치로 이동", StringComparison.Ordinal) == true,
             "STK20 normal stickers show title, accessible left shortcut icon and resize grip, with caption removed and a context menu available");
         ShortcutGlyphRemainsVisible(form, resume, title, assert);
+        ActionPictogramsRemainDistinct(assert);
         var menu = Field<ContextMenuStrip>(form, "_menu");
         var deleteItem = menu.Items.OfType<ToolStripMenuItem>().Single(item => item.Text == "책갈피 지우기");
         removed = null;
@@ -191,6 +193,7 @@ internal static class StickerFormChecks
         Invoke(form, "SetBusy", false);
         Apply(form, true, true);
         Save("sticker-collapsed.png");
+        RenderActionDesign(directory);
 
         void Save(string name)
         {
@@ -214,7 +217,7 @@ internal static class StickerFormChecks
         // Exercise real button paint states without moving or clicking the shared pointer.
         // Sample only the interior so focus rectangles and borders cannot count as the icon.
         var samples = new List<(string State, int White, int Background, int Area)>();
-        void Mouse(string method) => typeof(Button).GetMethod(method, Instance)!.Invoke(shortcut, [EventArgs.Empty]);
+        void Mouse(string method) => StickerFormChecks.Mouse(shortcut, method);
         void Capture(string state)
         {
             using var bitmap = new Bitmap(shortcut.Width, shortcut.Height);
@@ -256,6 +259,202 @@ internal static class StickerFormChecks
             $"STK22 shortcut glyph remains visible after native button painting in every state (dpi={form.DeviceDpi}; " +
             string.Join(", ", samples.Select(sample => $"{sample.State}: white={sample.White}, background={sample.Background}")) + ")");
     }
+
+    private static void ActionPictogramsRemainDistinct(Action<bool, string> assert)
+    {
+        using var form = Create(Sample());
+        form.Show();
+        Application.DoEvents();
+        var action = Field<Button>(form, "_resume");
+        var title = Field<Button>(form, "_title");
+        title.Focus();
+        Mouse(action, "OnMouseLeave");
+        using var navigation = Capture(action);
+        int blendedCorners = BlendedCornerPixels(navigation, form.BackColor, Px(form, 5));
+        assert(action.Region is null && blendedCorners >= 2,
+            $"STK23 shortcut rounded corners contain antialiased edge pixels instead of a hard native clip (dpi={form.DeviceDpi}, blended={blendedCorners})");
+
+        var folder = FolderSample();
+        Invoke(form, "UpdateBookmark", folder);
+        StickerType.GetMethod("SetHierarchy", Instance)!.Invoke(form, [0, null, 3]);
+        using var closed = Capture(action);
+        bool closedAccessible = action.AccessibleName == "폴더 열기" &&
+            action.AccessibleDescription?.Contains("자식 스티커", StringComparison.Ordinal) == true;
+        Invoke(form, "UpdateBookmark", folder with { FolderExpanded = true });
+        using var open = Capture(action);
+        bool openAccessible = action.AccessibleName == "폴더 닫기" &&
+            action.AccessibleDescription?.Contains("자식 스티커", StringComparison.Ordinal) == true;
+        bool[] navigationInk = InkMask(navigation, Px(form, 5));
+        bool[] closedInk = InkMask(closed, Px(form, 5));
+        bool[] openInk = InkMask(open, Px(form, 5));
+        int navigationDifference = MaskDifference(navigationInk, closedInk);
+        int expansionDifference = MaskDifference(closedInk, openInk);
+        assert(closedAccessible && openAccessible && navigationDifference >= 12 && expansionDifference >= 4,
+            $"STK24 navigation and folder actions use distinct pictograms, and folder direction changes with its accessible action (navigation={navigationDifference}, expansion={expansionDifference})");
+
+        var samples = new List<(string State, int Ink)>();
+        try
+        {
+            void Add(string name)
+            {
+                using var bitmap = Capture(action);
+                samples.Add((name, InkMask(bitmap, Px(form, 5)).Count(pixel => pixel)));
+            }
+            Mouse(action, "OnMouseLeave");
+            Add("normal");
+            Mouse(action, "OnMouseEnter");
+            Add("hover");
+            SendMessage(action.Handle, 0x00F3, 1, 0);
+            Add("pressed");
+            SendMessage(action.Handle, 0x00F3, 0, 0);
+            Mouse(action, "OnMouseLeave");
+            SendMessage(form.Handle, 0x0128, 0x00010002, 0); // Show keyboard focus cues.
+            bool focused = action.Focus();
+            Add("keyboard focus");
+            assert(focused && samples.All(sample => sample.Ink >= 20),
+                "STK25 folder pictogram remains legible during hover, press and keyboard focus (" +
+                string.Join(", ", samples.Select(sample => $"{sample.State}={sample.Ink}")) + ")");
+        }
+        finally
+        {
+            SendMessage(action.Handle, 0x00F3, 0, 0);
+            Mouse(action, "OnMouseLeave");
+            title.Focus();
+        }
+    }
+
+    private static void RenderActionDesign(string directory)
+    {
+        using var form = Create(Sample());
+        form.Show();
+        Application.DoEvents();
+        var action = Field<Button>(form, "_resume");
+        var title = Field<Button>(form, "_title");
+        var samples = new List<(string Name, Bitmap Bitmap)>();
+        void Add(string name)
+        {
+            form.PerformLayout();
+            samples.Add((name, Capture(action)));
+        }
+
+        try
+        {
+            title.Focus();
+            Mouse(action, "OnMouseLeave");
+            Add("Navigate");
+            Mouse(action, "OnMouseEnter");
+            Add("Navigate · hover");
+            SendMessage(action.Handle, 0x00F3, 1, 0);
+            Add("Navigate · pressed");
+            SendMessage(action.Handle, 0x00F3, 0, 0);
+            Mouse(action, "OnMouseLeave");
+            SendMessage(form.Handle, 0x0128, 0x00010002, 0);
+            action.Focus();
+            Add("Navigate · focus");
+            title.Focus();
+            Invoke(form, "SetBusy", true);
+            Add("Navigate · busy");
+            Invoke(form, "SetBusy", false);
+            Invoke(form, "UpdateBookmark", Sample() with { LastResumeResult = ResultCode.TargetUnavailable });
+            Add("Navigate · unavailable");
+            Invoke(form, "UpdateBookmark", FolderSample());
+            StickerType.GetMethod("SetHierarchy", Instance)!.Invoke(form, [0, null, 3]);
+            Add("Expand children");
+            Invoke(form, "UpdateBookmark", FolderSample() with { FolderExpanded = true });
+            Add("Collapse children");
+            Mouse(action, "OnMouseEnter");
+            Add("Folder · hover");
+            SendMessage(action.Handle, 0x00F3, 1, 0);
+            Add("Folder · pressed");
+            SendMessage(action.Handle, 0x00F3, 0, 0);
+            Mouse(action, "OnMouseLeave");
+            action.Focus();
+            Add("Folder · focus");
+            title.Focus();
+
+            int rowHeight = Math.Max(100, action.Height * 3 + 12);
+            int columnWidth = Math.Max(110, action.Width * 3 + 20);
+            using var sheet = new Bitmap(Math.Max(600, 220 + columnWidth * 3), 74 + samples.Count * rowHeight);
+            using var graphics = Graphics.FromImage(sheet);
+            graphics.Clear(Color.FromArgb(246, 248, 251));
+            using var font = new Font("Segoe UI", 9F);
+            using var ink = new SolidBrush(Color.FromArgb(36, 45, 60));
+            graphics.DrawString($"Sticker actions · native {form.DeviceDpi} DPI ({form.DeviceDpi / 96D:P0} display scale)", font, ink, 16, 10);
+            graphics.DrawString("1× native", font, ink, 220, 42);
+            graphics.DrawString("2× pixels", font, ink, 220 + columnWidth, 42);
+            graphics.DrawString("3× pixels", font, ink, 220 + columnWidth * 2, 42);
+            for (int i = 0; i < samples.Count; i++)
+            {
+                var sample = samples[i];
+                int top = 74 + i * rowHeight;
+                graphics.DrawString(sample.Name, font, ink, 16, top + (rowHeight - font.Height) / 2);
+                graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+                graphics.PixelOffsetMode = PixelOffsetMode.Half;
+                for (int scale = 1; scale <= 3; scale++)
+                {
+                    int width = sample.Bitmap.Width * scale, height = sample.Bitmap.Height * scale;
+                    graphics.DrawImage(sample.Bitmap, new Rectangle(220 + (scale - 1) * columnWidth, top + (rowHeight - height) / 2, width, height),
+                        0, 0, sample.Bitmap.Width, sample.Bitmap.Height, GraphicsUnit.Pixel);
+                }
+            }
+            sheet.Save(Path.Combine(directory, "sticker-actions-design.png"), ImageFormat.Png);
+            File.WriteAllText(Path.Combine(directory, "sticker-actions-design.txt"),
+                $"Native control capture: {form.DeviceDpi} DPI ({form.DeviceDpi / 96D:P0} Windows display scaling).\n" +
+                "Columns show original device pixels, then nearest-neighbor 2x and 3x pixel enlargements. They do not simulate other Windows DPI settings.\n" +
+                "States are invoked on the real button without moving the shared pointer. Busy shows the progress indicator.\n");
+        }
+        finally
+        {
+            SendMessage(action.Handle, 0x00F3, 0, 0);
+            Mouse(action, "OnMouseLeave");
+            title.Focus();
+            foreach (var sample in samples) sample.Bitmap.Dispose();
+        }
+    }
+
+    private static Bookmark FolderSample() => Sample() with
+    {
+        Target = new CapturedTarget(TargetKind.BookmarkFolder, ""), DisplayName = "프로젝트 자료", Note = "", FolderExpanded = false
+    };
+
+    private static Bitmap Capture(Control control)
+    {
+        var bitmap = new Bitmap(control.Width, control.Height);
+        control.DrawToBitmap(bitmap, new Rectangle(Point.Empty, control.Size));
+        return bitmap;
+    }
+
+    private static void Mouse(Button button, string method) =>
+        button.GetType().GetMethod(method, Instance)!.Invoke(button, [EventArgs.Empty]);
+
+    private static int BlendedCornerPixels(Bitmap bitmap, Color paper, int cornerSize)
+    {
+        Color fill = bitmap.GetPixel(bitmap.Width / 2, Math.Min(2, bitmap.Height - 1));
+        int blended = 0;
+        for (int y = 0; y < cornerSize; y++)
+        for (int x = 0; x < cornerSize; x++)
+        {
+            Color pixel = bitmap.GetPixel(x, y);
+            if (Distance(pixel, fill) > 3 && Distance(pixel, paper) > 3 &&
+                Between(pixel.R, fill.R, paper.R) && Between(pixel.G, fill.G, paper.G) && Between(pixel.B, fill.B, paper.B)) blended++;
+        }
+        return blended;
+    }
+
+    private static bool[] InkMask(Bitmap bitmap, int inset)
+    {
+        Color fill = bitmap.GetPixel(bitmap.Width / 2, Math.Min(2, bitmap.Height - 1));
+        var mask = new bool[(bitmap.Width - inset * 2) * (bitmap.Height - inset * 2)];
+        int index = 0;
+        for (int y = inset; y < bitmap.Height - inset; y++)
+        for (int x = inset; x < bitmap.Width - inset; x++)
+            mask[index++] = Distance(bitmap.GetPixel(x, y), fill) >= 80;
+        return mask;
+    }
+
+    private static int MaskDifference(bool[] left, bool[] right) => left.Zip(right).Count(pair => pair.First != pair.Second);
+    private static int Distance(Color left, Color right) => Math.Max(Math.Abs(left.R - right.R), Math.Max(Math.Abs(left.G - right.G), Math.Abs(left.B - right.B)));
+    private static bool Between(int value, int left, int right) => value >= Math.Min(left, right) - 2 && value <= Math.Max(left, right) + 2;
 
     private static int TextHeight(Control control, string text)
     {
