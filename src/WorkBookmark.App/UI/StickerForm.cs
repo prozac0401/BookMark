@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -11,6 +12,8 @@ internal sealed class StickerForm : Form
 {
     public static readonly Size DefaultClientSize = new(260, 36);
     public static readonly Size MinimumClientSize = new(240, 36);
+    // Match the 8-DIP corners of the Windows 11 sticker window.
+    private const int CornerRadius = 8;
 
     private static readonly Color Paper = Color.FromArgb(255, 253, 245);
     private static readonly Color Rule = Color.FromArgb(226, 225, 213);
@@ -64,7 +67,6 @@ internal sealed class StickerForm : Form
     private bool _nativeMoving;
     private bool _insideSizeMove;
     private Size _nativeSizeMoveSize;
-    private bool _selected;
     private Point _nativeMoveOrigin;
     private bool _dropTarget;
     private string? _parentTitle;
@@ -456,14 +458,6 @@ internal sealed class StickerForm : Form
         Invalidate(true);
     }
 
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        base.OnPaint(e);
-        if (!_dropTarget && !_selected) return;
-        using var pen = new Pen(UiStyle.Accent, _dropTarget ? Math.Max(2, Px(2)) : Math.Max(1, Px(1)));
-        e.Graphics.DrawRectangle(pen, 1, 1, Math.Max(0, ClientSize.Width - 3), Math.Max(0, ClientSize.Height - 3));
-    }
-
     public void SetBusy(bool busy)
     {
         _busy = busy;
@@ -573,8 +567,6 @@ internal sealed class StickerForm : Form
 
     protected override void OnDeactivate(EventArgs e)
     {
-        _selected = false;
-        Invalidate();
         base.OnDeactivate(e);
         if (!IsEditingNote || _noteSaving || _hidingForFolder || IsDisposed || Disposing) return;
         _noteAutoSavePending = true;
@@ -583,8 +575,6 @@ internal sealed class StickerForm : Form
 
     protected override void OnActivated(EventArgs e)
     {
-        _selected = true;
-        Invalidate();
         _noteAutoSavePending = false;
         base.OnActivated(e);
     }
@@ -1005,6 +995,15 @@ internal sealed class StickerForm : Form
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
+        if (OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22000))
+        {
+            // Keep the native resize frame and shadow, with rounded corners and
+            // no DWM outline. Older Windows versions retain their native frame.
+            uint cornerPreference = 2; // DWMWCP_ROUND
+            uint borderColor = 0xFFFFFFFE; // DWMWA_COLOR_NONE
+            DwmSetWindowAttribute(Handle, 33, ref cornerPreference, sizeof(uint));
+            DwmSetWindowAttribute(Handle, 34, ref borderColor, sizeof(uint));
+        }
         if (_layoutReady && !_iconLookupStarted)
         {
             _iconLookupStarted = true;
@@ -1153,6 +1152,33 @@ internal sealed class StickerForm : Form
     // button focus, keyboard activation and accessible naming.
     private sealed class ShortcutButton : Button
     {
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            UpdateRoundedRegion();
+        }
+
+        protected override void OnDpiChangedAfterParent(EventArgs e)
+        {
+            base.OnDpiChangedAfterParent(e);
+            UpdateRoundedRegion();
+        }
+
+        private void UpdateRoundedRegion()
+        {
+            if (Width <= 0 || Height <= 0) return;
+            float diameter = Math.Min(CornerRadius * 2 * DeviceDpi / 96F, Math.Min(Width, Height));
+            using var path = new GraphicsPath();
+            path.AddArc(0, 0, diameter, diameter, 180, 90);
+            path.AddArc(Width - diameter, 0, diameter, diameter, 270, 90);
+            path.AddArc(Width - diameter, Height - diameter, diameter, diameter, 0, 90);
+            path.AddArc(0, Height - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+            Region? previous = Region;
+            Region = new Region(path);
+            previous?.Dispose();
+        }
+
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         internal bool Busy { get; set; }
         [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
@@ -1165,6 +1191,11 @@ internal sealed class StickerForm : Form
         protected override void OnPaint(PaintEventArgs e)
         {
             var buttonState = e.Graphics.Save();
+            // Print/bitmap rendering does not apply the child window's region.
+            // Paint its cut-out corners as paper and clip native state painting too.
+            using (var paper = new SolidBrush(Parent?.BackColor ?? SystemColors.Control))
+                e.Graphics.FillRectangle(paper, ClientRectangle);
+            if (Region is { } rounded) e.Graphics.SetClip(rounded, CombineMode.Intersect);
             base.OnPaint(e);
             // Flat-button hover painting may leave a background exclusion clip.
             // Restore the original drawing region before adding the icon.
@@ -1377,6 +1408,8 @@ internal sealed class StickerForm : Form
     [DllImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool ReleaseCapture();
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(nint window, uint attribute, ref uint value, uint size);
     [DllImport("user32.dll")]
     private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")]

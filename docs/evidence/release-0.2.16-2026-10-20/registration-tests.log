@@ -1,0 +1,8 @@
+PASS no registration remains unowned
+PASS 32-bit owned registration recognized
+PASS 64-bit owned registration recognized
+PASS both owned views recognized
+PASS foreign 32-bit shadow is refused
+PASS foreign 64-bit shadow is refused
+PASS machine-wide shadow is refused
+RESULT: seven mock ownership checks; no registry accessed or modified.

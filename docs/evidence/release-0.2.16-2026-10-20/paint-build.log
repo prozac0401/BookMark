@@ -1,0 +1,17 @@
+  WorkBookmark.Core -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.Core\release\WorkBookmark.Core.dll
+  WorkBookmark.BrowserHost -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.BrowserHost\release\WorkBookmark.BrowserHost.dll
+  WorkBookmark.Integration.Tests -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.Integration.Tests\release\WorkBookmark.Integration.Tests.dll
+  WorkBookmark.Browser.Tests -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.Browser.Tests\release\WorkBookmark.Browser.Tests.dll
+  WorkBookmark.Windows -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.Windows\release\WorkBookmark.Windows.dll
+  WorkBookmark.Storage -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.Storage\release\WorkBookmark.Storage.dll
+  Probes -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\Probes\release\Probes.dll
+  WorkBookmark.Core.Tests -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.Core.Tests\release\WorkBookmark.Core.Tests.dll
+  WorkBookmark.App -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.App\release_win-x64\WorkBookmark.dll
+  WorkBookmark.Desktop.Tests -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WorkBookmark.Desktop.Tests\release\WorkBookmark.Desktop.Tests.dll
+  WindowsChecks -> D:\Github_REPOS\BookMark\artifacts\release-0.2.16\build\bin\WindowsChecks\release\WindowsChecks.dll
+
+빌드했습니다.
+    경고 0개
+    오류 0개
+
+경과 시간: 00:00:06.07
