@@ -65,6 +65,7 @@ internal sealed class StickerForm : Form
     private bool _insideSizeMove;
     private Size _nativeSizeMoveSize;
     private Point _nativeMoveOrigin;
+    private Point? _pointerMoveOffset;
     private bool _dropTarget;
     private string? _parentTitle;
     private int _treeDepth, _childCount;
@@ -101,6 +102,7 @@ internal sealed class StickerForm : Form
     public event Action? SettingsRequested;
     public event Action? UndoRequested;
     public event Action<StickerForm>? PlacementChanged;
+    internal event Action<StickerForm>? FootprintChanged;
     internal event Action<StickerForm, bool>? NativeMoveCompleted;
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     internal Func<Rectangle, Keys, Rectangle>? AdjustMoveBounds { get; set; }
@@ -255,7 +257,7 @@ internal sealed class StickerForm : Form
         _title.Cursor = Cursors.SizeAll;
         _title.Click += (_, _) => RequestNoteEdit();
         _title.DoubleClick += (_, _) => RequestNoteEdit();
-        _title.DragRequested += (_, _) => BeginPointerMove();
+        _title.DragRequested += (_, _) => BeginPointerMove(_title.DragOrigin);
         _resumeStatus.Font = _smallFont;
         _resumeStatus.UseCompatibleTextRendering = false; // Match the GDI line height used by OnLayout.
         _resumeStatus.ForeColor = Color.FromArgb(138, 80, 43);
@@ -524,6 +526,7 @@ internal sealed class StickerForm : Form
                 ResumeLayout(true);
                 _presentationChanging = changing;
             }
+            FootprintChanged?.Invoke(this);
         }
         if (!Visible) Show();
         Activate();
@@ -679,6 +682,7 @@ internal sealed class StickerForm : Form
             ResumeLayout(true);
             _presentationChanging = changing;
         }
+        FootprintChanged?.Invoke(this);
     }
 
     private void RefreshActionState()
@@ -830,8 +834,9 @@ internal sealed class StickerForm : Form
             _nativeMoving = false;
             _nativeMoveOrigin = Location;
         }
-        // WM_MOVING supplies the proposed screen rectangle before Windows moves
-        // the window. Correct that rectangle so native dragging stays smooth.
+        // Windows can build the next WM_MOVING rectangle from our last snapped
+        // rectangle. Pointer moves must retain their original grip offset so
+        // small cursor steps accumulate far enough to escape a magnet.
         if (message.Msg == 0x0216 && message.LParam != nint.Zero && !_presentationChanging)
         {
             if (!_nativeMoving)
@@ -841,7 +846,7 @@ internal sealed class StickerForm : Form
             }
             var bounds = Marshal.PtrToStructure<MovingRectangle>(message.LParam);
             var proposed = Rectangle.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
-            var snapped = AdjustMoveBounds?.Invoke(proposed, ModifierKeys) ?? proposed;
+            var snapped = AdjustNativeMoveBounds(proposed, Cursor.Position, ModifierKeys);
             Marshal.StructureToPtr(new MovingRectangle
             {
                 Left = snapped.Left, Top = snapped.Top, Right = snapped.Right, Bottom = snapped.Bottom
@@ -855,12 +860,20 @@ internal sealed class StickerForm : Form
             bool moved = _nativeMoving && Location != _nativeMoveOrigin;
             bool hadNativeMove = _nativeMoving;
             _insideSizeMove = _nativeMoving = false;
+            _pointerMoveOffset = null;
             if (hadNativeMove && !_presentationChanging) NativeMoveCompleted?.Invoke(this, moved);
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct MovingRectangle { public int Left, Top, Right, Bottom; }
+
+    private Rectangle AdjustNativeMoveBounds(Rectangle proposed, Point cursor, Keys modifiers)
+    {
+        if (_pointerMoveOffset is { } offset)
+            proposed.Location = new Point(cursor.X - offset.X, cursor.Y - offset.Y);
+        return AdjustMoveBounds?.Invoke(proposed, modifiers) ?? proposed;
+    }
 
 
     protected override void OnResizeEnd(EventArgs e)
@@ -888,6 +901,8 @@ internal sealed class StickerForm : Form
         double scale = (double)e.DeviceDpiNew / e.DeviceDpiOld;
         Size ScaleSize(Size value) => new((int)Math.Round(value.Width * scale), (int)Math.Round(value.Height * scale));
         if (_insideSizeMove) _nativeSizeMoveSize = ScaleSize(_nativeSizeMoveSize);
+        if (_pointerMoveOffset is { } offset)
+            _pointerMoveOffset = new Point((int)Math.Round(offset.X * scale), (int)Math.Round(offset.Y * scale));
         Rectangle? resting = _noteRestoreBounds;
         Point restoreOffset = resting.HasValue
             ? new Point(PlacementBounds.Left - Left, PlacementBounds.Top - Top) : Point.Empty;
@@ -1046,13 +1061,16 @@ internal sealed class StickerForm : Form
         BeginPointerMove();
     }
 
-    private void BeginPointerMove()
+    private void BeginPointerMove(Point? pointerDown = null)
     {
         if (IsDisposed) return;
         ReleaseCapture();
         Point cursor = Cursor.Position;
         int position = unchecked((int)((uint)(ushort)cursor.X | ((uint)(ushort)cursor.Y << 16)));
-        SendMessage(Handle, 0x00A1, (nint)2, (nint)position); // WM_NCLBUTTONDOWN / HTCAPTION
+        Point origin = pointerDown ?? cursor;
+        _pointerMoveOffset = new Point(origin.X - Left, origin.Y - Top);
+        try { SendMessage(Handle, 0x00A1, (nint)2, (nint)position); } // WM_NCLBUTTONDOWN / HTCAPTION
+        finally { _pointerMoveOffset = null; }
     }
 
     private void BeginPointerResize()
@@ -1162,6 +1180,7 @@ internal sealed class StickerForm : Form
         private bool _pointerClick;
         private bool _processingPointer;
         internal event EventHandler? DragRequested;
+        internal Point DragOrigin { get; private set; }
 
         protected override void WndProc(ref Message message)
         {
@@ -1218,6 +1237,7 @@ internal sealed class StickerForm : Form
                 // Releasing native button capture cancels its pending click.
                 // Keep the click guard throughout the nested window-move loop.
                 Capture = false;
+                DragOrigin = origin;
                 DragRequested?.Invoke(this, EventArgs.Empty);
             }
             finally { _dragging = false; }

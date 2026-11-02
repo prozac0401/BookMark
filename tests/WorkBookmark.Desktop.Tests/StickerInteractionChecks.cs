@@ -22,6 +22,8 @@ internal static class StickerInteractionChecks
             ResizeEditor(collapsed, changeHeight, save, assert);
         CancelledResize(assert);
         MoveResizesEditor(assert);
+        MagneticPointerMovement(assert);
+        InlineFootprints(assert);
     }
 
     internal static void Preview()
@@ -140,12 +142,14 @@ internal static class StickerInteractionChecks
         Application.DoEvents();
         int edits = 0, drags = 0;
         bool captureReleased = false;
+        Point? dragOrigin = null;
         title.Click += (_, _) => edits++;
         title.DoubleClick += (_, _) => edits++;
         titleType.GetEvent("DragRequested", Instance)!.GetAddMethod(true)!.Invoke(title, [(EventHandler)((_, _) =>
         {
             drags++;
             captureReleased = !title.Capture;
+            dragOrigin = Get<Point>(title, "DragOrigin");
             title.PerformClick(); // A click during the nested native move must never edit.
         })]);
 
@@ -172,6 +176,8 @@ internal static class StickerInteractionChecks
         title.MouseUp -= lateClick;
         assert(drags == 1 && captureReleased && edits == 2,
             "SI04 title dragging releases capture and suppresses nested plus late native clicks");
+        assert(dragOrigin == title.PointToScreen(new Point(20, 12)),
+            "SI21 title dragging retains the original pointer-down screen position after crossing the drag threshold");
         title.PerformClick();
         assert(edits == 3,
             "SI05 assistive title activation remains available after a completed drag");
@@ -322,6 +328,108 @@ internal static class StickerInteractionChecks
             Command(form, Keys.Escape);
             assert(adjustments == (withAdjuster ? 1 : 0) && normalPlacementRetained && form.Bounds == expected,
                 $"SI16 native move size changes retain the resting editor size and only persist movement (adjuster={withAdjuster})");
+        }
+    }
+
+    private static void MagneticPointerMovement(Action<bool, string> assert)
+    {
+        using var form = Create();
+        _ = form.Handle;
+        MethodInfo snap = typeof(UserSettings).Assembly.GetType("WorkBookmark.App.StickerSnap")!
+            .GetMethod("Snap", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var offsetField = StickerType.GetField("_pointerMoveOffset", Instance)!;
+        var adjustProperty = StickerType.GetProperty("AdjustMoveBounds", Instance)!;
+        Rectangle area = new(-4000, -4000, 8000, 8000);
+        Rectangle peer = new(-600, -300, form.Width, form.Height);
+        Point grip = new(Px(form, 40), Px(form, 16));
+        int gap = Px(form, 8), threshold = Px(form, 12);
+        Rectangle? received = null;
+        adjustProperty.SetValue(form, (Func<Rectangle, Keys, Rectangle>)((bounds, modifiers) =>
+        {
+            received = bounds;
+            return (modifiers & Keys.Alt) != 0 ? bounds
+                : (Rectangle)snap.Invoke(null, [bounds, new[] { peer }, area, form.DeviceDpi])!;
+        }));
+
+        foreach (bool horizontal in new[] { true, false })
+        foreach (int direction in new[] { -1, 1 })
+        {
+            Point origin = horizontal
+                ? new Point(direction > 0 ? peer.Right + gap : peer.Left - gap - form.Width, peer.Top)
+                : new Point(peer.Left, direction > 0 ? peer.Bottom + gap : peer.Top - gap - form.Height);
+            Point startCursor = origin + new Size(grip);
+            offsetField.SetValue(form, grip);
+            Rectangle last = new(origin, form.Size);
+            bool followsCursor = true;
+            for (int distance = 1; distance <= threshold + 20; distance++)
+            {
+                // Model Windows using the corrected previous rectangle plus
+                // one pixel, even though the physical cursor keeps travelling.
+                Size step = horizontal ? new Size(direction, 0) : new Size(0, direction);
+                Size total = horizontal ? new Size(distance * direction, 0) : new Size(0, distance * direction);
+                Rectangle native = new(last.Location + step, form.Size);
+                last = (Rectangle)Call(form, "AdjustNativeMoveBounds", native, startCursor + total, Keys.None)!;
+                Point expected = distance <= threshold ? origin : origin + total;
+                followsCursor &= received == new Rectangle(origin + total, form.Size) &&
+                    last.Location == expected && last.Size == form.Size;
+            }
+            assert(followsCursor,
+                $"SI17 one-pixel pointer steps escape a magnet after the cumulative threshold (horizontal={horizontal}, direction={direction})");
+
+            Size near = horizontal ? new Size(direction * 3, 0) : new Size(0, direction * 3);
+            Rectangle arbitraryNative = new(last.Location, form.Size);
+            Rectangle bypass = (Rectangle)Call(form, "AdjustNativeMoveBounds", arbitraryNative, startCursor + near, Keys.Alt)!;
+            Rectangle resnapped = (Rectangle)Call(form, "AdjustNativeMoveBounds", bypass, startCursor + near, Keys.None)!;
+            assert(bypass.Location == origin + near && resnapped.Location == origin,
+                $"SI18 Alt immediately follows the original pointer grip and releasing Alt restores snapping (horizontal={horizontal}, direction={direction})");
+        }
+
+        // Exercise the real WM_MOVING route without moving the desktop pointer.
+        Rectangle target = new(-1600, -1200, form.Width, form.Height);
+        Point cursor = Cursor.Position;
+        offsetField.SetValue(form, new Point(cursor.X - target.Left, cursor.Y - target.Top));
+        nint pointer = Marshal.AllocHGlobal(Marshal.SizeOf<NativeRectangle>());
+        try
+        {
+            Marshal.StructureToPtr(new NativeRectangle
+            {
+                Left = peer.Left, Top = peer.Top, Right = peer.Right, Bottom = peer.Bottom
+            }, pointer, false);
+            SendMessage(form.Handle, 0x0216, 0, pointer);
+            var moved = Marshal.PtrToStructure<NativeRectangle>(pointer);
+            assert(Rectangle.FromLTRB(moved.Left, moved.Top, moved.Right, moved.Bottom) == target,
+                "SI19 WM_MOVING uses the unsnapped pointer anchor instead of a stale native rectangle");
+        }
+        finally { Marshal.FreeHGlobal(pointer); }
+
+        SendMessage(form.Handle, 0x0232, 0, 0);
+        Rectangle keyboard = new(-1400, -1000, form.Width, form.Height);
+        Rectangle result = (Rectangle)Call(form, "AdjustNativeMoveBounds", keyboard, Point.Empty, Keys.None)!;
+        assert(offsetField.GetValue(form) is null && received == keyboard && result == keyboard,
+            "SI20 ending a pointer move clears its anchor and preserves later native keyboard movement");
+    }
+
+    private static void InlineFootprints(Action<bool, string> assert)
+    {
+        foreach (bool save in new[] { false, true })
+        {
+            using var form = Create();
+            form.Show();
+            Application.DoEvents();
+            Rectangle original = form.Bounds;
+            var changes = new List<(Rectangle Bounds, bool Editing, bool Changing)>();
+            int placementChanges = 0;
+            On(form, "FootprintChanged", (Action<Form>)(changed => changes.Add(
+                (changed.Bounds, Editing(changed), Field<bool>(changed, "_presentationChanging")))));
+            On(form, "PlacementChanged", (Action<Form>)(_ => placementChanges++));
+            Call(form, "BeginNoteEdit", (Func<string, Task>)(_ => Task.CompletedTask));
+            Call(form, "BeginNoteEdit", (Func<string, Task>)(_ => Task.CompletedTask));
+            if (save) Pump((Task)Call(form, "SaveNoteAsync")!);
+            else Command(form, Keys.Escape);
+            assert(changes.Count == 2 && changes[0].Editing && changes[0].Bounds.Height > original.Height &&
+                !changes[0].Changing && !changes[1].Editing && changes[1].Bounds == original &&
+                !changes[1].Changing && placementChanges == 0,
+                $"SI22 editor footprint notifications expose only completed enlargement and restoration without saving temporary placement (save={save})");
         }
     }
 

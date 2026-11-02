@@ -19,7 +19,7 @@ internal static class Program
     {
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--sticker-interaction-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component";
+        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--sticker-interaction-only" or "--sticker-layout-feedback-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -46,6 +46,15 @@ internal static class Program
         Console.OutputEncoding = Encoding.UTF8;
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
+        if (args.Length == 1 && args[0] == "--sticker-layout-feedback-only")
+        {
+            StickerInteractionChecks.Run(Assert);
+            StickerSnapChecks.Run(Assert);
+            StickerTreeAvoidanceChecks.Run(Assert);
+            StickerTreeAvoidanceIntegrationChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} sticker movement and tree avoidance checks passed. Physical pointer input remains a separate manual check.");
+            return;
+        }
         if (args.Length == 1 && args[0] == "--sticker-interaction-only")
         {
             StickerInteractionChecks.Run(Assert);
@@ -81,6 +90,8 @@ internal static class Program
         {
             RecentTreeChecks.Run(Assert);
             StickerTreeChecks.Run(Assert);
+            StickerTreeAvoidanceChecks.Run(Assert);
+            StickerTreeAvoidanceIntegrationChecks.Run(Assert);
             BookmarkColorChecks.Run(Assert);
             HierarchyIntegrationChecks.Run(Path.Combine(Path.GetTempPath(), "WorkBookmark-Hierarchy-" + Guid.NewGuid().ToString("N")), Assert);
             Console.WriteLine($"RESULT: {Checks.Count} hierarchy checks passed. Physical mouse input remains a separate manual check.");
@@ -130,6 +141,8 @@ internal static class Program
         BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
         RecentTreeChecks.Run(Assert);
         StickerTreeChecks.Run(Assert);
+        StickerTreeAvoidanceChecks.Run(Assert);
+        StickerTreeAvoidanceIntegrationChecks.Run(Assert);
         HierarchyIntegrationChecks.Run(Path.Combine(data, "hierarchy"), Assert);
         BookmarkColorChecks.Run(Assert);
         ColorIntegrationChecks.Run(Path.Combine(data, "colors"), Assert);
@@ -232,6 +245,8 @@ internal static class Program
         NoteReadVisibilityChecks.Run(Path.Combine(data, "note-read-visibility"), Assert);
         StickerArrangeNoteChecks.Run(Path.Combine(data, "arrange-note"), Assert);
         StickerSnapChecks.Run(Assert);
+        StickerTreeAvoidanceChecks.Run(Assert);
+        StickerTreeAvoidanceIntegrationChecks.Run(Assert);
         StickerArrangementChecks.Run(Assert);
         StickerAlignmentChecks.Run(Path.Combine(data, "sticker-alignment"), Assert);
         StickerPersistenceChecks.Run(Assert);
