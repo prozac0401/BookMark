@@ -1,0 +1,228 @@
+{
+  "msi": "WorkBookmark-0.2.19-win-x64.msi",
+  "sha256": "b876322d531051299ea3545d8b081425cdafc241231185a7e4a5fa59e08e32e5",
+  "checkedAtUtc": "2026-11-04T13:29:35.5467429Z",
+  "productVersion": "0.2.19",
+  "automaticChecks": 54,
+  "passed": 54,
+  "administrativeExtraction": true,
+  "liveInstallUninstallReboot": "NOT RUN: verify in a disposable Windows user account or virtual machine.",
+  "checks": [
+    {
+      "name": "MSI product/version match published executable",
+      "passed": true
+    },
+    {
+      "name": "MSI installs per user",
+      "passed": true
+    },
+    {
+      "name": "MSI targets x64",
+      "passed": true
+    },
+    {
+      "name": "MSI does not require elevation",
+      "passed": true
+    },
+    {
+      "name": "MSI uses the stable upgrade family",
+      "passed": true
+    },
+    {
+      "name": "MSI keeps the product language compatible with older releases",
+      "passed": true
+    },
+    {
+      "name": "Interactive install allows the full completion dialog",
+      "passed": true
+    },
+    {
+      "name": "MSI is removable in Windows Apps / Control Panel",
+      "passed": true
+    },
+    {
+      "name": "Application lives under LocalAppData Programs",
+      "passed": true
+    },
+    {
+      "name": "Components have unique stable identities",
+      "passed": true
+    },
+    {
+      "name": "Per-user components use registry key paths",
+      "passed": true
+    },
+    {
+      "name": "Startup default respects persisted opt-out on install and upgrade",
+      "passed": true
+    },
+    {
+      "name": "Installer owns only its HKCU registration keys",
+      "passed": true
+    },
+    {
+      "name": "Start Menu shortcut launches installed application",
+      "passed": true
+    },
+    {
+      "name": "Logon shortcut is recognized by application settings",
+      "passed": true
+    },
+    {
+      "name": "Windows Apps and every application shortcut use the branded product icon",
+      "passed": true
+    },
+    {
+      "name": "Packaged product icon resource matches the published application executable",
+      "passed": true
+    },
+    {
+      "name": "Uninstall removes startup shortcut even when recreated by application",
+      "passed": true
+    },
+    {
+      "name": "Uninstall has no wildcard or user-data cleanup",
+      "passed": true
+    },
+    {
+      "name": "Payload count matches publish and does not package user data",
+      "passed": true
+    },
+    {
+      "name": "Upgrade/uninstall request graceful shutdown before file validation",
+      "passed": true
+    },
+    {
+      "name": "Upgrade removes the old product before installing files within the rollback transaction",
+      "passed": true
+    },
+    {
+      "name": "Older MSI versions are detected for complete automatic removal",
+      "passed": true
+    },
+    {
+      "name": "Newer versions are detected without removing them",
+      "passed": true
+    },
+    {
+      "name": "Downgrades are blocked by a launch condition",
+      "passed": true
+    },
+    {
+      "name": "Completion launch checkbox is labeled in Korean and checked by default",
+      "passed": true
+    },
+    {
+      "name": "Installer embeds the exact branded artwork: dialog.bmp",
+      "passed": true
+    },
+    {
+      "name": "Installer embeds the exact branded artwork: banner.bmp",
+      "passed": true
+    },
+    {
+      "name": "Welcome and completion dialogs display the branded artwork",
+      "passed": true
+    },
+    {
+      "name": "Installation progress displays the branded banner",
+      "passed": true
+    },
+    {
+      "name": "Installer screens contain no trial or limited-edition wording",
+      "passed": true
+    },
+    {
+      "name": "Completion dialog contains the launch checkbox",
+      "passed": true
+    },
+    {
+      "name": "Checkbox selection controls the launch property",
+      "passed": true
+    },
+    {
+      "name": "Launch checkbox is shown for first installation and upgrades, not maintenance",
+      "passed": true
+    },
+    {
+      "name": "Completion dialog is scheduled only after successful installation",
+      "passed": true
+    },
+    {
+      "name": "Only checked Finish on successful interactive install or upgrade can launch the application",
+      "passed": true
+    },
+    {
+      "name": "Finish closes the wizard after processing the optional launch",
+      "passed": true
+    },
+    {
+      "name": "Silent, basic UI, repair, and uninstall sequences never launch the application",
+      "passed": true
+    },
+    {
+      "name": "Finish launches the installed executable through the unelevated user shell",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: checked fresh install",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: checked upgrade",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: unchecked install",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: unchecked upgrade",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: silent install",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: basic UI install",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: reduced UI install",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: repair",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: uninstall",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: old product removal during upgrade",
+      "passed": true
+    },
+    {
+      "name": "Windows Installer launch condition: administrative extraction",
+      "passed": true
+    },
+    {
+      "name": "MSI administrative extraction succeeds without installing product",
+      "passed": true
+    },
+    {
+      "name": "Administrative image contains one application executable",
+      "passed": true
+    },
+    {
+      "name": "Extracted payload has the complete published file set",
+      "passed": true
+    },
+    {
+      "name": "Every extracted file SHA-256 matches the publish directory",
+      "passed": true
+    }
+  ]
+}

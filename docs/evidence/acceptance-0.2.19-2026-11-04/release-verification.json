@@ -1,0 +1,63 @@
+{
+  "releaseId": 433966064,
+  "url": "https://github.com/prozac0401/BookMark/releases/tag/v0.2.19",
+  "tag": "v0.2.19",
+  "sourceCommit": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+  "draft": false,
+  "prerelease": false,
+  "publishedAtUtc": "2026-11-04T13:36:07Z",
+  "assetCount": 6,
+  "uploadHashesVerifiedAtUtc": "2026-11-04T13:35:43.59Z",
+  "uploadVerificationBeforePublication": true,
+  "allAssetDigestsMatch": true,
+  "assets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 558,
+      "digest": "sha256:89890ab1bed51b305f5cf89b21dd5bb20f361ac35b558c09c5ba690975eaf976",
+      "expectedSha256": "89890ab1bed51b305f5cf89b21dd5bb20f361ac35b558c09c5ba690975eaf976",
+      "digestMatches": true,
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/v0.2.19/SHA256SUMS.txt"
+    },
+    {
+      "name": "Source.zip",
+      "size": 3088522,
+      "digest": "sha256:b31a436a4d06a8437efb87d8e3ac3ae84629a134fd41ae46f43e8112b447e231",
+      "expectedSha256": "b31a436a4d06a8437efb87d8e3ac3ae84629a134fd41ae46f43e8112b447e231",
+      "digestMatches": true,
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/v0.2.19/Source.zip"
+    },
+    {
+      "name": "SourceSnapshot.json",
+      "size": 297,
+      "digest": "sha256:e2fb89fa5f08bf6058e2e445bcc76eab4bf3c903c3a4afc32a92d610e67ec400",
+      "expectedSha256": "e2fb89fa5f08bf6058e2e445bcc76eab4bf3c903c3a4afc32a92d610e67ec400",
+      "digestMatches": true,
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/v0.2.19/SourceSnapshot.json"
+    },
+    {
+      "name": "WorkBookmark-0.2.19-win-x64.msi",
+      "size": 76628528,
+      "digest": "sha256:b876322d531051299ea3545d8b081425cdafc241231185a7e4a5fa59e08e32e5",
+      "expectedSha256": "b876322d531051299ea3545d8b081425cdafc241231185a7e4a5fa59e08e32e5",
+      "digestMatches": true,
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/v0.2.19/WorkBookmark-0.2.19-win-x64.msi"
+    },
+    {
+      "name": "WorkBookmark-0.2.19-win-x64.validation.json",
+      "size": 6429,
+      "digest": "sha256:283946d2d08247bc4dbc3b9fc4b40e25e30a532b62081a80f2a5a96395722136",
+      "expectedSha256": "283946d2d08247bc4dbc3b9fc4b40e25e30a532b62081a80f2a5a96395722136",
+      "digestMatches": true,
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/v0.2.19/WorkBookmark-0.2.19-win-x64.validation.json"
+    },
+    {
+      "name": "WorkBookmark-0.2.19-win-x64.zip",
+      "size": 116870956,
+      "digest": "sha256:acb69cb901de58ab298666b89c4dd5a4c3fba28b5f4e17109bb77edbda9d1ed0",
+      "expectedSha256": "acb69cb901de58ab298666b89c4dd5a4c3fba28b5f4e17109bb77edbda9d1ed0",
+      "digestMatches": true,
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/v0.2.19/WorkBookmark-0.2.19-win-x64.zip"
+    }
+  ]
+}

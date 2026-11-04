@@ -1,0 +1,21 @@
+{
+  "checkedAtUtc": "2026-11-04T13:39:01.203Z",
+  "authenticatedRequest": false,
+  "releaseUrl": "https://github.com/prozac0401/BookMark/releases/tag/v0.2.19",
+  "passed": true,
+  "files": [
+    {
+      "name": "SHA256SUMS.txt",
+      "sha256": "89890ab1bed51b305f5cf89b21dd5bb20f361ac35b558c09c5ba690975eaf976",
+      "bytes": 558,
+      "byteIdentical": true
+    },
+    {
+      "name": "SourceSnapshot.json",
+      "sha256": "e2fb89fa5f08bf6058e2e445bcc76eab4bf3c903c3a4afc32a92d610e67ec400",
+      "bytes": 297,
+      "byteIdentical": true
+    }
+  ],
+  "remoteTagCommit": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93"
+}

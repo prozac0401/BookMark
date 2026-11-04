@@ -1,10 +1,25 @@
 {
   "schemaVersion": 1,
   "version": "0.2.19",
-  "documentState": "FUNCTIONAL_ACCEPTANCE_RECORDED_PENDING_PACKAGE",
+  "documentState": "POST_RELEASE_FINAL",
   "functionalAcceptance": "PASS",
-  "verdict": "PENDING_PACKAGE",
-  "deployment": "NOT_VERIFIED",
+  "packageAcceptance": "PASS",
+  "verdict": "SUCCESS",
+  "deployment": "DEPLOYED",
+  "release": {
+    "releaseId": 433966064,
+    "tag": "v0.2.19",
+    "url": "https://github.com/prozac0401/BookMark/releases/tag/v0.2.19",
+    "sourceCommit": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+    "publishedAtUtc": "2026-11-04T13:36:07Z",
+    "draft": false,
+    "prerelease": false,
+    "assetCount": 6,
+    "serverDigestMatches": 6,
+    "unauthenticatedPublicDownloadsVerified": ["SHA256SUMS.txt", "SourceSnapshot.json"],
+    "evidence": ["release-verification.json", "package-verification.json", "public-download-verification.json"],
+    "documentation": "Final report is a post-release documentation update; release tag and source commit are not changed."
+  },
   "fixtureShutdown": {
     "status": "PASS",
     "listStage": "exit",
@@ -35,6 +50,13 @@
       "coreDllSha256": "dbf3fa40af24e4be1acb7937811cee18354fefdebc7f72a9ef94516cc3a445f7",
       "desktopTestsDllSha256": "93facddad7e90aedcd9a365d2349307f39425d364c378d2365f21f49b456ad74",
       "scope": "Current candidate C01-C09 functional scenarios, including restart, real resume/capture, focus, note cancellation, drag/scroll, existing-folder insert/detach and delete/restore; full Desktop component suite"
+    },
+    "finalPublished": {
+      "appDllSha256": "60bc1fe769ddb7d3a18cb554c05ca3a0b5ea2fde74ae2f43dd0884d91ee7563e",
+      "appExeSha256": "033507fe46d643939e7417c946c17428d59bae4e5077424e94cf79f8216deab8",
+      "coreDllSha256": "42c441b78db1b93c6c727c38f569840fb2de11d0457fcaa061f17a7592f14b0a",
+      "sourceCommit": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+      "scope": "Final clean-commit build, package and worker checks; actual product DLL restart/persistence/hotkey/exit repeated in the fixture. Not a repeat of every C01-C09 case and not normal Program.Main UI startup."
     }
   },
   "completed": [
@@ -167,6 +189,26 @@
       "finalParentId": null,
       "note": "스크롤 항목 29",
       "evidence": ["user-step06-transitions.json", "user-step06-after.json"]
+    },
+    {
+      "id": "F01",
+      "binary": "finalPublished",
+      "input": "computer-use and read-only SQLite observation",
+      "status": "PASS",
+      "claim": "Final product DLL retained Korean note and folder membership after restart; real visibility hotkey changed visible product stickers 5 to 0 to 5, then exited with no product windows.",
+      "visibleStickerCounts": [5, 0, 5],
+      "controlWindowExcludedFromStickerCounts": true,
+      "exitStage": "exit",
+      "evidence": ["final-published-restart.json", "final-published-hidden.json", "final-published-shown.json", "final-published-exit.json"]
+    },
+    {
+      "id": "P01",
+      "binary": "finalPublished",
+      "status": "PASS",
+      "claim": "Final MSI structure, administrative extraction and every extracted-file hash passed; portable DLL and clean source archive match; six uploaded assets match server digests and release is public/stable.",
+      "normalProgramMainUiSmoke": "NOT_RUN",
+      "realProgramMainWorkerChecks": { "passed": 6, "total": 6 },
+      "evidence": ["package-verification.json", "final-msi-validation.json", "release-verification.json", "final-production-worker.json", "public-download-verification.json"]
     }
   ],
   "unconfirmedAttempts": [
@@ -181,6 +223,26 @@
     }
   ],
   "automatedRegression": [
+    {
+      "suite": "Final clean-commit Release build and test suites",
+      "binary": "finalPublished",
+      "passed": 1142,
+      "total": 1142,
+      "buildWarnings": 0,
+      "buildErrors": 0,
+      "includesDesktop713": true,
+      "msi54CountedSeparately": true,
+      "evidence": ["final-build.log"]
+    },
+    {
+      "suite": "Final MSI structure and administrative extraction",
+      "binary": "finalPublished",
+      "passed": 54,
+      "total": 54,
+      "allExtractedFileHashesMatch": true,
+      "liveInstall": false,
+      "evidence": ["final-msi-validation.json", "package-verification.json"]
+    },
     {
       "suite": "Desktop full",
       "binary": "currentCandidate",
@@ -219,7 +281,16 @@
     "sourcegenAggregate": { "passed": 11, "total": 12, "initialColdTimeoutRetained": true },
     "coldStartFullyResolved": false,
     "generalPerformanceGuarantee": false,
-    "evidence": ["../real-use-2026-11-04/sourcegen-investigation-summary.json"]
+    "evidence": ["../real-use-2026-11-04/sourcegen-investigation-summary.json"],
+    "finalPublishedWorker": {
+      "passed": 6,
+      "total": 6,
+      "deadlineSeconds": 3,
+      "firstRequestJsonMilliseconds": 2990,
+      "firstRequestConsoleMilliseconds": 2993,
+      "scope": "Real published Program.Main worker entry point with synthetic UnsupportedTarget requests; no actual target capture or normal application UI launch",
+      "evidence": ["final-production-worker.json", "final-production-worker.log"]
+    }
   },
   "historicalAnomalies": [
     {
@@ -234,10 +305,14 @@
       "evidence": ["../real-use-2026-11-04/focus-fix-list-settings.log", "../real-use-2026-11-04/shutdown-fixture-fix-full.log"]
     }
   ],
-  "pending": [
-    { "id": "P01", "status": "NOT_YET_VERIFIED", "case": "Published Program.Main smoke where feasible; MSI structure, administrative extraction and hashes of all extracted files; six release assets and uploaded hashes" }
-  ],
+  "pending": [],
   "scopeLimitations": [
+    {
+      "case": "Published Program.Main normal UI entry-point smoke",
+      "status": "NOT_RUN",
+      "requiredForThisChangeAcceptance": false,
+      "note": "Planned where feasible; real worker entry point 6/6 and actual published DLL Form checks do not imply normal UI entry-point execution."
+    },
     {
       "case": "Actual user installation, upgrade and uninstall full lifecycle",
       "status": "NOT_RUN",

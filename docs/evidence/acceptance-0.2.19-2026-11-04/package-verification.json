@@ -1,0 +1,140 @@
+{
+  "verifiedAtUtc": "2026-11-04T13:33:44.293Z",
+  "releaseDirectory": "D:/Github_REPOS/BookMark/artifacts/releases/20261104-132708-799",
+  "publishDirectory": "D:/Github_REPOS/BookMark/artifacts/publish/win-x64-20261104-132024-761",
+  "assets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 558,
+      "sha256": "89890ab1bed51b305f5cf89b21dd5bb20f361ac35b558c09c5ba690975eaf976"
+    },
+    {
+      "name": "Source.zip",
+      "size": 3088522,
+      "sha256": "b31a436a4d06a8437efb87d8e3ac3ae84629a134fd41ae46f43e8112b447e231"
+    },
+    {
+      "name": "SourceSnapshot.json",
+      "size": 297,
+      "sha256": "e2fb89fa5f08bf6058e2e445bcc76eab4bf3c903c3a4afc32a92d610e67ec400"
+    },
+    {
+      "name": "WorkBookmark-0.2.19-win-x64.msi",
+      "size": 76628528,
+      "sha256": "b876322d531051299ea3545d8b081425cdafc241231185a7e4a5fa59e08e32e5"
+    },
+    {
+      "name": "WorkBookmark-0.2.19-win-x64.validation.json",
+      "size": 6429,
+      "sha256": "283946d2d08247bc4dbc3b9fc4b40e25e30a532b62081a80f2a5a96395722136"
+    },
+    {
+      "name": "WorkBookmark-0.2.19-win-x64.zip",
+      "size": 116870956,
+      "sha256": "acb69cb901de58ab298666b89c4dd5a4c3fba28b5f4e17109bb77edbda9d1ed0"
+    }
+  ],
+  "releaseAssetCount": 6,
+  "checksumManifest": {
+    "allPassed": true,
+    "checks": [
+      {
+        "name": "WorkBookmark-0.2.19-win-x64.zip",
+        "path": "D:\\Github_REPOS\\BookMark\\artifacts\\releases\\20261104-132708-799\\WorkBookmark-0.2.19-win-x64.zip",
+        "expectedSha256": "acb69cb901de58ab298666b89c4dd5a4c3fba28b5f4e17109bb77edbda9d1ed0",
+        "actualSha256": "acb69cb901de58ab298666b89c4dd5a4c3fba28b5f4e17109bb77edbda9d1ed0",
+        "passed": true
+      },
+      {
+        "name": "Source.zip",
+        "path": "D:\\Github_REPOS\\BookMark\\artifacts\\releases\\20261104-132708-799\\Source.zip",
+        "expectedSha256": "b31a436a4d06a8437efb87d8e3ac3ae84629a134fd41ae46f43e8112b447e231",
+        "actualSha256": "b31a436a4d06a8437efb87d8e3ac3ae84629a134fd41ae46f43e8112b447e231",
+        "passed": true
+      },
+      {
+        "name": "SourceSnapshot.json",
+        "path": "D:\\Github_REPOS\\BookMark\\artifacts\\releases\\20261104-132708-799\\SourceSnapshot.json",
+        "expectedSha256": "e2fb89fa5f08bf6058e2e445bcc76eab4bf3c903c3a4afc32a92d610e67ec400",
+        "actualSha256": "e2fb89fa5f08bf6058e2e445bcc76eab4bf3c903c3a4afc32a92d610e67ec400",
+        "passed": true
+      },
+      {
+        "name": "WorkBookmark.exe",
+        "path": "D:\\Github_REPOS\\BookMark\\artifacts\\publish\\win-x64-20261104-132024-761\\WorkBookmark.exe",
+        "expectedSha256": "033507fe46d643939e7417c946c17428d59bae4e5077424e94cf79f8216deab8",
+        "actualSha256": "033507fe46d643939e7417c946c17428d59bae4e5077424e94cf79f8216deab8",
+        "passed": true
+      },
+      {
+        "name": "WorkBookmark-0.2.19-win-x64.msi",
+        "path": "D:\\Github_REPOS\\BookMark\\artifacts\\releases\\20261104-132708-799\\WorkBookmark-0.2.19-win-x64.msi",
+        "expectedSha256": "b876322d531051299ea3545d8b081425cdafc241231185a7e4a5fa59e08e32e5",
+        "actualSha256": "b876322d531051299ea3545d8b081425cdafc241231185a7e4a5fa59e08e32e5",
+        "passed": true
+      },
+      {
+        "name": "WorkBookmark-0.2.19-win-x64.validation.json",
+        "path": "D:\\Github_REPOS\\BookMark\\artifacts\\releases\\20261104-132708-799\\WorkBookmark-0.2.19-win-x64.validation.json",
+        "expectedSha256": "283946d2d08247bc4dbc3b9fc4b40e25e30a532b62081a80f2a5a96395722136",
+        "actualSha256": "283946d2d08247bc4dbc3b9fc4b40e25e30a532b62081a80f2a5a96395722136",
+        "passed": true
+      }
+    ],
+    "sha256SumsFileHash": "89890ab1bed51b305f5cf89b21dd5bb20f361ac35b558c09c5ba690975eaf976"
+  },
+  "sourceSnapshot": {
+    "productVersion": "0.2.19",
+    "sourceMode": "Commit",
+    "baseCommit": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+    "workingTreeHadChanges": false,
+    "createdAtUtc": "2026-11-04T13:27:29.8001132Z",
+    "sourceSha256": "b31a436a4d06a8437efb87d8e3ac3ae84629a134fd41ae46f43e8112b447e231",
+    "expectedCommit": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+    "commitMatches": true,
+    "commitMode": true,
+    "declaresCleanWorkingTree": true,
+    "sourceZipHashMatches": true,
+    "sourceArchiveComment": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+    "archiveCommentMatchesCommit": true
+  },
+  "portableDll": {
+    "entry": "WorkBookmark.dll",
+    "size": 337408,
+    "sha256": "60bc1fe769ddb7d3a18cb554c05ca3a0b5ea2fde74ae2f43dd0884d91ee7563e",
+    "expectedSha256": "60bc1fe769ddb7d3a18cb554c05ca3a0b5ea2fde74ae2f43dd0884d91ee7563e",
+    "passed": true,
+    "publishDllSha256": "60bc1fe769ddb7d3a18cb554c05ca3a0b5ea2fde74ae2f43dd0884d91ee7563e",
+    "matchesPublishedDll": true
+  },
+  "git": {
+    "headCommit": "557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+    "workingTreeClean": true,
+    "porcelain": [],
+    "verifiedUsing": "git rev-parse HEAD; git --no-optional-locks status --porcelain"
+  },
+  "productVersions": [
+    {
+      "file": "WorkBookmark.exe",
+      "productVersion": "0.2.19+557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+      "fileVersion": "0.2.19.0"
+    },
+    {
+      "file": "WorkBookmark.dll",
+      "productVersion": "0.2.19+557000dbe7daf8b97b8a0b5bf5c0d5f288771c93",
+      "fileVersion": "0.2.19.0"
+    }
+  ],
+  "productVersionCommitMatches": true,
+  "msiValidation": {
+    "file": "WorkBookmark-0.2.19-win-x64.validation.json",
+    "automaticChecks": 54,
+    "passed": 54,
+    "administrativeExtraction": true,
+    "msiSha256": "b876322d531051299ea3545d8b081425cdafc241231185a7e4a5fa59e08e32e5",
+    "msiHashMatches": true,
+    "liveInstallUninstallReboot": "NOT RUN: verify in a disposable Windows user account or virtual machine."
+  },
+  "overallPassed": true,
+  "scope": "Independent package integrity and source provenance verification; no files changed except this report; no build/test/install was run."
+}

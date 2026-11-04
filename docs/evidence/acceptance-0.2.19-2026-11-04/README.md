@@ -1,6 +1,8 @@
-# 0.2.19 실사용 검증 — 기능 통과·패키지 검증 중
+# 0.2.19 실사용 검증 — 성공·정식 배포 완료
 
-**실사용 기능 시나리오: 통과. 전체 판정: 최종 패키지 검증 대기.** 현재 후보의 재시작 보존, 실제 문서 열기와 캡처, 검색 유지·외부 앱 전환 시 숨김, 메모 취소, 긴 목록 드래그 스크롤, 기존 폴더로 이동/꺼내기 및 삭제/복원을 확인했다. 최종 패키지 검증과 배포 성공을 뜻하는 문서는 아니다. 기계 판독용 현황은 [results.json](results.json)에 있다.
+**최종 판정: 성공. 실사용 기능 인수·패키지 검증 통과, 정식 배포 완료.** [WorkBookmark 0.2.19](https://github.com/prozac0401/BookMark/releases/tag/v0.2.19)는 2026-11-04 13:36:07 UTC에 공개됐다. 릴리스 ID는 `433966064`, draft/prerelease는 모두 false이며 자산 6개의 서버 SHA-256이 로컬 산출물과 일치한다. [배포 확인](release-verification.json), [기계 판독 결과](results.json).
+
+고정 소스 `557000dbe7daf8b97b8a0b5bf5c0d5f288771c93`의 Release 빌드 경고·오류 0개, 자동검사 **1,142개**, 별도 MSI 검사 **54개**를 확인했다. MSI 관리 추출과 모든 추출 파일 해시, 포터블 DLL과 소스 아카이브의 커밋 일치도 통과했다. 비인증 공개 다운로드로 `SHA256SUMS.txt`와 `SourceSnapshot.json` 2개가 원본과 byte-identical함을 확인했다. 이는 대용량 자산 6개 모두를 다시 다운로드했다는 뜻은 아니다. [빌드](final-build.log), [패키지 확인](package-verification.json), [MSI 검사](final-msi-validation.json), [공개 다운로드](public-download-verification.json).
 
 ## 실행 바이너리와 검증 범위
 
@@ -8,9 +10,10 @@
 | --- | --- | --- |
 | 초기 수동 실행 | `6662dbb894349029cc2694dfe7b60962022fec1e3440478ad9b171355dae3378` | 사용자의 일반 드래그, 폴더 펼침/접힘, 한글 메모 저장 및 도구 단축키 시험 |
 | 중간 준비 산출물 | `f101695786d1c4cd9113081c0282fba18d0295dafbf5e735a8c433a7647b8ddd` | 포커스 수정 후 목록/설정 123개 검사. 이 해시의 launcher 준비만으로 실사용 통과를 주장하지 않음 |
-| 현재 0.2.19 후보 | `28e47e1799072de8c3c0ed02f9c9363a752a348554f64290e9ee22cd96dbfc05` | sourcegen을 포함한 후보, 전체 Desktop 713개 검사 및 아래 C01–C09 실제 조작/DB 확인 |
+| 기능 시험 후보 | `28e47e1799072de8c3c0ed02f9c9363a752a348554f64290e9ee22cd96dbfc05` | sourcegen을 포함한 후보, 전체 Desktop 713개 검사 및 아래 C01–C09 실제 조작/DB 확인 |
+| 최종 배포 DLL | `60bc1fe769ddb7d3a18cb554c05ca3a0b5ea2fde74ae2f43dd0884d91ee7563e` | 고정 커밋 빌드. 같은 제품 DLL로 재시작 보존, 실제 단축키 표시 5→숨김 0→표시 5, 정상 종료 재확인 |
 
-시험은 격리된 합성 문서와 SQLite를 사용하는 실제 제품 Form에서 진행한다. launcher가 제품 화면을 열고 상태를 읽으며, 사람의 직접 입력과 기존 Computer Use 도구 입력을 구분한다. 별도 C# native 입력 자동화, 추측한 창 ID 바인딩, 시험만을 위한 제품 창 스타일 변경은 사용하지 않았다. 배포 산출물은 가능한 경우 published `Program.Main` smoke와 MSI 구조·관리 추출·파일 해시 검증으로 별도 확인한다. 예비 증거는 수정하지 않고 보존했다.
+시험은 격리된 합성 문서와 SQLite를 사용하는 실제 제품 Form에서 진행했다. launcher가 제품 화면을 열고 상태를 읽으며, 사람의 직접 입력과 기존 Computer Use 도구 입력을 구분한다. 별도 C# native 입력 자동화, 추측한 창 ID 바인딩, 시험만을 위한 제품 창 스타일 변경은 사용하지 않았다. 예비 증거는 수정하지 않고 보존했다. C01–C09 전체를 최종 DLL에서 다시 수행한 것으로 기록하지 않으며, 최종 DLL에서 반복한 범위는 재시작·보존·표시 단축키·종료다. [재시작](final-published-restart.json), [숨김](final-published-hidden.json), [표시](final-published-shown.json), [종료](final-published-exit.json).
 
 ## 확인한 결과
 
@@ -43,13 +46,14 @@
 - 현재 후보의 Desktop 검사 **713/713**, 종료 코드 0, 최종 RESULT 뒤 예외 없음. [로그](../real-use-2026-11-04/shutdown-fixture-fix-full.log). 새 FL26–31은 같은 앱 포커스 유지·외부 전환·메뉴/드래그 지연을 검사하는 **컴포넌트 검사**다.
 - sourcegen 격리 빌드의 Core **86/86**, IPC **17/17** 통과. [Core](../real-use-2026-11-04/sourcegen-core-tests.log), [IPC](../real-use-2026-11-04/sourcegen-ipc.log).
 - 실제 worker의 합성 Unsupported 요청 반대 순서 비교는 sourcegen/reflection 각 **6/6**. 앞선 sourcegen 최초 요청 시간초과도 보존하므로 합산은 **11/12**다. cold-start 완전 해결이나 일반 성능 보장으로 해석하지 않는다. [조사](../real-use-2026-11-04/sourcegen-investigation-summary.json).
+- 최종 배포 EXE의 실제 `Program.Main` worker 경로는 합성 요청 **6/6** 통과했다. 첫 요청은 JSON 결과 2,990ms, 콘솔 요약 2,993ms로 3초 제한에 근접했다. 이 최종 측정은 이전 11/12 조사와 구분하며 최초 timeout을 지우지 않는다. [결과](final-production-worker.json), [콘솔](final-production-worker.log).
 - 이전 전체 실행은 713 assertion 뒤 종료 continuation 예외가 있었다. browser commit 전용 fixture에서 불필요한 시작 마이그레이션을 제외한 뒤 재실행이 정상 종료했다. [수정 전](../real-use-2026-11-04/focus-fix-full-repro.log), [수정 후](../real-use-2026-11-04/shutdown-fixture-fix-full.log). 제품의 초기화 도중 즉시 종료 안전성을 별도로 입증한 것은 아니다.
 - 최초 시도의 `CreateGraphics` 예외는 후속 전체 실행들에서 SV15 통과로 재현되지 않았다. [최초 로그](../real-use-2026-11-04/focus-fix-list-settings.log)를 보존한다.
 
-## 최종 패키지 검증 대기
+## 배포 기준과 검증 제한
 
-- 최종 패키지 검증: 가능한 경우 published `Program.Main` smoke, MSI 구조·관리 추출·추출된 모든 파일의 해시 대조, 배포 자산 6개 업로드 해시 확인.
+배포 태그 `v0.2.19`와 Source.zip의 기준 커밋은 `557000dbe7daf8b97b8a0b5bf5c0d5f288771c93`이다. 이 최종 보고서는 배포 후 문서 커밋으로 추가되며 태그나 배포 소스 커밋을 바꾸지 않는다. [소스 지문](final-source-snapshot.json), [체크섬](final-sha256sums.txt).
 
 `sourceUnchanged: true`는 준비된 합성 원본 파일의 해시 보존을 뜻한다. 제품 소스 전체가 변경되지 않았다는 뜻은 아니다. 실제 한글 조합 입력의 초기 사람 확인과 자동 주입·컴포넌트 IME 검사를 서로 대체하지 않는다.
 
-실제 사용자 설치·업그레이드·제거 전주기는 이번 변경의 실사용 게이트에 추가하지 않는다. 해당 전주기를 수행하지 않았다는 점은 검증 범위의 제한으로 기록한다.
+Published `Program.Main`의 일반 UI 경로 smoke는 **NOT RUN**이다. 실제 entry point의 worker 경로 6회 실행과 동일 배포 DLL의 Form 검증을 일반 UI 경로 실행으로 바꾸어 기록하지 않는다. 실제 사용자 MSI 설치·업그레이드·제거 전주기도 **NOT RUN**이며, 관리 추출은 실제 설치 시험을 대신하지 않는다. 이 전주기는 이번 변경에 추가한 인수 게이트가 아니다.
