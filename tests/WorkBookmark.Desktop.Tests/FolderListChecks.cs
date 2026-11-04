@@ -76,12 +76,53 @@ internal static class FolderListChecks
 
         using (var other = new Form())
         {
+            Search(form, deep.DisplayName);
+            list.SelectedIndex = Index(list, deep.Id);
+            Guid[] visibleBefore = Items(list).Select(item => item.Id).ToArray();
             other.Show();
             other.Activate();
             Application.DoEvents();
-            assert(!form.Visible, "FL26 activating another window still dismisses the recent list");
+            assert(Form.ActiveForm == other && form.Visible && Field<TextBox>(form, "_search").Text == deep.DisplayName &&
+                Items(list).Select(item => item.Id).SequenceEqual(visibleBefore) && ((Bookmark)list.SelectedItem!).Id == deep.Id,
+                "FL26 switching to another window in the application retains the recent search, rows and selection");
+
+            ApplicationActivation(form, false);
+            bool visibleDuringDispatch = form.Visible;
+            Application.DoEvents();
+            assert(visibleDuringDispatch && !form.Visible,
+                "FL27 application deactivation dismisses an inactive recent list after native activation dispatch finishes");
+
+            Pump((Task)Invoke(form, "OpenAsync")!);
+            Search(form, deep.DisplayName);
+            ApplicationActivation(form, false);
+            ApplicationActivation(form, true);
+            Application.DoEvents();
+            assert(form.Visible && Field<TextBox>(form, "_search").Text == deep.DisplayName,
+                "FL28 returning to the application before a queued dismissal keeps the current search visible");
+
+            MenuOpening(form);
+            ApplicationActivation(form, false);
+            Application.DoEvents();
+            assert(form.Visible, "FL29 application dismissal waits for an active context-menu interaction");
+            typeof(ToolStripDropDown).GetMethod("OnClosed", Private)!.Invoke(Field<ContextMenuStrip>(form, "_menu"),
+                [new ToolStripDropDownClosedEventArgs(ToolStripDropDownCloseReason.AppFocusChange)]);
+            Application.DoEvents();
+            assert(!form.Visible, "FL30 closing the context menu applies a pending application dismissal");
+
+            Pump((Task)Invoke(form, "OpenAsync")!);
+            ApplicationActivation(form, true);
+            RecentType.GetField("_dragging", Private)!.SetValue(form, true);
+            RecentType.GetField("_keepOpen", Private)!.SetValue(form, true);
+            ApplicationActivation(form, false);
+            Application.DoEvents();
+            bool visibleDuringDrag = form.Visible;
+            Invoke(form, "FinishDrag");
+            Application.DoEvents();
+            assert(visibleDuringDrag && !form.Visible,
+                "FL31 a drag remains visible through app deactivation and applies dismissal when it finishes or cancels");
         }
         Pump((Task)Invoke(form, "OpenAsync")!);
+        ApplicationActivation(form, true);
 
         list.SelectedIndex = Index(list, folder.Id);
         MenuOpening(form);
@@ -264,6 +305,12 @@ internal static class FolderListChecks
     {
         var message = Message.Create(form.Handle, 0, nint.Zero, nint.Zero);
         RecentType.GetMethod("ProcessCmdKey", Private)!.Invoke(form, [message, keys]);
+    }
+    private static void ApplicationActivation(Form form, bool active)
+    {
+        // Component message-path regression, not physical input or an Alt+Tab test.
+        var message = Message.Create(form.Handle, 0x001C, active ? new nint(1) : nint.Zero, nint.Zero);
+        Invoke(form, "WndProc", message);
     }
     private static void Save(Form form, string path)
     {

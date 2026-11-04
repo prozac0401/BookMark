@@ -1,0 +1,87 @@
+[
+  {
+    "test": "D11 protocol-roundtrip",
+    "status": "PASS",
+    "milliseconds": 188
+  },
+  {
+    "test": "D11 all-resumes-share-input-without-cancelling-open",
+    "status": "PASS",
+    "milliseconds": 8
+  },
+  {
+    "test": "D11 oversized-and-truncated-frames",
+    "status": "PASS",
+    "milliseconds": 6
+  },
+  {
+    "test": "D04 valid-result-id",
+    "status": "PASS",
+    "milliseconds": 564
+  },
+  {
+    "test": "D04 wrong-request-id-rejected",
+    "status": "PASS",
+    "milliseconds": 483
+  },
+  {
+    "test": "D04 capture-deadline-no-late-success",
+    "status": "PASS",
+    "milliseconds": 547
+  },
+  {
+    "test": "D05 resume-deadline-outcome-unknown",
+    "status": "PASS",
+    "milliseconds": 531
+  },
+  {
+    "test": "O01 web-Office-capture-worker-result",
+    "status": "PASS",
+    "milliseconds": 656
+  },
+  {
+    "test": "O02 web-Office-timeout-never-claims-position-restored",
+    "status": "PASS",
+    "milliseconds": 525
+  },
+  {
+    "test": "O03 web-Office-cancellation-never-claims-position-restored",
+    "status": "PASS",
+    "milliseconds": 162
+  },
+  {
+    "test": "O04 extended-deadline-only-for-web-Office-resume",
+    "status": "PASS",
+    "milliseconds": 758
+  },
+  {
+    "test": "U12 single-flight-no-queue",
+    "status": "PASS",
+    "milliseconds": 664
+  },
+  {
+    "test": "D04 cancellation-discards-response",
+    "status": "PASS",
+    "milliseconds": 158
+  },
+  {
+    "test": "D06 worker-crash-cleanup",
+    "status": "PASS",
+    "milliseconds": 263
+  },
+  {
+    "test": "D06 worker-child-survives-timeout",
+    "status": "PASS",
+    "milliseconds": 3092
+  },
+  {
+    "test": "D06 dispose-terminates-worker-synchronously",
+    "status": "PASS",
+    "milliseconds": 687
+  },
+  {
+    "test": "D04 deadline-boundary-does-not-stick-busy",
+    "status": "PASS",
+    "milliseconds": 125
+  }
+]

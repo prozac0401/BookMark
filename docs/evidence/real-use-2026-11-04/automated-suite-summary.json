@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-04",
+  "source": "Current working tree including pre-existing uncommitted modifications; not the published 0.2.18 package",
+  "restore": { "exitCode": 0, "lockedMode": true, "log": "restore.log" },
+  "build": { "exitCode": 0, "configuration": "Release", "warnings": 0, "errors": 0, "log": "build-release.log" },
+  "suites": [
+    { "name": "Core/Storage", "passed": 76, "failed": 0, "exitCode": 0, "log": "core-storage.log" },
+    { "name": "IPC first run concurrent with Core and WindowsChecks", "passed": 13, "failed": 4, "exitCode": 1, "log": "integration-ipc.log" },
+    { "name": "IPC rerun after Core and WindowsChecks completed", "passed": 17, "failed": 0, "exitCode": 0, "log": "integration-ipc-sequential-rerun.log" },
+    { "name": "IPC additional confirmation before harness fix", "passed": 16, "failed": 1, "exitCode": 1, "log": "integration-ipc-confirmation.log" },
+    { "name": "IPC after bounded fixture cleanup fix", "passed": 17, "failed": 0, "exitCode": 0, "log": "integration-ipc-harness-fixed.log" },
+    { "name": "Browser native host with mock pipe", "passed": 27, "failed": 0, "exitCode": 0, "log": "browser-native-host.log" },
+    { "name": "Browser extension Node tests", "passed": 23, "failed": 0, "exitCode": 0, "log": "browser-extension.log" },
+    { "name": "Browser registration ownership mocks", "passed": 7, "failed": 0, "exitCode": 0, "log": "browser-registration.log" },
+    { "name": "Shell adapter", "passed": 10, "failed": 0, "exitCode": 0, "log": "adapter-checks.log" },
+    { "name": "Excel evidence verdict", "passed": 13, "failed": 0, "exitCode": 0, "log": "evidence-selftest.log" },
+    { "name": "Capture session verdict", "passed": 14, "failed": 0, "exitCode": 0, "log": "session-selftest.log" },
+    { "name": "Word coordinates", "passed": 24, "failed": 0, "exitCode": 0, "log": "word-checks.log" },
+    { "name": "Office URL/resume adapters", "passed": 103, "failed": 0, "exitCode": 0, "log": "office-url-checks.log" },
+    { "name": "Browser adapter", "passed": 34, "failed": 0, "exitCode": 0, "log": "browser-checks.log" },
+    { "name": "Notepad snapshot/coordinates", "passed": 28, "failed": 0, "exitCode": 0, "log": "notepad-checks.log" },
+    { "name": "PDF parsing and synthetic native DDE", "passed": 28, "failed": 0, "exitCode": 0, "log": "pdf-checks.log" }
+  ],
+  "latestUniqueChecksPassed": 404,
+  "transientFailure": {
+    "observed": true,
+    "firstRunFailedCases": ["D04 valid-result-id", "D04 wrong-request-id-rejected", "O01 web-Office-capture-worker-result", "D06 worker-child-survives-timeout"],
+    "reproduction": "Direct apphost execution of WorkBookmark.Integration.Tests.exe concurrently with Core and WindowsChecks suites, DOTNET_ROOT set to repository SDK",
+    "rerun": "Same executable and settings after those suites completed; all 17 passed without source changes",
+    "interpretation": "The first run overlapped Core, WindowsChecks and Desktop suites. Startup deadline sensitivity is plausible but the first three failed cases are not explained by the subsequently observed marker cleanup race. First-run per-case elapsed and the actual response code for wrong-id/Office capture were not recorded. No product deadline was changed.",
+    "additionalConfirmation": "A further run passed 16/17 and failed D06 worker-child-survives-timeout with a sharing violation deleting the fixture .pid.pending file. The worker can still own that file immediately after asynchronous Process.Kill. The harness now retries only sharing/lock violations for at most 2 seconds and waits for its identified child to exit during cleanup. The child-survives fixture alone now uses the existing normal 3-second Request allowance instead of 1.5 seconds; its CaptureTimedOut and live-descendant assertions remain. Product WorkerClient is unchanged.",
+    "finalRerun": "After rebuilding only Integration.Tests with BuildProjectReferences=false, all 17 passed. Detailed timings are in integration-ipc-harness-fixed-results.json. No existing single-case option was available, so no additional D06-only repetition was performed."
+  },
+  "limitations": [
+    "No live Office, Explorer active-tab acceptance, browser extension installation or native browser capture was performed by these automated suites.",
+    "Browser native host suite uses a mock pipe; database commit and UI notifications are separate desktop checks.",
+    "Notepad suite uses hidden synthetic RichTextBox handles and temporary recovery copies; it does not certify installed Notepad UI.",
+    "PDF suite uses private synthetic DDE message windows; it does not certify SumatraPDF.",
+    "Desktop tests, physical mouse/keyboard acceptance and installed MSI verification are outside this automated summary."
+  ]
+}

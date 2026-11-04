@@ -1,0 +1,190 @@
+[
+  {
+    "test": "D11 protocol-roundtrip",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:54.708772+00:00",
+    "completedUtc": "2026-11-04T12:16:56.0603981+00:00",
+    "milliseconds": 1351,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 all-resumes-share-input-without-cancelling-open",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:56.2945853+00:00",
+    "completedUtc": "2026-11-04T12:16:56.3029371+00:00",
+    "milliseconds": 8,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 oversized-and-truncated-frames",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:56.3037536+00:00",
+    "completedUtc": "2026-11-04T12:16:56.3104634+00:00",
+    "milliseconds": 6,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 valid-result-id",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:16:56.3159541+00:00",
+    "completedUtc": "2026-11-04T12:17:00.2153073+00:00",
+    "milliseconds": 3899,
+    "error": "Valid DTO not accepted: CaptureTimedOut; target present: False.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:16:56.3192402+00:00",
+        "deadlineUtc": "2026-11-04T12:16:59.3183026+00:00",
+        "milliseconds": 3699,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 wrong-request-id-rejected",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:17:00.4468857+00:00",
+    "completedUtc": "2026-11-04T12:17:03.5648896+00:00",
+    "milliseconds": 3118,
+    "error": "Expected InvalidRequest for mismatched response ID; actual: CaptureTimedOut.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:17:00.4478854+00:00",
+        "deadlineUtc": "2026-11-04T12:17:03.4478817+00:00",
+        "milliseconds": 3115,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 capture-deadline-no-late-success",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:03.5709132+00:00",
+    "completedUtc": "2026-11-04T12:17:04.1952283+00:00",
+    "milliseconds": 624,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D05 resume-deadline-outcome-unknown",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:04.2430327+00:00",
+    "completedUtc": "2026-11-04T12:17:04.906041+00:00",
+    "milliseconds": 663,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O01 web-Office-capture-worker-result",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:17:04.9121391+00:00",
+    "completedUtc": "2026-11-04T12:17:08.0054293+00:00",
+    "milliseconds": 3093,
+    "error": "Expected Captured with exact Office metadata; actual: CaptureTimedOut; target matches: False.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:17:04.9132598+00:00",
+        "deadlineUtc": "2026-11-04T12:17:07.9132549+00:00",
+        "milliseconds": 3091,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O02 web-Office-timeout-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:08.0120329+00:00",
+    "completedUtc": "2026-11-04T12:17:08.7130366+00:00",
+    "milliseconds": 701,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O03 web-Office-cancellation-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:08.7139332+00:00",
+    "completedUtc": "2026-11-04T12:17:08.9256894+00:00",
+    "milliseconds": 211,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O04 extended-deadline-only-for-web-Office-resume",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:08.9315197+00:00",
+    "completedUtc": "2026-11-04T12:17:13.2192229+00:00",
+    "milliseconds": 4287,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "U12 single-flight-no-queue",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:13.2247671+00:00",
+    "completedUtc": "2026-11-04T12:17:14.0127911+00:00",
+    "milliseconds": 788,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 cancellation-discards-response",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:14.0184379+00:00",
+    "completedUtc": "2026-11-04T12:17:14.3739587+00:00",
+    "milliseconds": 355,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D06 worker-crash-cleanup",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:14.3792426+00:00",
+    "completedUtc": "2026-11-04T12:17:15.9849894+00:00",
+    "milliseconds": 1605,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D06 worker-child-survives-timeout",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:17:15.9905193+00:00",
+    "completedUtc": "2026-11-04T12:17:19.5641608+00:00",
+    "milliseconds": 3573,
+    "error": "Child fixture did not start.",
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D06 dispose-terminates-worker-synchronously",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:17:19.5695018+00:00",
+    "completedUtc": "2026-11-04T12:17:22.7138259+00:00",
+    "milliseconds": 3144,
+    "error": "Worker fixture was not ready before Dispose: elapsed=3014ms; request completed=False.",
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 deadline-boundary-does-not-stick-busy",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:17:22.7192968+00:00",
+    "completedUtc": "2026-11-04T12:17:23.2303702+00:00",
+    "milliseconds": 511,
+    "responses": [],
+    "fixtureTraces": []
+  }
+]

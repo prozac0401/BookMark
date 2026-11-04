@@ -1,0 +1,217 @@
+[
+  {
+    "test": "D11 protocol-roundtrip",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:15:51.4111224+00:00",
+    "completedUtc": "2026-11-04T12:15:53.0073179+00:00",
+    "milliseconds": 1596,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 all-resumes-share-input-without-cancelling-open",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:15:53.1911921+00:00",
+    "completedUtc": "2026-11-04T12:15:53.2082465+00:00",
+    "milliseconds": 17,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 oversized-and-truncated-frames",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:15:53.2082996+00:00",
+    "completedUtc": "2026-11-04T12:15:53.2286497+00:00",
+    "milliseconds": 20,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 valid-result-id",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:15:53.2287021+00:00",
+    "completedUtc": "2026-11-04T12:15:56.4111595+00:00",
+    "milliseconds": 3182,
+    "error": "Valid DTO not accepted: CaptureTimedOut; target present: False.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:15:53.2329795+00:00",
+        "deadlineUtc": "2026-11-04T12:15:56.2320272+00:00",
+        "milliseconds": 3160,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\03-ok-8c00bd81226a4e74adf74224f63a02cf.tsv"
+    ]
+  },
+  {
+    "test": "D04 wrong-request-id-rejected",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:15:56.4119637+00:00",
+    "completedUtc": "2026-11-04T12:15:59.3410497+00:00",
+    "milliseconds": 2929,
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:15:56.4127773+00:00",
+        "deadlineUtc": "2026-11-04T12:15:59.4127748+00:00",
+        "milliseconds": 2926,
+        "code": "InvalidRequest",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\04-wrong-id-ce8bb4e9fa134fa4a460f7e6811cb506.tsv"
+    ]
+  },
+  {
+    "test": "D04 capture-deadline-no-late-success",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:15:59.3411521+00:00",
+    "completedUtc": "2026-11-04T12:15:59.9966829+00:00",
+    "milliseconds": 655,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\05-late-1fe3ea0dbc1643ae9e2ede1dea995f2d.tsv"
+    ]
+  },
+  {
+    "test": "D05 resume-deadline-outcome-unknown",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:15:59.9969248+00:00",
+    "completedUtc": "2026-11-04T12:16:00.526591+00:00",
+    "milliseconds": 529,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\06-late-0a6c6f60b68743aa961b1a6dce06e107.tsv"
+    ]
+  },
+  {
+    "test": "O01 web-Office-capture-worker-result",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:16:00.527058+00:00",
+    "completedUtc": "2026-11-04T12:16:03.6218618+00:00",
+    "milliseconds": 3094,
+    "error": "Expected Captured with exact Office metadata; actual: CaptureTimedOut; target matches: False.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:16:00.5287751+00:00",
+        "deadlineUtc": "2026-11-04T12:16:03.5287686+00:00",
+        "milliseconds": 3091,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\07-echo-target-96e42ce87b25458b94942d71a7c00857.tsv"
+    ]
+  },
+  {
+    "test": "O02 web-Office-timeout-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:03.6225296+00:00",
+    "completedUtc": "2026-11-04T12:16:04.5687654+00:00",
+    "milliseconds": 946,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\08-late-36b4be63d5d64f73b1c118732e7c7905.tsv"
+    ]
+  },
+  {
+    "test": "O03 web-Office-cancellation-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:04.5689658+00:00",
+    "completedUtc": "2026-11-04T12:16:04.7826032+00:00",
+    "milliseconds": 213,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\09-late-072d632a67dd4814a05d54897d02e6aa.tsv"
+    ]
+  },
+  {
+    "test": "O04 extended-deadline-only-for-web-Office-resume",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:04.7828832+00:00",
+    "completedUtc": "2026-11-04T12:16:09.0107697+00:00",
+    "milliseconds": 4227,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\10-document-opened-df7cbc7292e949739ad9d0d173af6bca.tsv"
+    ]
+  },
+  {
+    "test": "U12 single-flight-no-queue",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:09.0108195+00:00",
+    "completedUtc": "2026-11-04T12:16:09.6989898+00:00",
+    "milliseconds": 688,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\11-late-f8a5dc6320d04fa4b22f25feb4eae3a0.tsv"
+    ]
+  },
+  {
+    "test": "D04 cancellation-discards-response",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:09.6990303+00:00",
+    "completedUtc": "2026-11-04T12:16:10.202228+00:00",
+    "milliseconds": 503,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\12-late-cce7d038a5184790b351778478aaa5b6.tsv"
+    ]
+  },
+  {
+    "test": "D06 worker-crash-cleanup",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:10.2023125+00:00",
+    "completedUtc": "2026-11-04T12:16:12.1579685+00:00",
+    "milliseconds": 1955,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\13-crash-86cf0a5f2cb44cfcb2f0ccfb5f622483.tsv"
+    ]
+  },
+  {
+    "test": "D06 worker-child-survives-timeout",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:16:12.158008+00:00",
+    "completedUtc": "2026-11-04T12:16:15.4142936+00:00",
+    "milliseconds": 3256,
+    "error": "Child fixture did not start.",
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\14-spawn-child-b987a51155db4c96b6ee5b496680d981.tsv"
+    ]
+  },
+  {
+    "test": "D06 dispose-terminates-worker-synchronously",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:16:15.4143542+00:00",
+    "completedUtc": "2026-11-04T12:16:18.4587852+00:00",
+    "milliseconds": 3044,
+    "error": "Worker fixture was not ready before Dispose: elapsed=3040ms; request completed=False.",
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\15-own-pid-9fa9046d77d84ef49537f36e450c6195.tsv"
+    ]
+  },
+  {
+    "test": "D04 deadline-boundary-does-not-stick-busy",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:16:18.4594718+00:00",
+    "completedUtc": "2026-11-04T12:16:19.5560738+00:00",
+    "milliseconds": 1096,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-exclusive-tsv-workers\\16-late-e2511c47c80d489296699d7e728aed75.tsv"
+    ]
+  }
+]

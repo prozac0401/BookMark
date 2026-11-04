@@ -1,0 +1,29 @@
+{
+  "recordedUtc": "2026-11-04T12:51:58.756Z",
+  "sourceHashes": [
+    {
+      "path": "src/WorkBookmark.Core/FrameProtocol.cs",
+      "sha256": "b9ea8f20c636c7fe0419d5d3662f5134a092726022de9d15fea66f215d5d36af"
+    },
+    {
+      "path": "src/WorkBookmark.Core/FrameProtocolJsonContext.cs",
+      "sha256": "a74b8f317ca4b0ea31228f5ab3169ebeba04797c34d44d242145eef8165bbed1"
+    },
+    {
+      "path": "tests/WorkBookmark.Core.Tests/FrameProtocolChecks.cs",
+      "sha256": "2c7fe8cc09732ba1fbcb74de36d8a69ff6ebdf20691d6fae52db737652b3bf9c"
+    },
+    {
+      "path": "tests/WorkBookmark.Core.Tests/Program.cs",
+      "sha256": "783e124c83bda5f3d6e5a184f3c5b53868d15d3f9014a54cac932f64bd7a42f3"
+    },
+    {
+      "path": "tests/WorkBookmark.Integration.Tests/Program.cs",
+      "sha256": "4c7c74fb3e5e3545c64004e2f4dce8a41c8b3546064e3ae34615c8c79ae43da0"
+    },
+    {
+      "path": "tests/WorkBookmark.Integration.Tests/ProductionWorkerStartupChecks.cs",
+      "sha256": "3a2ee90cedc9c54497dc50f435e79dc88c4ebf361ed3ae85627e09100b9c06bf"
+    }
+  ]
+}

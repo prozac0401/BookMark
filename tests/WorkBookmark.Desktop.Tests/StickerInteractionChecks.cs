@@ -23,6 +23,7 @@ internal static class StickerInteractionChecks
         CancelledResize(assert);
         MoveResizesEditor(assert);
         MagneticPointerMovement(assert);
+        NativeMoveLifecycle(assert);
         InlineFootprints(assert);
     }
 
@@ -38,7 +39,7 @@ internal static class StickerInteractionChecks
         };
         var instruction = new Label
         {
-            Text = "클릭 선택 · 드래그 이동 · 더블 클릭/F2 편집 · 우측 아래 크기 조절\nShift+드래그로 폴더에 넣기/새 폴더 묶기 · Alt로 자유 이동",
+            Text = "클릭 선택 · 드래그 이동 · 더블 클릭/F2 편집 · 우측 아래 크기 조절\n다른 스티커 위에 놓아 폴더에 넣기/새 폴더 묶기 · Alt로 자유 이동",
             Location = new Point(16, 14), Size = new Size(580, 44)
         };
         var magnet = new CheckBox { Text = "자석 정렬", Checked = true, Location = new Point(16, 72), AutoSize = true };
@@ -102,7 +103,7 @@ internal static class StickerInteractionChecks
                 foreach (var changed in changes) rows[changed.Id] = changed;
                 Call(manager, "ApplyFolderChanges", changes, (Guid?)target);
             }
-            status.Text = "Shift+드래그 폴더 이동 반영됨";
+            status.Text = "드래그 폴더 이동 반영됨";
         }));
         On(manager, "ColorChangeRequested", (Action<Bookmark, BookmarkColor>)((item, color) => Publish(rows[item.Id] with { Color = color })));
         On(manager, "SettingsRequested", (Action)(() => panel.Activate()));
@@ -407,6 +408,56 @@ internal static class StickerInteractionChecks
         Rectangle result = (Rectangle)Call(form, "AdjustNativeMoveBounds", keyboard, Point.Empty, Keys.None)!;
         assert(offsetField.GetValue(form) is null && received == keyboard && result == keyboard,
             "SI20 ending a pointer move clears its anchor and preserves later native keyboard movement");
+    }
+
+    private static void NativeMoveLifecycle(Action<bool, string> assert)
+    {
+        using var form = Create();
+        _ = form.Handle;
+        var completions = new List<bool>();
+        On(form, "NativeMoveCompleted", (Action<Form, bool>)((_, moved) => completions.Add(moved)));
+        Point origin = form.Location;
+        var delta = new Size(48, 24);
+
+        void MoveTo(Point location)
+        {
+            Rectangle proposed = new(location, form.Size);
+            nint pointer = Marshal.AllocHGlobal(Marshal.SizeOf<NativeRectangle>());
+            try
+            {
+                Marshal.StructureToPtr(new NativeRectangle
+                {
+                    Left = proposed.Left, Top = proposed.Top, Right = proposed.Right, Bottom = proposed.Bottom
+                }, pointer, false);
+                SendMessage(form.Handle, 0x0216, 0, pointer);
+                var moved = Marshal.PtrToStructure<NativeRectangle>(pointer);
+                form.Bounds = Rectangle.FromLTRB(moved.Left, moved.Top, moved.Right, moved.Bottom);
+            }
+            finally { Marshal.FreeHGlobal(pointer); }
+        }
+
+        SendMessage(form.Handle, 0x0231, 0, 0);
+        MoveTo(origin + delta);
+        SendMessage(form.Handle, 0x0232, 0, 0);
+        SendMessage(form.Handle, 0x0232, 0, 0);
+        assert(completions.SequenceEqual([true]) && form.Location == origin + delta,
+            "SI23 a native move reports one successful completion even if exit notification is repeated");
+
+        origin = form.Location;
+        SendMessage(form.Handle, 0x0231, 0, 0);
+        MoveTo(origin + delta);
+        // Windows restores the starting location before WM_EXITSIZEMOVE on Esc.
+        form.Location = origin;
+        SendMessage(form.Handle, 0x0232, 0, 0);
+        assert(completions.SequenceEqual([true, false]),
+            "SI24 an Esc-restored native move reports cancellation rather than a completed drop");
+
+        SendMessage(form.Handle, 0x0231, 0, 0);
+        form.Width += 20;
+        SendMessage(form.Handle, 0x0232, 0, 0);
+        form.Location += delta;
+        assert(completions.SequenceEqual([true, false]),
+            "SI25 native resizing and programmatic movement never report a hierarchy drop");
     }
 
     private static void InlineFootprints(Action<bool, string> assert)

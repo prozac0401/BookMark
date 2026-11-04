@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using WorkBookmark.App;
 using WorkBookmark.Core;
 using WorkBookmark.Storage;
@@ -38,11 +39,11 @@ internal static class FolderIntegrationChecks
         Pump((Task)recent.GetType().GetMethod("OpenAsync")!.Invoke(recent, null)!);
         var list = Field<ListBox>(recent, "_items");
 
-        Pump(Change(b, a.Id));
+        bool groupPreview = DragOnto(b.Id, a.Id);
         var folder = repository.ListActive().Single(item => item.IsFolder);
-        assert(folder.ParentId is null && folder.Target.Path == "" && !folder.FolderExpanded &&
+        assert(groupPreview && folder.ParentId is null && folder.Target.Path == "" && !folder.FolderExpanded &&
             repository.Get(a.Id) == a with { ParentId = folder.Id } && repository.Get(b.Id) == b with { ParentId = folder.Id },
-            "FI01 bookmark-on-bookmark creates one closed linkless folder and preserves both original bookmarks");
+            "FI01 an unmodified synthetic sticker drag previews and creates one closed SQLite folder through application events, preserving both bookmarks");
         assert(Listed(folder.Id) is not null && Listed(a.Id) is null && Listed(b.Id) is null &&
             Sticker(folder.Id).Visible && !Sticker(a.Id).Visible && !Sticker(b.Id).Visible && Sticker(c.Id).Visible,
             "FI02 atomic grouping reaches both views without exposing children of a closed folder");
@@ -75,25 +76,26 @@ internal static class FolderIntegrationChecks
         var create = (Task<Bookmark>)Invoke(context, "CreateFolderAsync", "자료", (Guid?)null)!;
         Pump(create);
         var nested = create.Result;
-        Pump(Change(b, nested.Id));
-        Pump(Change(nested, folder.Id));
-        assert(repository.ListActive().Count(item => item.IsFolder) == 2 && repository.Get(nested.Id)!.ParentId == folder.Id &&
+        bool childPreview = DragOnto(b.Id, nested.Id);
+        bool nestedPreview = DragOnto(nested.Id, folder.Id);
+        assert(childPreview && nestedPreview && repository.ListActive().Count(item => item.IsFolder) == 2 && repository.Get(nested.Id)!.ParentId == folder.Id &&
             repository.Get(b.Id)!.ParentId == nested.Id && Sticker(nested.Id).Visible && !Sticker(b.Id).Visible && Listed(b.Id) is null,
-            "FI05 folders and bookmarks move into folders without creating extra wrappers; nested closed state is retained");
+            "FI05 unmodified synthetic sticker drags persist bookmark and nested-folder membership without extra wrappers and retain closed child visibility");
         Field<Action<Bookmark>>(Sticker(nested.Id), "FolderToggleRequested")(repository.Get(nested.Id)!);
         PumpUntil(() => repository.Get(nested.Id)!.FolderExpanded && Sticker(b.Id).Visible && Listed(b.Id) is not null);
         assert(Current(Sticker(nested.Id)).FolderExpanded && Listed(nested.Id)!.FolderExpanded,
             "FI06 sticker folder toggle commits the same open state to the list");
-        Pump(Change(repository.Get(folder.Id)!, b.Id));
-        assert(repository.Get(folder.Id)!.ParentId is null && repository.ListActive().Count(item => item.IsFolder) == 2,
-            "FI07 dropping a folder onto its own descendant refuses a cycle without creating a wrapper");
+        bool cyclePreview = DragOnto(folder.Id, b.Id);
+        assert(!cyclePreview && repository.Get(folder.Id)!.ParentId is null && repository.ListActive().Count(item => item.IsFolder) == 2,
+            "FI07 an unmodified synthetic folder drag onto its descendant refuses the preview and SQLite cycle without creating a wrapper");
 
         var allBefore = repository.ListActive().ToArray();
         fail = true;
-        Pump(Change(c, a.Id));
-        fail = false;
-        assert(repository.ListActive().SequenceEqual(allBefore) && Current(Sticker(c.Id)).ParentId is null && Listed(c.Id)!.ParentId is null,
-            "FI08 failed ordinary-target grouping rolls back the new folder and all parent changes in both views");
+        bool failedPreview;
+        try { failedPreview = DragOnto(c.Id, a.Id); }
+        finally { fail = false; }
+        assert(failedPreview && repository.ListActive().SequenceEqual(allBefore) && Current(Sticker(c.Id)).ParentId is null && Listed(c.Id)!.ParentId is null,
+            "FI08 a previewed synthetic sticker drop with a SQLite failure rolls back the new folder and parent changes in both views");
 
         Pump((Task)Invoke(context, "ResumeAsync", repository.Get(folder.Id)!, (TargetSnapshot?)null)!);
         assert(!repository.Get(folder.Id)!.FolderExpanded && repository.Get(folder.Id)!.LastResumeAtUtc is null &&
@@ -229,7 +231,48 @@ internal static class FolderIntegrationChecks
             Listed(folder.Id) == outerAfterDialogs && Current(folderSticker) == outerAfterDialogs && repository.Get(nested.Id) == nestedAfterDialogs,
             "FI27 saving the first retained dialog uses its original folder callback without changing the second folder");
 
-        Task Change(Bookmark item, Guid? target) => (Task)Invoke(context, "ChangeParentAsync", item, target)!;
+        bool DragOnto(Guid sourceId, Guid targetId)
+        {
+            Form source = Sticker(sourceId), target = Sticker(targetId);
+            Point cursor = Cursor.Position;
+            var adjustProperty = source.GetType().GetProperty("AdjustMoveBounds", Private)!;
+            var adjust = (Func<Rectangle, Keys, Rectangle>)adjustProperty.GetValue(source)!;
+            nint pointer = Marshal.AllocHGlobal(Marshal.SizeOf<NativeRectangle>());
+            try
+            {
+                Rectangle area = Screen.FromControl(target).WorkingArea;
+                target.Location = area.Location + new Size(80, 80);
+                source.Location = target.Location + new Size(target.Width + 60, 0);
+                target.BringToFront();
+                Cursor.Position = new Point(target.Left + target.Width / 2, target.Top + target.Height / 2);
+                // Exercise the native movement handler and manager preview with
+                // deterministic modifier state. This is a synthetic UI test;
+                // physical pointer drag remains a separate acceptance check.
+                adjustProperty.SetValue(source, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, Keys.None)));
+                SendMessage(source.Handle, 0x0231, 0, 0);
+                Rectangle proposed = new(target.Location + new Size(4, 2), source.Size);
+                Marshal.StructureToPtr(new NativeRectangle
+                {
+                    Left = proposed.Left, Top = proposed.Top, Right = proposed.Right, Bottom = proposed.Bottom
+                }, pointer, false);
+                SendMessage(source.Handle, 0x0216, 0, pointer);
+                var moved = Marshal.PtrToStructure<NativeRectangle>(pointer);
+                source.Bounds = Rectangle.FromLTRB(moved.Left, moved.Top, moved.Right, moved.Bottom);
+                bool preview = Field<bool>(target, "_dropTarget");
+                // FinishMove raises the manager's real ParentChangeRequested
+                // event; this helper never calls ChangeParentAsync directly.
+                Invoke(manager, "FinishMove", source, true, Cursor.Position, Keys.None);
+                SendMessage(source.Handle, 0x0232, 0, 0);
+                PumpUntil(() => !Field<HashSet<Guid>>(context, "_mutatingBookmarks").Contains(sourceId));
+                return preview;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(pointer);
+                adjustProperty.SetValue(source, adjust);
+                Cursor.Position = cursor;
+            }
+        }
         Bookmark? Listed(Guid id) => list.Items.Cast<Bookmark>().FirstOrDefault(item => item.Id == id);
         Form[] Forms() => ((System.Collections.IEnumerable)manager.GetType().GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
         Form Sticker(Guid id) => Forms().Single(form => Current(form).Id == id);
@@ -252,4 +295,10 @@ internal static class FolderIntegrationChecks
         while (!done() && watch.Elapsed < TimeSpan.FromSeconds(15)) { Application.DoEvents(); Thread.Sleep(1); }
         if (!done()) throw new TimeoutException("Folder integration did not complete.");
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRectangle { public int Left, Top, Right, Bottom; }
+
+    [DllImport("user32.dll")]
+    private static extern nint SendMessage(nint window, uint message, nint wParam, nint lParam);
 }

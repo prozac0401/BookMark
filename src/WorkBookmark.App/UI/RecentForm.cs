@@ -18,6 +18,7 @@ internal sealed class RecentForm : Form
     private readonly ToolStripMenuItem _renameFolderMenu;
     private readonly ToolTip _tooltip = new();
     private readonly System.Windows.Forms.Timer _searchTimer = new() { Interval = 180 };
+    private readonly System.Windows.Forms.Timer _dragScrollTimer = new() { Interval = 300 };
     private readonly Func<string, Task<SearchResults>> _load;
     private readonly List<Bookmark> _bookmarks = [];
     private readonly Dictionary<Guid, long> _displaySequence = [];
@@ -27,12 +28,19 @@ internal sealed class RecentForm : Form
     private long _changeRevision;
     private int _loadVersion;
     private bool _keepOpen;
+    private bool _applicationDeactivated;
+    private bool _deactivationHideQueued;
     private Point? _dragOrigin;
     private Guid? _dragId;
     private Guid? _dropTargetId;
     private bool _dragging;
     private bool _suppressClick;
     private bool _dropHint;
+    private Point _dragScrollPoint;
+    private Guid? _dragScrollId;
+    private int _dragScrollDirection;
+    private bool _projectionPending;
+    private Guid? _projectionSelection;
     private string _normalStatus = "";
     private const string DragFormat = "WorkBookmark.BookmarkId";
     public event Action<Bookmark>? ResumeRequested;
@@ -79,6 +87,8 @@ internal sealed class RecentForm : Form
         _status.DragOver += RootDragOver;
         _status.DragLeave += (_, _) => ClearDropTarget();
         _status.DragDrop += RootDragDrop;
+        _dragScrollTimer.Tick += (_, _) => ScrollDragItems();
+        VisibleChanged += (_, _) => { if (!Visible) ClearDropTarget(); };
         _search.TextChanged += (_, _) => { _searchTimer.Stop(); _searchTimer.Start(); };
         _searchTimer.Tick += async (_, _) => { _searchTimer.Stop(); await ReloadAsync(); };
         _cancel.LinkClicked += (_, _) => CancelRequested?.Invoke();
@@ -109,11 +119,34 @@ internal sealed class RecentForm : Form
             copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사";
             _keepOpen = true;
         };
-        _menu.Closed += (_, _) => _keepOpen = false;
+        _menu.Closed += (_, _) => { _keepOpen = false; QueueApplicationDeactivateHide(); };
         _items.ContextMenuStrip = _menu;
-        Deactivate += (_, _) => { if (!_keepOpen && !_menu.Visible) Hide(); };
         FormClosing += (_, e) => { if (e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; Hide(); } };
         UiStyle.Position(this);
+    }
+    protected override void WndProc(ref Message message)
+    {
+        // WM_ACTIVATEAPP distinguishes leaving the application from switching
+        // between its list, stickers and dialogs. Form.Deactivate cannot do that.
+        // https://learn.microsoft.com/windows/win32/winmsg/wm-activateapp
+        bool applicationActivation = message.Msg == 0x001C;
+        if (applicationActivation) _applicationDeactivated = message.WParam == nint.Zero;
+        base.WndProc(ref message);
+        if (applicationActivation) QueueApplicationDeactivateHide();
+    }
+    private void QueueApplicationDeactivateHide()
+    {
+        if (!_applicationDeactivated || _keepOpen || _menu.Visible || _dragging || _deactivationHideQueued ||
+            !Visible || !IsHandleCreated || IsDisposed || Disposing) return;
+        _deactivationHideQueued = true;
+        // Finish native activation dispatch before hiding a window. Recheck the
+        // current app state so a quick return cannot apply a stale dismissal.
+        BeginInvoke((Action)(() =>
+        {
+            _deactivationHideQueued = false;
+            if (_applicationDeactivated && !_keepOpen && !_menu.Visible && !_dragging && Visible && !IsDisposed && !Disposing)
+                Hide();
+        }));
     }
     public async Task OpenAsync()
     {
@@ -224,6 +257,15 @@ internal sealed class RecentForm : Form
     public void SetBusy(bool busy, string? message = null) { _cancel.Visible = busy; if (message is not null) _status.Text = message; }
     private void ProjectItems(Guid? selected)
     {
+        // Committed data still updates immediately for drop validation. Keep the
+        // displayed rows fixed until the pointer is released so an in-flight
+        // search or edit cannot move a different target under the drag.
+        if (_dragging)
+        {
+            _projectionPending = true;
+            _projectionSelection = selected;
+            return;
+        }
         string query = _search.Text.Trim();
         bool searching = query.Length > 0;
         // Virtual folder visibility is shared, committed data. Local expansion
@@ -340,14 +382,22 @@ internal sealed class RecentForm : Form
         _dropHint = true;
         _status.Text = "폴더 위: 넣기 · 일반 항목 위: 새 폴더 · 빈 곳: 꺼내기";
         try { _items.DoDragDrop(new DataObject(DragFormat, id.ToString()), DragDropEffects.Move); }
-        finally
+        finally { FinishDrag(); }
+    }
+    private void FinishDrag()
+    {
+        _dragging = false;
+        _keepOpen = false;
+        _dragOrigin = null;
+        _dragId = null;
+        ClearDropTarget();
+        if (_projectionPending)
         {
-            _dragging = false;
-            _keepOpen = false;
-            _dragOrigin = null;
-            _dragId = null;
-            ClearDropTarget();
+            _projectionPending = false;
+            ProjectItems(_projectionSelection);
+            _projectionSelection = null;
         }
+        QueueApplicationDeactivateHide();
     }
     private void ItemsMouseUp(object? sender, MouseEventArgs e)
     {
@@ -362,23 +412,61 @@ internal sealed class RecentForm : Form
     private void ItemsDragOver(object? sender, DragEventArgs e)
     {
         Point point = _items.PointToClient(new Point(e.X, e.Y));
-        if (_items.Items.Count > 0)
-        {
-            if (point.Y < Scale(22) && _items.TopIndex > 0) _items.TopIndex--;
-            else if (point.Y > _items.ClientSize.Height - Scale(22) && _items.TopIndex < _items.Items.Count - 1) _items.TopIndex++;
-        }
-        // Hit-test after scrolling so the outlined parent is the one a drop at
-        // this exact pointer location would choose.
+        UpdateDragScroll(DragId(e), point);
         int index = _items.IndexFromPoint(point);
         Guid? target = index >= 0 ? ((Bookmark)_items.Items[index]).Id : null;
         SetDropTarget(e, target);
     }
-    private void RootDragOver(object? sender, DragEventArgs e) => SetDropTarget(e, null);
+    private void UpdateDragScroll(Guid? id, Point point)
+    {
+        int direction = id is not null && _bookmarks.Any(item => item.Id == id) && _items.ClientRectangle.Contains(point)
+            ? point.Y < Scale(22) ? -1 : point.Y > _items.ClientSize.Height - Scale(22) ? 1 : 0
+            : 0;
+        if (direction != _dragScrollDirection)
+        {
+            StopDragScroll();
+            _dragScrollDirection = direction;
+            if (direction != 0)
+            {
+                // Give edge rows time to receive a drop before scrolling. Pointer
+                // event frequency must not control the speed of the whole list.
+                _dragScrollTimer.Interval = 300;
+                _dragScrollTimer.Start();
+            }
+        }
+        _dragScrollId = id;
+        _dragScrollPoint = point;
+    }
+    private void ScrollDragItems()
+    {
+        if (_dragScrollDirection == 0 || _dragScrollId is not { } id || !Visible || _items.Items.Count == 0) return;
+        int before = _items.TopIndex;
+        int next = Math.Clamp(before + _dragScrollDirection, 0, _items.Items.Count - 1);
+        if (next == before) return;
+        _items.TopIndex = next;
+        _dragScrollTimer.Interval = 120;
+        // Re-hit-test after each timed scroll, including when the pointer is still.
+        int index = _items.IndexFromPoint(_dragScrollPoint);
+        UpdateDropTarget(id, index >= 0 ? ((Bookmark)_items.Items[index]).Id : null);
+    }
+    private void StopDragScroll()
+    {
+        _dragScrollTimer.Stop();
+        _dragScrollDirection = 0;
+        _dragScrollId = null;
+    }
+    private void RootDragOver(object? sender, DragEventArgs e)
+    {
+        StopDragScroll();
+        SetDropTarget(e, null);
+    }
     private void SetDropTarget(DragEventArgs e, Guid? parentId)
+        => e.Effect = UpdateDropTarget(DragId(e), parentId) ? DragDropEffects.Move : DragDropEffects.None;
+    private bool UpdateDropTarget(Guid? sourceId, Guid? parentId)
     {
         _dropHint = true;
-        bool allowed = DragId(e) is { } id && CanRequestParentChange(id, parentId);
-        e.Effect = allowed ? DragDropEffects.Move : DragDropEffects.None;
+        bool allowed = sourceId is { } id && CanRequestParentChange(id, parentId);
+        Guid? previous = _dropTargetId;
         _dropTargetId = allowed ? parentId : null;
         _status.BackColor = allowed && parentId is null ? Color.FromArgb(220, 238, 232) : BackColor;
         Bookmark? destination = parentId is { } parent ? _bookmarks.FirstOrDefault(item => item.Id == parent) : null;
@@ -386,7 +474,23 @@ internal sealed class RecentForm : Form
             : destination?.IsFolder == true ? $"‘{destination.DisplayName}’ 폴더에 넣습니다."
             : $"‘{destination?.DisplayName}’ 항목과 새 폴더로 묶습니다."
             : "현재 위치이거나 자기 자신/하위 항목이라 이동할 수 없습니다.";
-        _items.Invalidate();
+        if (previous != _dropTargetId)
+        {
+            InvalidateDropRow(previous);
+            InvalidateDropRow(_dropTargetId);
+        }
+        return allowed;
+    }
+    private void InvalidateDropRow(Guid? id)
+    {
+        if (id is null) return;
+        for (int index = 0; index < _items.Items.Count; index++)
+        {
+            if (((Bookmark)_items.Items[index]).Id != id) continue;
+            Rectangle bounds = Rectangle.Intersect(_items.ClientRectangle, _items.GetItemRectangle(index));
+            if (bounds.Width > 0 && bounds.Height > 0) _items.Invalidate(bounds);
+            return;
+        }
     }
     private void ItemsDragDrop(object? sender, DragEventArgs e)
     {
@@ -413,11 +517,13 @@ internal sealed class RecentForm : Form
     }
     private void ClearDropTarget()
     {
+        StopDragScroll();
+        Guid? previous = _dropTargetId;
         _dropTargetId = null;
         _status.BackColor = BackColor;
         if (_dropHint) _status.Text = _normalStatus;
         _dropHint = false;
-        _items.Invalidate();
+        InvalidateDropRow(previous);
     }
     protected override bool ProcessCmdKey(ref Message message, Keys keyData)
     {
@@ -523,7 +629,7 @@ internal sealed class RecentForm : Form
     }
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _searchTimer.Dispose(); _menu.Dispose(); _tooltip.Dispose(); }
+        if (disposing) { _searchTimer.Dispose(); _dragScrollTimer.Dispose(); _menu.Dispose(); _tooltip.Dispose(); }
         base.Dispose(disposing);
     }
 }

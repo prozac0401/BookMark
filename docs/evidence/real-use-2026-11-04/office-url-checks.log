@@ -1,0 +1,104 @@
+PASS ExcelCell matches the opened URL/IRI without filesystem or authentication probes
+PASS ExcelCell never confuses same-name documents, URL states or local caches
+PASS ExcelCell invalid observed URL is not treated as proven absence
+PASS ExcelCell requests the correct Office handler exactly once
+PASS ExcelCell missing handler is reported as failure without a claimed open
+PASS ExcelCell invalid URL never reaches Shell
+PASS ExcelCell expired request cannot start an Office open
+PASS ExcelCell authentication/loading is observed until the final response allowance
+PASS WordPosition matches the opened URL/IRI without filesystem or authentication probes
+PASS WordPosition never confuses same-name documents, URL states or local caches
+PASS WordPosition invalid observed URL is not treated as proven absence
+PASS WordPosition requests the correct Office handler exactly once
+PASS WordPosition missing handler is reported as failure without a claimed open
+PASS WordPosition invalid URL never reaches Shell
+PASS WordPosition expired request cannot start an Office open
+PASS WordPosition authentication/loading is observed until the final response allowance
+PASS PowerPointSlide matches the opened URL/IRI without filesystem or authentication probes
+PASS PowerPointSlide never confuses same-name documents, URL states or local caches
+PASS PowerPointSlide invalid observed URL is not treated as proven absence
+PASS PowerPointSlide requests the correct Office handler exactly once
+PASS PowerPointSlide missing handler is reported as failure without a claimed open
+PASS PowerPointSlide invalid URL never reaches Shell
+PASS PowerPointSlide expired request cannot start an Office open
+PASS PowerPointSlide authentication/loading is observed until the final response allowance
+PASS local Office documents still require the filesystem existence check
+PASS local exact paths and conservative file-alias decisions are preserved
+PASS an unrelated open web document does not block local resume
+PASS missing local file is not silently accepted
+PASS existing Excel UNC and Word/PowerPoint local-only filesystem scope is unchanged
+PASS a failed retry preserves the fact that the initial Office open request was accepted
+PASS authentication warm-up strips the document path, query and fragment while retaining its origin port
+PASS authentication warm-up rejects embedded credentials before any network boundary
+PASS automatic Windows logon honors explicit silent-logon or conditional intranet policy
+PASS Internet-zone conditional logon, prompts, anonymous-only and unknown policies cannot release credentials
+PASS no origin visit or retry is performed before an initial Office launch
+PASS ordinary Office startup gets an initial grace period without authentication requests
+PASS one background root visit starts even while Office inventory is temporarily incomplete
+PASS Office is never reopened while authentication warm-up is still running
+PASS completed warm-up does not turn incomplete Office inventory into proven absence
+PASS complete absence after warm-up permits exactly one input-guarded Office retry
+PASS a process without an exact document window never claims an opened document
+PASS an exact observed document reports opened separately from unconfirmed position restoration
+PASS an observed exact document suppresses warm-up and duplicate opens
+PASS login/user input permanently prevents retries while read-only observation can still confirm the document
+PASS local Office documents never invoke web authentication recovery
+PASS insufficient remaining budget cannot start a root visit or delayed retry
+PASS a failed root request stays bounded and is not confused with document success
+PASS only transient web Office COM-busy responses are retried observationally
+PASS delayed Office position metadata is observed until it confirms the requested position
+PASS position verification has a two-second bound and never claims an unchanged position succeeded
+PASS transient ActiveWindow/Selection changes after web navigation are observed again
+PASS local position verification retains its existing immediate result
+PASS input latched before worker startup prevents any automatic Office retry
+PASS input latched before worker startup also prevents position navigation and focus changes
+PASS a missing requested input signal fails closed before Office automation starts
+PASS ExcelCell local an accepted Shell launch or missing HWND does not claim the document opened
+PASS ExcelCell local verified document identity survives a click, focus change or later timeout
+PASS ExcelCell local an actual position failure retains its precise result
+PASS ExcelCell local verified position survives focus acquisition interruption
+PASS ExcelCell local an already open exact document is confirmed without a new activation
+PASS ExcelCell local relink validation cannot turn an interrupted check into resume success
+PASS ExcelCell local initial document detection has a short bounded interval
+PASS ExcelCell local a 45-second wait performs at most 100 full Office inventories
+PASS WordPosition local an accepted Shell launch or missing HWND does not claim the document opened
+PASS WordPosition local verified document identity survives a click, focus change or later timeout
+PASS WordPosition local an actual position failure retains its precise result
+PASS WordPosition local verified position survives focus acquisition interruption
+PASS WordPosition local an already open exact document is confirmed without a new activation
+PASS WordPosition local relink validation cannot turn an interrupted check into resume success
+PASS WordPosition local initial document detection has a short bounded interval
+PASS WordPosition local a 45-second wait performs at most 100 full Office inventories
+PASS PowerPointSlide local an accepted Shell launch or missing HWND does not claim the document opened
+PASS PowerPointSlide local verified document identity survives a click, focus change or later timeout
+PASS PowerPointSlide local an actual position failure retains its precise result
+PASS PowerPointSlide local verified position survives focus acquisition interruption
+PASS PowerPointSlide local an already open exact document is confirmed without a new activation
+PASS PowerPointSlide local relink validation cannot turn an interrupted check into resume success
+PASS PowerPointSlide local initial document detection has a short bounded interval
+PASS PowerPointSlide local a 45-second wait performs at most 100 full Office inventories
+PASS ExcelCell web an accepted Shell launch or missing HWND does not claim the document opened
+PASS ExcelCell web verified document identity survives a click, focus change or later timeout
+PASS ExcelCell web an actual position failure retains its precise result
+PASS ExcelCell web verified position survives focus acquisition interruption
+PASS ExcelCell web an already open exact document is confirmed without a new activation
+PASS ExcelCell web relink validation cannot turn an interrupted check into resume success
+PASS ExcelCell web initial document detection has a short bounded interval
+PASS ExcelCell web a 45-second wait performs at most 100 full Office inventories
+PASS WordPosition web an accepted Shell launch or missing HWND does not claim the document opened
+PASS WordPosition web verified document identity survives a click, focus change or later timeout
+PASS WordPosition web an actual position failure retains its precise result
+PASS WordPosition web verified position survives focus acquisition interruption
+PASS WordPosition web an already open exact document is confirmed without a new activation
+PASS WordPosition web relink validation cannot turn an interrupted check into resume success
+PASS WordPosition web initial document detection has a short bounded interval
+PASS WordPosition web a 45-second wait performs at most 100 full Office inventories
+PASS PowerPointSlide web an accepted Shell launch or missing HWND does not claim the document opened
+PASS PowerPointSlide web verified document identity survives a click, focus change or later timeout
+PASS PowerPointSlide web an actual position failure retains its precise result
+PASS PowerPointSlide web verified position survives focus acquisition interruption
+PASS PowerPointSlide web an already open exact document is confirmed without a new activation
+PASS PowerPointSlide web relink validation cannot turn an interrupted check into resume success
+PASS PowerPointSlide web initial document detection has a short bounded interval
+PASS PowerPointSlide web a 45-second wait performs at most 100 full Office inventories
+RESULT: 103 Office URL/resume adapter checks passed. AD/Office desktop acceptance remains manual.

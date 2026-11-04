@@ -29,7 +29,11 @@ internal static class ManualTreeColorsAcceptance
         Converters = { new JsonStringEnumConverter() }
     };
 
-    internal static void Run(string directory, string workerExecutable)
+    internal static void Run(string directory, string workerExecutable) => RunCore(directory, workerExecutable, listStress: false);
+
+    internal static void RunListStress(string directory, string workerExecutable) => RunCore(directory, workerExecutable, listStress: true);
+
+    private static void RunCore(string directory, string workerExecutable, bool listStress)
     {
         ApplicationConfiguration.Initialize();
         string allowed = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "artifacts", "manual-ui"));
@@ -47,11 +51,11 @@ internal static class ManualTreeColorsAcceptance
         if (!firstInstance) throw new InvalidOperationException("Another WorkBookmark instance is active.");
         try
         {
-            string marker = Path.Combine(root, ".owned-manual-tree-colors");
+            string marker = Path.Combine(root, listStress ? ".owned-manual-list-stress" : ".owned-manual-tree-colors");
             if (Directory.Exists(root) && (!File.Exists(marker) || (File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0))
                 throw new InvalidOperationException("Existing fixture directory is not owned by this harness.");
             Directory.CreateDirectory(root);
-            File.WriteAllText(marker, "WorkBookmark isolated tree and color acceptance v1");
+            File.WriteAllText(marker, listStress ? "WorkBookmark isolated list scroll acceptance v1" : "WorkBookmark isolated tree and color acceptance v1");
             string data = Path.Combine(root, "data");
             Directory.CreateDirectory(data);
             DiagnosticLog.Initialize(data);
@@ -71,10 +75,14 @@ internal static class ManualTreeColorsAcceptance
             else
             {
                 var seeds = new List<Seed>();
-                string[] labels = ["A · 신규 서비스 기획", "B · 시장 조사 자료", "C · 경쟁 서비스 비교"];
+                string[] labels = listStress
+                    ? Enumerable.Range(1, 30).Select(index => $"스크롤 항목 {index:00}").ToArray()
+                    : ["A · 신규 서비스 기획", "B · 시장 조사 자료", "C · 경쟁 서비스 비교"];
                 for (int index = 0; index < labels.Length; index++)
                 {
-                    string path = Path.Combine(root, $"합성 문서 {(char)('A' + index)}.txt");
+                    // Extensionless synthetic files keep the stored display name
+                    // and note identical for the list's search/scroll oracle.
+                    string path = Path.Combine(root, listStress ? labels[index] : $"합성 문서 {(char)('A' + index)}.txt");
                     File.WriteAllText(path, "WorkBookmark synthetic acceptance source; preserve this file.\r\n" + labels[index]);
                     var bookmark = repository.UpsertCapture(new CapturedTarget(TargetKind.File, path)).Bookmark;
                     repository.UpdateNote(bookmark.Id, labels[index]);
@@ -85,15 +93,16 @@ internal static class ManualTreeColorsAcceptance
                 // use the actual native window move loop and product event wiring.
                 var managerType = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.StickerManager")!;
                 var size = (Size)managerType.GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
-                for (int index = 0; index < seeds.Count; index++)
-                    repository.SaveStickerLayout(new(seeds[index].Id, screen.DeviceName,
-                        80 + index % 2 * (size.Width + 100), 150 + index / 2 * 130, size.Width, size.Height));
+                if (!listStress)
+                    for (int index = 0; index < seeds.Count; index++)
+                        repository.SaveStickerLayout(new(seeds[index].Id, screen.DeviceName,
+                            80 + index % 2 * (size.Width + 100), 150 + index / 2 * 130, size.Width, size.Height));
                 fixture = new(seeds.ToArray());
                 File.WriteAllText(fixturePath, JsonSerializer.Serialize(fixture, Json));
                 (UserSettings.Default with
                 {
                     CaptureHotkey = new Hotkey(7, (int)Keys.F15), RecentHotkey = new Hotkey(7, (int)Keys.F16),
-                    IntroShown = true, DisplayMode = BookmarkDisplayMode.Stickers,
+                    IntroShown = true, DisplayMode = listStress ? BookmarkDisplayMode.List : BookmarkDisplayMode.Stickers,
                     StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
                 }).Save(data);
             }
@@ -102,7 +111,7 @@ internal static class ManualTreeColorsAcceptance
             using var panelFont = new Font("맑은 고딕", 9F);
             using var panel = new Form
             {
-                Text = "BookMark 트리·색상 실기 검증", StartPosition = FormStartPosition.Manual,
+                Text = listStress ? "BookMark 목록 스크롤 실기 검증" : "BookMark 트리·색상 실기 검증", StartPosition = FormStartPosition.Manual,
                 ClientSize = new Size(590, 580), ShowInTaskbar = true, FormBorderStyle = FormBorderStyle.Sizable,
                 Font = panelFont, MinimumSize = new Size(530, 500)
             };
@@ -110,7 +119,9 @@ internal static class ManualTreeColorsAcceptance
             panel.Location = new Point(Math.Max(workArea.Left, workArea.Right - panel.Width - 25), workArea.Top + 35);
             var instructions = new Label
             {
-                Text = "실제 제품 창에서 B를 A 위로, C를 B 위로 끌어 놓으세요.\n우클릭 메뉴에서 색상과 ‘최상위로 꺼내기’를 확인하세요.\n이 제어 창은 저장소 관찰·창 표시·실패 주입만 제공합니다.",
+                Text = listStress
+                    ? "‘실제 목록 열기’에서 ‘스크롤 항목’을 검색하세요.\n항목을 끌어 위·아래 가장자리에 머문 뒤 가운데 이동·Esc를 확인하세요.\n이 제어 창은 저장소 관찰·창 표시·실패 주입만 제공합니다."
+                    : "실제 제품 창에서 B를 A 위로, C를 B 위로 끌어 놓으세요.\n우클릭 메뉴에서 색상과 ‘최상위로 꺼내기’를 확인하세요.\n이 제어 창은 저장소 관찰·창 표시·실패 주입만 제공합니다.",
                 Bounds = new Rectangle(16, 14, 555, 68), AutoSize = false
             };
             var showList = Button("실제 목록 열기", 16, 92, 174);
@@ -155,7 +166,10 @@ internal static class ManualTreeColorsAcceptance
                 object gate = context is null ? repository : Field<object>(context, "_repositoryLock");
                 lock (gate)
                 {
-                    var bookmarks = fixture.Items.Select(seed => repository.Get(seed.Id)).ToArray();
+                    // Observe the whole isolated repository, including folders created
+                    // by a real drop and records moved to the recoverable deleted list.
+                    var bookmarks = repository.ListActive();
+                    var deletedBookmarks = repository.ListDeleted();
                     var layouts = repository.GetStickerLayouts();
                     var windows = Application.OpenForms.Cast<Form>().Select(form => new
                     {
@@ -164,39 +178,59 @@ internal static class ManualTreeColorsAcceptance
                         handle = form.IsHandleCreated ? form.Handle.ToInt64() : 0,
                         bookmark = form.GetType().Name == "StickerForm" ? Property<Bookmark>(form, "Bookmark") : null,
                         editingNote = form.GetType().Name == "StickerForm" && Property<bool>(form, "IsEditingNote"),
+                        noteDraft = form.GetType().Name == "StickerForm" ? Field<TextBox>(form, "_noteEditor").Text : null,
+                        noteStatus = form.GetType().Name == "StickerForm" ? Field<Label>(form, "_noteStatus").Text : null,
+                        noteHasFocus = form.GetType().Name == "StickerForm" && Field<TextBox>(form, "_noteEditor").Focused,
+                        noteComposing = form.GetType().Name == "StickerForm" && Property<bool>(Field<TextBox>(form, "_noteEditor"), "IsComposing"),
                         background = form.BackColor.ToArgb()
                     }).ToArray();
-                    var rows = BookmarkTree.Flatten(bookmarks.OfType<Bookmark>()).Select(row => new
+                    var rows = BookmarkTree.Flatten(bookmarks).Select(row => new
                     {
-                        row.Bookmark.Id, row.Bookmark.Note, row.Bookmark.ParentId, row.Bookmark.Color, row.Depth, row.HasChildren
+                        row.Bookmark.Id, row.Bookmark.DisplayName, row.Bookmark.IsFolder, row.Bookmark.Note,
+                        row.Bookmark.ParentId, row.Bookmark.Color, row.Bookmark.FolderExpanded,
+                        row.Bookmark.LastResumeResult, row.Depth, row.HasChildren
                     }).ToArray();
-                    string state = JsonSerializer.Serialize(new { bookmarks, layouts, windows, attempts = attempts.ToArray() }, CompactJson);
+                    var recent = Application.OpenForms.Cast<Form>().FirstOrDefault(form => form.GetType().Name == "RecentForm");
+                    var list = recent is null ? null : new
+                    {
+                        recent.Visible, search = Field<TextBox>(recent, "_search").Text,
+                        selectedId = (Field<ListBox>(recent, "_items").SelectedItem as Bookmark)?.Id,
+                        itemIds = Field<ListBox>(recent, "_items").Items.Cast<Bookmark>().Select(item => item.Id).ToArray(),
+                        topIndex = Field<ListBox>(recent, "_items").TopIndex,
+                        dragging = Field<bool>(recent, "_dragging")
+                    };
+                    string state = JsonSerializer.Serialize(new { bookmarks, deletedBookmarks, layouts, windows, list, attempts = attempts.ToArray() }, CompactJson);
                     if (state != previousState)
                     {
                         previousState = state;
                         File.AppendAllText(Path.Combine(root, "state-changes.jsonl"), JsonSerializer.Serialize(new
                         {
-                            atUtc = DateTimeOffset.UtcNow, session, stage, bookmarks, layouts, windows, attempts = attempts.ToArray()
+                            atUtc = DateTimeOffset.UtcNow, session, stage, bookmarks, deletedBookmarks, layouts, windows, list, attempts = attempts.ToArray()
                         }, CompactJson) + Environment.NewLine);
                     }
                     string Describe(BookmarkTreeRow row)
                     {
-                        string parent = row.Bookmark.ParentId is Guid id ? bookmarks.FirstOrDefault(item => item?.Id == id)?.Note ?? id.ToString() : "최상위";
-                        return new string(' ', row.Depth * 3) + row.Bookmark.Note + "\r\n" + new string(' ', row.Depth * 3) +
+                        string Label(Bookmark item) => item.IsFolder || string.IsNullOrEmpty(item.Note) ? item.DisplayName : item.Note;
+                        string parent = row.Bookmark.ParentId is Guid id
+                            ? bookmarks.FirstOrDefault(item => item.Id == id) is { } value ? Label(value) : id.ToString()
+                            : "최상위";
+                        return new string(' ', row.Depth * 3) + Label(row.Bookmark) + "\r\n" + new string(' ', row.Depth * 3) +
                             $"  상위: {parent}  |  색상: {row.Bookmark.Color}";
                     }
                     string summaryText = "실제 DB 상태 — 제품 보기 세션 " + session + "\r\n\r\n" +
-                        string.Join("\r\n\r\n", BookmarkTree.Flatten(bookmarks.OfType<Bookmark>()).Select(Describe)) +
+                        string.Join("\r\n\r\n", BookmarkTree.Flatten(bookmarks).Select(Describe)) +
+                        "\r\n\r\n최근 삭제: " + deletedBookmarks.Count + "개 (최대 100개 관찰)" +
                         "\r\n\r\n저장 시도: " + attempts.Count + " (실패 주입: " + attempts.Count(value => value.Rejected) + ")";
                     if (!summary.IsDisposed && summary.Text != summaryText) summary.Text = summaryText;
                     return new
                     {
                         stage, atUtc = DateTimeOffset.UtcNow, pid = Environment.ProcessId, session,
+                        fixtureMode = listStress ? "list-stress" : "tree-colors",
                         productAssemblySha256 = productHash, workerExecutable = workerPath,
                         sourceUnchanged = true, failureParentInjected = Volatile.Read(ref rejectParents) != 0,
                         failureColorInjected = Volatile.Read(ref rejectColors) != 0,
-                        bookmarks, rows, layouts, windows, attempts = attempts.ToArray(),
-                        acceptanceScope = "Actual product forms and SQLite; host only shows/restarts product views and observes. Native input must target a window returned by the automation provider. Installed Program.Main remains a separate gate."
+                        bookmarks, deletedBookmarks, rows, layouts, windows, list, attempts = attempts.ToArray(),
+                        acceptanceScope = "Actual product forms and SQLite; host only shows/restarts product views and observes. Automated native input must target a window returned by the automation provider; human operator input is recorded separately. Installed Program.Main remains a separate gate."
                     };
                 }
             }

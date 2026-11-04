@@ -1,0 +1,7 @@
+PASS production Capture 1: UnsupportedTarget, 1026 ms
+PASS production ValidateRelink 1: UnsupportedTarget, 1415 ms
+PASS production Capture 2: UnsupportedTarget, 1196 ms
+PASS production ValidateRelink 2: UnsupportedTarget, 2165 ms
+PASS production Capture 3: UnsupportedTarget, 1443 ms
+PASS production ValidateRelink 3: UnsupportedTarget, 1526 ms
+6/6 production worker startup checks passed; unsupported synthetic requests only.

@@ -1,0 +1,9 @@
+{
+  "start": "2026-11-04T20:18:24.0092520+09:00",
+  "finish": "2026-11-04T20:19:07.8064580+09:00",
+  "exitCode": 1,
+  "invocation": "WorkBookmark.Integration.Tests.exe --output integration-ipc-confirmation-results.json",
+  "ownConcurrentSuites": [],
+  "nativeUiFixtureMayBeRunning": true,
+  "productionPipeUsed": false
+}

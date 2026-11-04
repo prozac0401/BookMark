@@ -1,0 +1,13 @@
+{
+  "order": [
+    "sourcegen",
+    "reflection"
+  ],
+  "sourcegenExit": 0,
+  "reflectionExit": 0,
+  "sameRunner": "D:\\Github_REPOS\\BookMark\\artifacts\\ipc-sourcegen-20261104\\bin\\WorkBookmark.Integration.Tests\\release\\WorkBookmark.Integration.Tests.exe",
+  "userAppsTouched": false,
+  "probeDeadlineSeconds": 3,
+  "productionCaptureDeadlineSeconds": 3,
+  "productionValidateRelinkDeadlineSeconds": 15
+}

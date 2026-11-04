@@ -1,0 +1,26 @@
+[
+  {
+    "path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.exe",
+    "unchanged": true
+  },
+  {
+    "path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.dll",
+    "unchanged": true
+  },
+  {
+    "path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\bin\\Release\\net10.0\\WorkBookmark.Core.dll",
+    "unchanged": true
+  },
+  {
+    "path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\bin\\Release\\net10.0-windows\\WorkBookmark.Windows.dll",
+    "unchanged": true
+  },
+  {
+    "path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Storage\\bin\\Release\\net10.0\\WorkBookmark.Storage.dll",
+    "unchanged": true
+  },
+  {
+    "path": "D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Desktop.Tests\\bin\\Release\\net10.0-windows\\WorkBookmark.Desktop.Tests.exe",
+    "unchanged": true
+  }
+]

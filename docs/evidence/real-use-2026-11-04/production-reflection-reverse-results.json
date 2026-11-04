@@ -1,0 +1,71 @@
+{
+  "executable": "D:\\Github_REPOS\\BookMark\\artifacts\\worker-reflection-baseline-20261104\\WorkBookmark.exe",
+  "executableSha256": "B4AC789C98C849A4ADC9D449107192DABC72F19EB2382412E7092CA2C965C63A",
+  "coreSha256": "0057D82AF0339BB20F1CB9599C36C62892DA43722A19769179DBF39DB02A4F90",
+  "deadlineSeconds": 3,
+  "externalUserAppsAccessed": false,
+  "passed": 6,
+  "total": 6,
+  "checks": [
+    {
+      "iteration": 1,
+      "operation": "Capture",
+      "startedUtc": "2026-11-04T12:49:52.8682231+00:00",
+      "milliseconds": 1737,
+      "deadlineUtc": "2026-11-04T12:49:55.8672505+00:00",
+      "code": "UnsupportedTarget",
+      "success": true,
+      "ExternalActionStarted": false
+    },
+    {
+      "iteration": 1,
+      "operation": "ValidateRelink",
+      "startedUtc": "2026-11-04T12:49:54.6214369+00:00",
+      "milliseconds": 1173,
+      "deadlineUtc": "2026-11-04T12:49:57.6212602+00:00",
+      "code": "UnsupportedTarget",
+      "success": true,
+      "ExternalActionStarted": false
+    },
+    {
+      "iteration": 2,
+      "operation": "Capture",
+      "startedUtc": "2026-11-04T12:49:55.7949482+00:00",
+      "milliseconds": 1190,
+      "deadlineUtc": "2026-11-04T12:49:58.7949459+00:00",
+      "code": "UnsupportedTarget",
+      "success": true,
+      "ExternalActionStarted": false
+    },
+    {
+      "iteration": 2,
+      "operation": "ValidateRelink",
+      "startedUtc": "2026-11-04T12:49:56.9850549+00:00",
+      "milliseconds": 1879,
+      "deadlineUtc": "2026-11-04T12:49:59.9850521+00:00",
+      "code": "UnsupportedTarget",
+      "success": true,
+      "ExternalActionStarted": false
+    },
+    {
+      "iteration": 3,
+      "operation": "Capture",
+      "startedUtc": "2026-11-04T12:49:58.864739+00:00",
+      "milliseconds": 1647,
+      "deadlineUtc": "2026-11-04T12:50:01.8647358+00:00",
+      "code": "UnsupportedTarget",
+      "success": true,
+      "ExternalActionStarted": false
+    },
+    {
+      "iteration": 3,
+      "operation": "ValidateRelink",
+      "startedUtc": "2026-11-04T12:50:00.5123833+00:00",
+      "milliseconds": 826,
+      "deadlineUtc": "2026-11-04T12:50:03.5123771+00:00",
+      "code": "UnsupportedTarget",
+      "success": true,
+      "ExternalActionStarted": false
+    }
+  ]
+}

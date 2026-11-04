@@ -1,0 +1,31 @@
+✔ manifest grants temporary current-tab access only (29.8476ms)
+✔ URL spelling, query ordering, percent escapes and fragment are preserved (0.5721ms)
+✔ unsupported and ambiguous URLs are rejected before native messaging (3.1631ms)
+✔ title cap preserves surrogate pairs and removes control characters (0.4843ms)
+✔ loading, inaccessible, inactive and private tabs are refused (1.1784ms)
+✔ preview reads metadata without contacting the native host (0.4404ms)
+✔ native capture carries only bounded tab metadata and waits for commit (3.705ms)
+✔ popup cannot capture a different tab or a navigated page (0.6087ms)
+✔ tab switch, window switch and navigation during metadata collection are refused (0.724ms)
+✔ concurrent requests do not start a second host (2.2241ms)
+✔ host timeout is unknown and never automatically retries (20.5105ms)
+✔ native connection loss cannot be reported as confirmed failure or success (0.6647ms)
+✔ known host startup errors identify setup failure; disconnects remain unknown without retries (1.5609ms)
+✔ wrong request ID, malformed replies and noncommit successes are never success (0.4383ms)
+✔ host database refusal is displayed as failure without retry (0.42ms)
+✔ service worker accepts only its popup and confirms a saved unchanged page (29.735ms)
+✔ a late commit for the previous URL never decorates the new page (11.9797ms)
+✔ new installation avoids the Edge Collections shortcut without extra permissions (37.4852ms)
+✔ keyboard capture sends the invoked tab once and waits for the committed reply (33.5872ms)
+✔ keyboard capture refuses a tab that changed after the command invocation (6.6753ms)
+✔ popup recovers unassigned Edge shortcut without claiming a default is active (12.7452ms)
+✔ popup recovers custom Chrome shortcut without claiming a default is active (5.8083ms)
+✔ popup recovers shortcut query failure without claiming a default is active (8.7846ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 610.3634

@@ -116,7 +116,123 @@ internal static class RecentTreeChecks
         assert(scrolledDrag.Effect == DragDropEffects.Move && Field<Guid?>(form, "_dropTargetId") == atPointer,
             "RT20 edge auto-scroll highlights the same parent that dropping at the pointer will select");
 
+        DragFeedbackChecks(assert);
+        DragProjectionChecks(assert);
         LoadRaces(parent, child, assert);
+    }
+
+    private static void DragFeedbackChecks(Action<bool, string> assert)
+    {
+        Bookmark[] all = Enumerable.Range(0, 30).Select(index => Make($"드래그 검색 자료 {index}", index + 1)).ToArray();
+        using var form = Create(_ => Task.FromResult(new SearchResults(all, false)));
+        Pump((Task)RecentType.GetMethod("OpenAsync")!.Invoke(form, null)!);
+        Search(form, "드래그 검색");
+        var list = Field<ListBox>(form, "_items");
+        list.TopIndex = 3;
+        var source = (Bookmark)list.Items[15];
+        var invalidated = new List<Rectangle>();
+        list.Invalidated += (_, e) => invalidated.Add(e.InvalidRect);
+        DragEventArgs At(Point point, string? data = null)
+        {
+            Point screen = list.PointToScreen(point);
+            return new DragEventArgs(new DataObject("WorkBookmark.BookmarkId", data ?? source.Id.ToString()), 0,
+                screen.X, screen.Y, DragDropEffects.Move, DragDropEffects.None);
+        }
+        var middle = At(new Point(160, list.ItemHeight + list.ItemHeight / 2));
+        Invoke(form, "ItemsDragOver", list, middle);
+        assert(middle.Effect == DragDropEffects.Move && invalidated.Count == 1 && invalidated[0].Height <= list.ItemHeight,
+            "RT21 entering a search-result drop target redraws only that row");
+        invalidated.Clear();
+        for (int repeat = 0; repeat < 100; repeat++) Invoke(form, "ItemsDragOver", list, middle);
+        assert(invalidated.Count == 0 && list.TopIndex == 3,
+            "RT22 repeated drag feedback over the same search row neither repaints the list nor moves it");
+
+        var next = At(new Point(160, list.ItemHeight * 2 + list.ItemHeight / 2));
+        Invoke(form, "ItemsDragOver", list, next);
+        assert(invalidated.Count == 2 && invalidated.All(bounds => bounds.Height <= list.ItemHeight),
+            "RT23 changing a search drop target redraws only the old and new highlighted rows");
+        invalidated.Clear();
+        Invoke(form, "ClearDropTarget");
+        Invoke(form, "ClearDropTarget");
+        assert(invalidated.Count == 1 && Field<Guid?>(form, "_dropTargetId") is null,
+            "RT24 leaving a drop target clears its row once without flashing the full list");
+
+        var timer = Field<System.Windows.Forms.Timer>(form, "_dragScrollTimer");
+        var topEdge = At(new Point(160, 5));
+        for (int repeat = 0; repeat < 100; repeat++) Invoke(form, "ItemsDragOver", list, topEdge);
+        assert(list.TopIndex == 3 && timer.Enabled && timer.Interval == 300,
+            "RT25 edge pointer events wait for a dwell timer instead of racing through search rows");
+        Invoke(form, "ScrollDragItems");
+        Guid atPointer = ((Bookmark)list.Items[list.IndexFromPoint(new Point(160, 5))]).Id;
+        assert(list.TopIndex == 2 && timer.Interval == 120 && Field<Guid?>(form, "_dropTargetId") == atPointer,
+            "RT26 each edge timer tick scrolls one row and updates the target under the stationary pointer");
+        Invoke(form, "ScrollDragItems");
+        assert(list.TopIndex == 1, "RT27 sustained edge hover continues scrolling without extra pointer movement");
+
+        var bottomEdge = At(new Point(160, list.ClientSize.Height - 5));
+        for (int repeat = 0; repeat < 100; repeat++) Invoke(form, "ItemsDragOver", list, bottomEdge);
+        assert(list.TopIndex == 1 && timer.Interval == 300,
+            "RT28 reversing the edge scroll direction restores the dwell interval without jumping");
+        Invoke(form, "ScrollDragItems");
+        assert(list.TopIndex == 2, "RT29 the lower edge scrolls downward by one row per timer tick");
+        Invoke(form, "ItemsDragOver", list, middle);
+        Invoke(form, "ScrollDragItems");
+        assert(!timer.Enabled && list.TopIndex == 2,
+            "RT30 moving away from an edge immediately stops automatic scrolling");
+
+        Invoke(form, "ItemsDragOver", list, topEdge);
+        Invoke(form, "RootDragOver", Field<Label>(form, "_status"), topEdge);
+        Invoke(form, "ScrollDragItems");
+        assert(!timer.Enabled && list.TopIndex == 2,
+            "RT31 entering the root footer cancels the list's pending edge scroll");
+        Invoke(form, "ItemsDragOver", list, topEdge);
+        Invoke(form, "ClearDropTarget");
+        Invoke(form, "ScrollDragItems");
+        assert(!timer.Enabled && list.TopIndex == 2 && Field<Guid?>(form, "_dropTargetId") is null,
+            "RT32 leaving or cancelling a drag cancels pending scroll and removes the target highlight");
+        var foreign = At(new Point(160, 5), Guid.NewGuid().ToString());
+        Invoke(form, "ItemsDragOver", list, foreign);
+        Invoke(form, "ScrollDragItems");
+        assert(!timer.Enabled && list.TopIndex == 2 && foreign.Effect == DragDropEffects.None,
+            "RT33 dragging an unknown bookmark cannot start scrolling the search results");
+    }
+
+    private static void DragProjectionChecks(Action<bool, string> assert)
+    {
+        Bookmark[] all = Enumerable.Range(0, 20).Select(index => Make($"드래그 갱신 자료 {index}", index + 1)).ToArray();
+        TaskCompletionSource<SearchResults>? response = null;
+        using var form = Create(_ => response?.Task ?? Task.FromResult(new SearchResults(all, false)));
+        Pump((Task)RecentType.GetMethod("OpenAsync")!.Invoke(form, null)!);
+        Search(form, "드래그 갱신");
+        var list = Field<ListBox>(form, "_items");
+        list.SelectedIndex = 4;
+        list.TopIndex = 3;
+        var source = (Bookmark)list.Items[4];
+        var target = (Bookmark)list.Items[5];
+        Guid[] visibleOrder = Items(list).Select(item => item.Id).ToArray();
+        RecentType.GetField("_dragging", Private)!.SetValue(form, true);
+        response = new TaskCompletionSource<SearchResults>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Task reload = (Task)RecentType.GetMethod("ReloadAsync")!.Invoke(form, [true])!;
+        var edited = source with { Note = "드래그 도중 저장한 메모" };
+        RecentType.GetMethod("Replace")!.Invoke(form, [edited]);
+        RecentType.GetMethod("Remove")!.Invoke(form, [target.Id]);
+        assert(list.TopIndex == 3 && Items(list).Select(item => item.Id).SequenceEqual(visibleOrder) &&
+            Items(list).Single(item => item.Id == source.Id).Note == source.Note,
+            "RT34 committed edits during a search drag leave the displayed rows and viewport fixed");
+        Point pointer = list.PointToScreen(new Point(160, list.ItemHeight * 2 + list.ItemHeight / 2));
+        var drop = new DragEventArgs(new DataObject("WorkBookmark.BookmarkId", source.Id.ToString()), 0,
+            pointer.X, pointer.Y, DragDropEffects.Move, DragDropEffects.None);
+        Invoke(form, "ItemsDragOver", list, drop);
+        assert(drop.Effect == DragDropEffects.None && Field<Guid?>(form, "_dropTargetId") is null,
+            "RT35 a visually retained target deleted during drag is rejected using current committed data");
+        response.SetResult(new SearchResults(all, false));
+        Pump(reload);
+        assert(list.TopIndex == 3 && Items(list).Select(item => item.Id).SequenceEqual(visibleOrder),
+            "RT36 an in-flight search result cannot rebuild or scroll the list before the drag ends");
+        Invoke(form, "FinishDrag");
+        assert(!Items(list).Any(item => item.Id == target.Id) && Items(list).Single(item => item.Id == source.Id).Note == edited.Note &&
+            ((Bookmark)list.SelectedItem!).Id == source.Id && !Field<bool>(form, "_projectionPending"),
+            "RT37 releasing or cancelling a drag applies deferred search results with newer committed edits intact");
     }
 
     private static void LoadRaces(Bookmark parent, Bookmark child, Action<bool, string> assert)

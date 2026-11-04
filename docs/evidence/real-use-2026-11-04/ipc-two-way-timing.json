@@ -1,0 +1,7 @@
+{
+  "start": "2026-11-04T21:16:50.0570604+09:00",
+  "finish": "2026-11-04T21:17:24.3481787+09:00",
+  "mode": "Two concurrent IPC suites; no trace; no synthetic CPU load",
+  "firstExit": 1,
+  "secondExit": 1
+}

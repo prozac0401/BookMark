@@ -1,0 +1,53 @@
+{
+  "observedAt": "2026-11-04T11:22:09.845Z",
+  "source": "current development worktree",
+  "shellHost": {
+    "process": 3012,
+    "windowsVisibleInFixture": 4,
+    "listedByInputTools": false,
+    "cleanup": "stopped only owned fixture host"
+  },
+  "toolLaunchedHost": {
+    "process": 14756,
+    "launchResult": "launch_app timed out; subsequent window inventory confirmed launch",
+    "controlWindowListed": true,
+    "controlWindowId": 13698646,
+    "actualListOpenedViaPointer": true,
+    "actualListVisuallyObserved": true,
+    "productWindowsSeparatelyListed": false
+  },
+  "actions": [
+    {
+      "action": "accessibility click on show list",
+      "outcome": "tool coordinate error before click: point (-1189, 270) outside bounds"
+    },
+    {
+      "action": "screenshot coordinate click on show list",
+      "outcome": "actual RecentForm opened; three synthetic bookmarks visible"
+    },
+    {
+      "action": "drag B onto A in related RecentForm screenshot",
+      "outcome": "input rejected: target activation caused RecentForm to hide; endpoint over non-target window"
+    }
+  ],
+  "verdict": "BLOCKED for physical product drag, edit, IME, persistence via real input; no product regression conclusion from tool failures",
+  "screenshots": [
+    {
+      "file": "native-visible-0.jpg",
+      "id": "screenshot-0",
+      "width": 592,
+      "height": 612
+    },
+    {
+      "file": "native-visible-1.jpg",
+      "id": "screenshot-1",
+      "width": 662,
+      "height": 594
+    }
+  ],
+  "limitations": [
+    "Do not count control-panel clicks as successful sticker interactions",
+    "Product window styles and ownership were not changed to make the input tool work"
+  ],
+  "cleanup": "Normal exit button clicked; exit snapshot and process absence confirmed"
+}

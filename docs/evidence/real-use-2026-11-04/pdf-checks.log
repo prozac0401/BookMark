@@ -1,0 +1,29 @@
+PASS: Unicode path and physical page decoded without title heuristics
+PASS: matching exact path and page confirms position
+PASS: same filename in another folder cannot confirm position
+PASS: successful response at wrong page cannot confirm position
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 4
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 5
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 6
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 7
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 8
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 9
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 10
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 11
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 12
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 13
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 14
+PASS: invalid, ambiguous, old-viewer or incomplete PDF state refused 15
+PASS: oversized PDF response refused
+PASS: duplicate open documents retained for ambiguity detection
+PASS: unsupported open-files capability is not treated as no documents
+PASS: embedded NUL cannot truncate an open path
+PASS: open does not force refresh or deliberately create another window
+PASS: native DDE preserves Unicode path without command-line escaping
+PASS: command-injection quote in a pathname refused
+PASS: native DDE binds response to requested HWND among two servers
+PASS: native DDE executes only on selected HWND
+PASS: execute acknowledgement with wrong actual page remains unconfirmed
+PASS: unmatched requested HWND does not fall back to another DDE server
+PASS: expired whole-request deadline prevents DDE connection
+RESULT: 28 PDF checks passed. Real Windows DDE transport with synthetic servers; SumatraPDF application remains untested.

@@ -1,0 +1,185 @@
+[
+  {
+    "test": "D11 protocol-roundtrip",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:22.5486299+00:00",
+    "completedUtc": "2026-11-04T12:41:23.5317651+00:00",
+    "milliseconds": 983,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 all-resumes-share-input-without-cancelling-open",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:23.5630579+00:00",
+    "completedUtc": "2026-11-04T12:41:23.5695978+00:00",
+    "milliseconds": 6,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 oversized-and-truncated-frames",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:23.5696858+00:00",
+    "completedUtc": "2026-11-04T12:41:23.5755745+00:00",
+    "milliseconds": 5,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 valid-result-id",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:23.5756091+00:00",
+    "completedUtc": "2026-11-04T12:41:24.8207049+00:00",
+    "milliseconds": 1245,
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:41:23.5784405+00:00",
+        "deadlineUtc": "2026-11-04T12:41:26.5775161+00:00",
+        "milliseconds": 1239,
+        "code": "Captured",
+        "requestIdMatches": true,
+        "targetPresent": true,
+        "targetMatches": true
+      }
+    ],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 wrong-request-id-rejected",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:24.8212939+00:00",
+    "completedUtc": "2026-11-04T12:41:26.1010481+00:00",
+    "milliseconds": 1279,
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:41:24.8221024+00:00",
+        "deadlineUtc": "2026-11-04T12:41:27.8220992+00:00",
+        "milliseconds": 1277,
+        "code": "InvalidRequest",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 capture-deadline-no-late-success",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:26.1011113+00:00",
+    "completedUtc": "2026-11-04T12:41:26.6379996+00:00",
+    "milliseconds": 536,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D05 resume-deadline-outcome-unknown",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:26.6381962+00:00",
+    "completedUtc": "2026-11-04T12:41:27.1837264+00:00",
+    "milliseconds": 545,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O01 web-Office-capture-worker-result",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:27.1838312+00:00",
+    "completedUtc": "2026-11-04T12:41:28.5266141+00:00",
+    "milliseconds": 1342,
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:41:27.18558+00:00",
+        "deadlineUtc": "2026-11-04T12:41:30.1855765+00:00",
+        "milliseconds": 1340,
+        "code": "Captured",
+        "requestIdMatches": true,
+        "targetPresent": true,
+        "targetMatches": true
+      }
+    ],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O02 web-Office-timeout-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:28.5266564+00:00",
+    "completedUtc": "2026-11-04T12:41:29.0536166+00:00",
+    "milliseconds": 526,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O03 web-Office-cancellation-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:29.0538517+00:00",
+    "completedUtc": "2026-11-04T12:41:29.2601831+00:00",
+    "milliseconds": 206,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "O04 extended-deadline-only-for-web-Office-resume",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:29.2605594+00:00",
+    "completedUtc": "2026-11-04T12:41:30.3684643+00:00",
+    "milliseconds": 1107,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "U12 single-flight-no-queue",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:30.3685+00:00",
+    "completedUtc": "2026-11-04T12:41:31.0947272+00:00",
+    "milliseconds": 726,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 cancellation-discards-response",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:31.0947639+00:00",
+    "completedUtc": "2026-11-04T12:41:31.4287604+00:00",
+    "milliseconds": 333,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D06 worker-crash-cleanup",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:31.4288637+00:00",
+    "completedUtc": "2026-11-04T12:41:32.2262466+00:00",
+    "milliseconds": 797,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D06 worker-child-survives-timeout",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:32.2262997+00:00",
+    "completedUtc": "2026-11-04T12:41:35.4966273+00:00",
+    "milliseconds": 3270,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D06 dispose-terminates-worker-synchronously",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:35.4966663+00:00",
+    "completedUtc": "2026-11-04T12:41:37.2008785+00:00",
+    "milliseconds": 1704,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 deadline-boundary-does-not-stick-busy",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:41:37.2010408+00:00",
+    "completedUtc": "2026-11-04T12:41:37.5158023+00:00",
+    "milliseconds": 314,
+    "responses": [],
+    "fixtureTraces": []
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "start": "2026-11-04T20:21:14.0538634+09:00",
+  "finish": "2026-11-04T20:21:24.9255939+09:00",
+  "exitCode": 0,
+  "invocation": "WorkBookmark.Integration.Tests.exe --output integration-ipc-harness-fixed-results.json",
+  "ownConcurrentSuites": [],
+  "productWorkerClientChanged": false,
+  "buildProjectReferences": false
+}

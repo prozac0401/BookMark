@@ -1,0 +1,97 @@
+PASS E06/X12 Windows path policy and conservative identity
+PASS E07 Document allowlist and executable reveal policy
+PASS X01/X12 Absolute single Excel cell bounds
+PASS U05/U06/U07 Duplicate capture preserves note and separates cells
+PASS U08 Sequence survives clock rollback, notes, resume, and restart
+PASS U10 Delete, undo, and recapture preserve identity and notes
+  Synthetic 1,026-record repository recent query: 3.72 ms (not UI p95).
+PASS U13 Full-history search, literal query, and result bounds
+PASS D01/D02 All mutation failures roll back without false commits
+PASS E09 Relink preserves metadata and rejects collisions/location edits
+PASS D03 Corruption and unknown schemas are preserved
+PASS D03 Migration creates consistent backup and rolls back on failure
+PASS D01 Concurrent writer serialization keeps unique monotonic sequence
+  Real SQLite writer lock rejected after 4.69 s.
+PASS D01/D02 Real SQLite writer lock fails atomically within a bounded wait
+RESULT: 13 passed; 0 failed. Policy/SQLite execution only; Windows/Office acceptance remains separate.
+PASS Browser URL state is preserved and unsupported handlers are rejected
+PASS Word/PowerPoint/PDF coordinates reject mixed or incomplete target metadata
+PASS Notepad requires an unambiguous nonnegative text offset and unsaved state
+PASS Notepad offsets preserve notes, separate positions and survive restart
+PASS Notepad failed capture preserves committed state and sequence
+PASS Version 2 migration preserves all target kinds and history with backup
+PASS Version 2 migration failure restores schema, rows and sequence before retry
+PASS Browser exact-URL recapture updates title and preserves notes
+PASS Word offsets, stable slide IDs and PDF pages survive persistence
+PASS Position relink preserves coordinates and rejects collisions
+PASS Extended-target mutation failures preserve metadata and sequence
+PASS Version 1 migration preserves history, sequence and a consistent backup
+PASS Version 1 migration failure rolls back schema and rows before retry
+EXTENDED RESULT: 13 passed; 0 failed. No browser or Office automation.
+PASS N-S01 Empty, Korean, emoji and newline snapshots use canonical UTF-16 selections
+PASS N-S02 Snapshot bodies, selections, metadata and content hashes reject tampering
+PASS N-S03 Snapshot boundaries allow two Mi UTF-16 characters and reject larger input
+PASS N-S04 Snapshot metadata cannot leak onto file, browser or legacy position targets
+PASS N-S05 Snapshot identity preserves notes and distinguishes content, title and selection
+PASS N-S06 Snapshot content, selection, history and deletion survive restart
+PASS N-S07 Failed snapshot transactions preserve committed content and capture sequence
+PASS N-S08 Schema 3 migration preserves every historical field and consistent backup
+PASS N-S09 Schema 3 migration failure rolls back all fields and can be retried
+PASS N-S10 SQLite snapshot constraints and read validation reject corrupted content
+PASS N-S11 Full-size request/response frames round-trip and over-limit frames fail
+SNAPSHOT RESULT: 11 passed; 0 failed. Isolated Core/SQLite/protocol checks; editor acceptance remains separate.
+PASS HTTP/HTTPS Office targets retain their coordinates and original URL
+PASS Office URL validation rejects credentials, handler injection and malformed input
+PASS Office IRI identity preserves document paths and URL state
+PASS Office URI launch always selects the recorded application
+PASS Office URLs, distinct positions, notes and resume results survive SQLite restart
+PASS Office URL failed writes and file relinking preserve committed records
+PASS Office URL metadata survives the worker frame protocol
+OFFICE URL RESULT: 7 passed; 0 failed. No Office or authentication session used.
+PASS S-S01 Sticker history includes all active records and deleted history is bounded and ordered
+PASS S-S02 Sticker geometry and presentation round-trip without altering bookmark history
+PASS S-S03 Delete, restart, restore and recapture retain sticker geometry and note
+PASS S-S04 Failed layout, deletion and restoration writes preserve committed state
+PASS S-S05 Invalid and orphan layouts cannot alter persisted state
+PASS S-S06 Schema 4 upgrade preserves all bookmark fields, schema, unrelated content and backup
+PASS S-S07 Schema 4 upgrade failure rolls back and retry retains original content
+PASS S-S08 Incomplete current sticker schema is rejected without initialization
+STICKER STORAGE RESULT: 8 passed; 0 failed. Isolated Core/SQLite checks; desktop interaction is verified separately.
+PASS T-S01 Reparent, detach and restart retain bookmark history, subtree and sticker layout
+PASS T-S02 Deleted parents project as roots and restore or recapture retains relationships
+PASS T-S03 Self, descendant, deleted-ancestor cycles and unavailable moves are rejected atomically
+PASS T-S04 Failed attach, move and detach roll back all relationship state
+PASS T-S05 Schema 5 migration preserves every field, sticker layout, backup and capture sequence
+PASS T-S06 Failed schema 5 migration preserves original schema and retry succeeds
+PASS T-S07 Incomplete version 5 presentation schema is rejected before migration
+PASS T-C01 Full tree projection preserves parents beyond recent limits, sibling order and collapsed branches
+PASS T-C02 Projection tolerates deep trees and malformed cycles without omissions or recursion
+BOOKMARK HIERARCHY RESULT: 9 passed; 0 failed.
+PASS C-S01 Explicit colors round-trip and reset without changing hierarchy, layout or history
+PASS C-S02 Delete, restore and recapture retain explicit bookmark colors
+PASS C-S03 Invalid, unavailable and failed color writes preserve committed data
+PASS C-S04 Version 6 migration preserves tree, placement snapshots, historical fields and backup
+PASS C-S05 Version 6 migration failure rolls back and retry retains all original data
+PASS C-S06 Missing version 6 hierarchy columns are rejected before migration
+BOOKMARK COLOR RESULT: 6 passed; 0 failed.
+PASS F-S01 Linkless folders persist names, nested membership, expansion and independent colors
+PASS F-S02 Ordinary bookmark drops atomically create a closed folder at the target parent
+PASS F-S03 Folder drops preserve expansion, subtree, snapshots and capture history
+PASS F-S04 Cycle, unavailable-target and folder-only operation validation preserves data
+PASS F-S05 Failed grouping, folder create, rename and expansion roll back every affected row
+PASS F-S06 Version 7 parent graphs become nested virtual folders without historical/layout loss
+PASS F-S07 Failed version 7 folder migration preserves database, backup and successful retry
+PASS F-C01 Folder target and name policy cannot enter capture, resume or worker launch
+PASS F-S08 Incomplete schemas and externally corrupted folder metadata are rejected without repair
+BOOKMARK FOLDER RESULT: 9 passed; 0 failed.
+PASS FP01 WorkerRequest preserves exact legacy bytes and reciprocal decoding
+PASS FP02 WorkerResponse preserves exact legacy bytes and reciprocal decoding
+PASS FP03 BrowserCaptureRequest preserves URL spelling, escaping and property names
+PASS FP04 BrowserCaptureResponse preserves exact legacy bytes and reciprocal decoding
+PASS FP05 Null/default fields remain present and enums remain numeric
+PASS FP06 Unregistered generic dictionary and string retain reflection fallback
+PASS FP07 Worker property matching remains case-sensitive
+PASS FP08 Browser unknown/wrong-case fields are rejected while worker extras remain allowed
+PASS FP09 Maximum JSON depth stays 16 on the generated worker route
+PASS FP10 Null messages remain invalid for generated and fallback readers
+FRAME PROTOCOL RESULT: 10 passed; 0 failed. Wire compatibility only; process-start latency is measured separately.

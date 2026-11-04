@@ -1,0 +1,9 @@
+{
+  "status": "NOT RUN",
+  "fixture": "artifacts/manual-ui/drag-folders-2026-11-04",
+  "reason": "sky.list_apps and sky.list_windows did not expose any window of the isolated fixture on initial enumeration and retry. No native input was sent.",
+  "ownedProcessId": 15592,
+  "visibleFixtureWindows": 4,
+  "providerMatchedWindows": 0,
+  "cleanup": "Stopped only the owned test-host process after recording its state."
+}

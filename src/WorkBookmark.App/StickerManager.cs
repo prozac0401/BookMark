@@ -223,11 +223,6 @@ internal sealed class StickerManager : IDisposable
         if (_forms.TryGetValue(item.Id, out var existing))
         {
             bool parentChanged = existing.Bookmark.ParentId != item.ParentId;
-            if (item.IsFolder && item.FolderExpanded && !existing.Bookmark.FolderExpanded)
-            {
-                _expansionOrder.Remove(item.Id);
-                _expansionOrder.Insert(0, item.Id);
-            }
             existing.UpdateBookmark(item);
             if (!_refreshingHierarchy)
             {
@@ -468,9 +463,15 @@ internal sealed class StickerManager : IDisposable
         var offsets = groups.ToDictionary(group => group[0].Bookmark.Id, _ => Point.Empty);
         var visibleGroups = groups.Where(group => group.Any(form => form.Visible)).ToArray();
         var expanded = visibleGroups.Where(group => group.Any(form => form.Visible && form.Bookmark.IsFolder &&
-                form.Bookmark.FolderExpanded && Subtree(form.Bookmark.Id).Skip(1).Any(row => _forms[row.Bookmark.Id].Visible)))
-            .OrderBy(group => group.Select(form => _expansionOrder.IndexOf(form.Bookmark.Id))
-                .Where(index => index >= 0).DefaultIfEmpty(int.MaxValue).Min()).ToArray();
+                form.Bookmark.FolderExpanded && Subtree(form.Bookmark.Id).Skip(1).Any(row => _forms[row.Bookmark.Id].Visible))).ToArray();
+        // Keep already-open trees anchored, including trees restored at startup.
+        // Track visible root groups so a hidden expanded descendant cannot retain
+        // priority after its enclosing tree has been closed and reopened.
+        var expandedRoots = expanded.Select(group => group[0].Bookmark.Id).ToHashSet();
+        _expansionOrder.RemoveAll(id => !expandedRoots.Contains(id));
+        foreach (var group in expanded)
+            if (!_expansionOrder.Contains(group[0].Bookmark.Id)) _expansionOrder.Add(group[0].Bookmark.Id);
+        expanded = expanded.OrderBy(group => _expansionOrder.IndexOf(group[0].Bookmark.Id)).ToArray();
         var fixedRoots = new HashSet<Guid>();
         foreach (var active in expanded)
         {
@@ -591,9 +592,9 @@ internal sealed class StickerManager : IDisposable
 
     private StickerForm? FindDropTarget(StickerForm moving, Point cursor, Keys modifiers)
     {
-        // Placement and hierarchy changes are separate gestures in either snap
-        // mode. Overlapping a card while moving must never silently group it.
-        if ((modifiers & Keys.Shift) == 0 || (modifiers & Keys.Alt) != 0 ||
+        // Dropping onto the highlighted card groups it in either snap mode.
+        // Alt keeps overlapping placement available without changing hierarchy.
+        if ((modifiers & Keys.Alt) != 0 ||
             moving.IsEditingNote || moving.Bookmark.Id == _busyBookmarkId) return null;
         var bookmarks = _forms.Values.Select(form => form.Bookmark).ToArray();
         var candidates = _forms.Values.Where(form => form != moving && form.Visible && !form.IsDisposed &&
@@ -636,7 +637,7 @@ internal sealed class StickerManager : IDisposable
         // the policy for other stickers. Actual visibility decides drop eligibility.
         // Commit only the target already highlighted during this gesture, and
         // revalidate it at release. A late modifier or cursor change cannot
-        // create an unpreviewed folder, while releasing Shift cancels grouping.
+        // create an unpreviewed folder, while Alt cancels grouping.
         StickerForm? target = moved && _enabled && moving.Visible && _dropTarget is not null &&
             ReferenceEquals(_dropTarget, FindDropTarget(moving, cursor, modifiers)) ? _dropTarget : null;
         var changed = _subtreeMoveOrigins.Keys.Append(moving.Bookmark.Id).ToArray();

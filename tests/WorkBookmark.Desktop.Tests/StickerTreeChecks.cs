@@ -48,11 +48,11 @@ internal static class StickerTreeChecks
 
             Cursor.Position = Center(a);
             SendMessage(b.Handle, 0x0231, 0, 0);
-            Rectangle drop = SendMoving(b, new Rectangle(a.Location + new Size(8, 4), b.Size), Keys.Shift);
+            Rectangle drop = SendMoving(b, new Rectangle(a.Location + new Size(8, 4), b.Size), Keys.None);
             assert(Field<bool>(a, "_dropTarget") && drop.Location == a.Location + new Size(8, 4),
                 "STR02 a valid parent highlights and accepts overlap ahead of magnetic snapping");
             b.Bounds = drop;
-            Call(manager, "FinishMove", b, true, Cursor.Position, Keys.Shift);
+            Call(manager, "FinishMove", b, true, Cursor.Position, Keys.None);
             SendMessage(b.Handle, 0x0232, 0, 0);
             assert(requested == 1 && requestedChild == child.Id && requestedParent == parent.Id &&
                 BookmarkFor(b).ParentId is null && !Field<bool>(a, "_dropTarget"),
@@ -177,21 +177,21 @@ internal static class StickerTreeChecks
         {
             ManagerType.GetProperty("SnapEnabled", Private)!.SetValue(manager, snap);
             int before = requested;
-            assert(!Gesture(Keys.None, Keys.None) && requested == before && BookmarkFor(moving).ParentId is null &&
+            assert(Gesture(Keys.None, Keys.None) && requested == before + 1 && requestedTarget == items[0].Id && BookmarkFor(moving).ParentId is null &&
                 moving.Location == target.Location + new Size(7, 3),
-                $"STR22 snap={snap}: an ordinary overlapping drag only changes placement without a grouping preview or request");
-            assert(Gesture(Keys.Shift, Keys.Shift) && requested == before + 1 && requestedTarget == items[0].Id &&
+                $"STR22 snap={snap}: an ordinary overlapping drag previews and requests grouping without a modifier");
+            assert(Gesture(Keys.Shift, Keys.Shift) && requested == before + 2 && requestedTarget == items[0].Id &&
                 !Field<bool>(target, "_dropTarget") && BookmarkFor(moving).ParentId is null,
                 $"STR23 snap={snap}: holding Shift groups only the previewed target and waits for the authoritative update");
             before = requested;
             assert(!Gesture(Keys.Shift | Keys.Alt, Keys.Shift | Keys.Alt) && requested == before &&
                 moving.Location == target.Location + new Size(7, 3),
                 $"STR24 snap={snap}: Alt vetoes grouping even when Shift is also held");
-            assert(!Gesture(Keys.None, Keys.Shift) && requested == before,
-                $"STR25 snap={snap}: pressing Shift only at release cannot create an unpreviewed group");
-            assert(Gesture(Keys.Shift, Keys.None) && requested == before && !Field<bool>(target, "_dropTarget"),
-                $"STR26 snap={snap}: releasing Shift before the drop cancels its preview and grouping");
-            assert(Gesture(Keys.Shift, Keys.Shift, Center(other)) && requested == before,
+            assert(!Gesture(Keys.Alt, Keys.None) && requested == before,
+                $"STR25 snap={snap}: releasing Alt only at release cannot create an unpreviewed group");
+            assert(Gesture(Keys.None, Keys.Alt) && requested == before && !Field<bool>(target, "_dropTarget"),
+                $"STR26 snap={snap}: pressing Alt before the drop cancels its preview and grouping");
+            assert(Gesture(Keys.None, Keys.None, Center(other)) && requested == before,
                 $"STR27 snap={snap}: a release over a different unpreviewed target cannot group either card");
         }
     }

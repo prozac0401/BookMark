@@ -1,0 +1,42 @@
+[
+  {
+    "suite": "adapter-checks",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\adapter-checks.log"
+  },
+  {
+    "suite": "evidence-selftest",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\evidence-selftest.log"
+  },
+  {
+    "suite": "session-selftest",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\session-selftest.log"
+  },
+  {
+    "suite": "word-checks",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\word-checks.log"
+  },
+  {
+    "suite": "office-url-checks",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\office-url-checks.log"
+  },
+  {
+    "suite": "browser-checks",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\browser-checks.log"
+  },
+  {
+    "suite": "notepad-checks",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\notepad-checks.log"
+  },
+  {
+    "suite": "pdf-checks",
+    "exitCode": 0,
+    "log": "docs\\evidence\\real-use-2026-11-04\\pdf-checks.log"
+  }
+]

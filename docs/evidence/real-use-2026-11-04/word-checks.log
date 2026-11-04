@@ -1,0 +1,25 @@
+PASS: unprotected body navigation remains supported
+PASS: read-only editing restriction permits metadata capture and body navigation without removing protection
+PASS: unsupported or unknown editing restriction 0 is refused
+PASS: unsupported or unknown editing restriction 1 is refused
+PASS: unsupported or unknown editing restriction 2 is refused
+PASS: unsupported or unknown editing restriction 4 is refused
+PASS: unsupported or unknown editing restriction -2147483648 is refused
+PASS: unsupported or unknown editing restriction 2147483647 is refused
+PASS: saved empty Word body accepts its first insertion point
+PASS: normal body selection records its start without requiring selected text
+PASS: header coordinate cannot masquerade as a body offset
+PASS: footnote coordinate cannot masquerade as a body offset
+PASS: text-frame coordinate cannot masquerade as a body offset
+PASS: discontinuous block selection is refused
+PASS: shape selection is refused
+PASS: no-selection state is refused
+PASS: negative capture offset is refused
+PASS: reversed capture coordinates are refused
+PASS: selection that outlived a shortened body is refused
+PASS: restore accepts zero offset in an empty body
+PASS: restore rejects negative offsets
+PASS: restore never clamps an offset after the document shrinks
+PASS: restore refuses unavailable main-story bounds
+PASS: offset comparison does not overflow at COM Long maximum
+RESULT: 24 Word coordinate/protection checks passed. This does not certify installed Word COM capture or full UI behavior.

@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-04",
+  "timezone": "Asia/Seoul",
+  "source": "HEAD 843e75e plus existing working tree changes, not published 0.2.18",
+  "verdict": "PARTIAL: automated final suites pass; physical-input acceptance blocked; initial general IPC failures remain unexplained",
+  "build": {
+    "errors": 0,
+    "warnings": 0,
+    "configuration": "Release"
+  },
+  "automated": {
+    "latestUniqueChecksPassed": 1127,
+    "otherSuites": 404,
+    "browserSqlite": 15,
+    "cleanFirstPass": false,
+    "otherSummary": "automated-suite-summary.json",
+    "desktop": 708
+  },
+  "physicalInput": {
+    "listDrag": "BLOCKED",
+    "evidence": "native-input-result.json",
+    "memoAndIme": "NOT RUN",
+    "actualProductListVisuallyObserved": true,
+    "stickerDrag": "NOT RUN"
+  },
+  "changes": [
+    "Integration test harness cleanup, failure timing, and child-fixture startup allowance (1.5 to 3 seconds); product deadlines unchanged",
+    "Validation evidence and report"
+  ],
+  "productCodeModifiedByThisValidation": false,
+  "releaseUpdated": false,
+  "ownedFixtureHostCleanup": "Shell host stopped after evidence saved; tool-launched host normal exit confirmed"
+}

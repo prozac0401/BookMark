@@ -1,0 +1,12 @@
+{
+  "observedAt": "2026-11-04T11:19:00.101Z",
+  "launchResult": "computer-use request timed out: launch_app",
+  "targetMatches": [
+    {
+      "app": "process:D:\\Github_REPOS\\BookMark\\artifacts\\real-use-2026-11-04\\launcher\\publish\\WorkBookmark.RealUseLauncher.exe",
+      "id": 13698646,
+      "title": "BookMark 트리·색상 실기 검증"
+    }
+  ],
+  "windowCount": 5
+}

@@ -1,0 +1,380 @@
+{
+  "summaries": [
+    {
+      "run": "ipc-exclusive-tsv",
+      "passed": 13,
+      "total": 17,
+      "failed": [
+        {
+          "test": "D04 valid-result-id",
+          "error": "Valid DTO not accepted: CaptureTimedOut; target present: False.",
+          "milliseconds": 3182,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:15:53.2329795+00:00",
+              "deadlineUtc": "2026-11-04T12:15:56.2320272+00:00",
+              "milliseconds": 3160,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "O01 web-Office-capture-worker-result",
+          "error": "Expected Captured with exact Office metadata; actual: CaptureTimedOut; target matches: False.",
+          "milliseconds": 3094,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:16:00.5287751+00:00",
+              "deadlineUtc": "2026-11-04T12:16:03.5287686+00:00",
+              "milliseconds": 3091,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "D06 worker-child-survives-timeout",
+          "error": "Child fixture did not start.",
+          "milliseconds": 3256,
+          "responses": []
+        },
+        {
+          "test": "D06 dispose-terminates-worker-synchronously",
+          "error": "Worker fixture was not ready before Dispose: elapsed=3040ms; request completed=False.",
+          "milliseconds": 3044,
+          "responses": []
+        }
+      ],
+      "normalResponses": [
+        {
+          "test": "D04 valid-result-id",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:15:53.2329795+00:00",
+            "deadlineUtc": "2026-11-04T12:15:56.2320272+00:00",
+            "milliseconds": 3160,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "D04 wrong-request-id-rejected",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:15:56.4127773+00:00",
+            "deadlineUtc": "2026-11-04T12:15:59.4127748+00:00",
+            "milliseconds": 2926,
+            "code": "InvalidRequest",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "O01 web-Office-capture-worker-result",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:16:00.5287751+00:00",
+            "deadlineUtc": "2026-11-04T12:16:03.5287686+00:00",
+            "milliseconds": 3091,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        }
+      ]
+    },
+    {
+      "run": "ipc-two-way-a",
+      "passed": 13,
+      "total": 17,
+      "failed": [
+        {
+          "test": "D04 valid-result-id",
+          "error": "Valid DTO not accepted: CaptureTimedOut; target present: False.",
+          "milliseconds": 3371,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:16:57.6486096+00:00",
+              "deadlineUtc": "2026-11-04T12:17:00.6474415+00:00",
+              "milliseconds": 3363,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "D04 wrong-request-id-rejected",
+          "error": "Expected InvalidRequest for mismatched response ID; actual: CaptureTimedOut.",
+          "milliseconds": 3113,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:17:01.0239914+00:00",
+              "deadlineUtc": "2026-11-04T12:17:04.0239888+00:00",
+              "milliseconds": 3111,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "O01 web-Office-capture-worker-result",
+          "error": "Expected Captured with exact Office metadata; actual: CaptureTimedOut; target matches: False.",
+          "milliseconds": 3123,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:17:05.5394917+00:00",
+              "deadlineUtc": "2026-11-04T12:17:08.5394759+00:00",
+              "milliseconds": 3119,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "D06 worker-child-survives-timeout",
+          "error": "Child fixture did not start.",
+          "milliseconds": 3576,
+          "responses": []
+        }
+      ],
+      "normalResponses": [
+        {
+          "test": "D04 valid-result-id",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:16:57.6486096+00:00",
+            "deadlineUtc": "2026-11-04T12:17:00.6474415+00:00",
+            "milliseconds": 3363,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "D04 wrong-request-id-rejected",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:17:01.0239914+00:00",
+            "deadlineUtc": "2026-11-04T12:17:04.0239888+00:00",
+            "milliseconds": 3111,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "O01 web-Office-capture-worker-result",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:17:05.5394917+00:00",
+            "deadlineUtc": "2026-11-04T12:17:08.5394759+00:00",
+            "milliseconds": 3119,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        }
+      ]
+    },
+    {
+      "run": "ipc-two-way-b",
+      "passed": 12,
+      "total": 17,
+      "failed": [
+        {
+          "test": "D04 valid-result-id",
+          "error": "Valid DTO not accepted: CaptureTimedOut; target present: False.",
+          "milliseconds": 3899,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:16:56.3192402+00:00",
+              "deadlineUtc": "2026-11-04T12:16:59.3183026+00:00",
+              "milliseconds": 3699,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "D04 wrong-request-id-rejected",
+          "error": "Expected InvalidRequest for mismatched response ID; actual: CaptureTimedOut.",
+          "milliseconds": 3118,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:17:00.4478854+00:00",
+              "deadlineUtc": "2026-11-04T12:17:03.4478817+00:00",
+              "milliseconds": 3115,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "O01 web-Office-capture-worker-result",
+          "error": "Expected Captured with exact Office metadata; actual: CaptureTimedOut; target matches: False.",
+          "milliseconds": 3093,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:17:04.9132598+00:00",
+              "deadlineUtc": "2026-11-04T12:17:07.9132549+00:00",
+              "milliseconds": 3091,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "D06 worker-child-survives-timeout",
+          "error": "Child fixture did not start.",
+          "milliseconds": 3573,
+          "responses": []
+        },
+        {
+          "test": "D06 dispose-terminates-worker-synchronously",
+          "error": "Worker fixture was not ready before Dispose: elapsed=3014ms; request completed=False.",
+          "milliseconds": 3144,
+          "responses": []
+        }
+      ],
+      "normalResponses": [
+        {
+          "test": "D04 valid-result-id",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:16:56.3192402+00:00",
+            "deadlineUtc": "2026-11-04T12:16:59.3183026+00:00",
+            "milliseconds": 3699,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "D04 wrong-request-id-rejected",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:17:00.4478854+00:00",
+            "deadlineUtc": "2026-11-04T12:17:03.4478817+00:00",
+            "milliseconds": 3115,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "O01 web-Office-capture-worker-result",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:17:04.9132598+00:00",
+            "deadlineUtc": "2026-11-04T12:17:07.9132549+00:00",
+            "milliseconds": 3091,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        }
+      ]
+    },
+    {
+      "run": "ipc-final-sequential",
+      "passed": 15,
+      "total": 17,
+      "failed": [
+        {
+          "test": "D04 valid-result-id",
+          "error": "Valid DTO not accepted: CaptureTimedOut; target present: False.",
+          "milliseconds": 3243,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:18:26.5811944+00:00",
+              "deadlineUtc": "2026-11-04T12:18:29.579136+00:00",
+              "milliseconds": 3232,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        },
+        {
+          "test": "D04 wrong-request-id-rejected",
+          "error": "Expected InvalidRequest for mismatched response ID; actual: CaptureTimedOut.",
+          "milliseconds": 3147,
+          "responses": [
+            {
+              "dispatchedUtc": "2026-11-04T12:18:29.8902092+00:00",
+              "deadlineUtc": "2026-11-04T12:18:32.8902035+00:00",
+              "milliseconds": 3144,
+              "code": "CaptureTimedOut",
+              "requestIdMatches": true,
+              "targetPresent": false,
+              "targetMatches": false
+            }
+          ]
+        }
+      ],
+      "normalResponses": [
+        {
+          "test": "D04 valid-result-id",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:18:26.5811944+00:00",
+            "deadlineUtc": "2026-11-04T12:18:29.579136+00:00",
+            "milliseconds": 3232,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "D04 wrong-request-id-rejected",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:18:29.8902092+00:00",
+            "deadlineUtc": "2026-11-04T12:18:32.8902035+00:00",
+            "milliseconds": 3144,
+            "code": "CaptureTimedOut",
+            "requestIdMatches": true,
+            "targetPresent": false,
+            "targetMatches": false
+          }
+        },
+        {
+          "test": "O01 web-Office-capture-worker-result",
+          "response": {
+            "dispatchedUtc": "2026-11-04T12:18:34.2682536+00:00",
+            "deadlineUtc": "2026-11-04T12:18:37.2682463+00:00",
+            "milliseconds": 2535,
+            "code": "Captured",
+            "requestIdMatches": true,
+            "targetPresent": true,
+            "targetMatches": true
+          }
+        }
+      ]
+    }
+  ],
+  "memory": {
+    "observedUtc": "2026-11-04T12:20:13.575Z",
+    "freeMiB": 4308,
+    "totalMiB": 16270,
+    "logicalProcessors": 4
+  }
+}

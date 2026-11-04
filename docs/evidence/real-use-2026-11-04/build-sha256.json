@@ -1,0 +1,26 @@
+[
+  {
+    "Path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.exe",
+    "Hash": "58824E4599370AC1DB289349EC7549B95456C92B6F8E9828B9A789A4419CBB4E"
+  },
+  {
+    "Path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.dll",
+    "Hash": "6662DBB894349029CC2694DFE7B60962022FEC1E3440478AD9B171355DAE3378"
+  },
+  {
+    "Path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Core\\bin\\Release\\net10.0\\WorkBookmark.Core.dll",
+    "Hash": "1B05882D65F5B4A9137E34223CDE1761BE2CE4EAA8FFB21A1BE8762F313546C0"
+  },
+  {
+    "Path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Windows\\bin\\Release\\net10.0-windows\\WorkBookmark.Windows.dll",
+    "Hash": "BDF39835672EBCF349AD1CAFDB3ED23D4A30B1AE3CFC4FE98825689A5CCB1182"
+  },
+  {
+    "Path": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.Storage\\bin\\Release\\net10.0\\WorkBookmark.Storage.dll",
+    "Hash": "341DAC18983856B42D0996373C4DA81B63DDD06E7234621CD5CAD8F0D687DB11"
+  },
+  {
+    "Path": "D:\\Github_REPOS\\BookMark\\tests\\WorkBookmark.Desktop.Tests\\bin\\Release\\net10.0-windows\\WorkBookmark.Desktop.Tests.exe",
+    "Hash": "7DECE77CA8035DEE41143D62AE412BBFDCD1EA58DD7CFFC24C0F197C1CAA20CE"
+  }
+]

@@ -1,0 +1,7 @@
+2026-11-04T11:20:00.9379461+00:00 stage=recent_open code=Validated elapsed_ms=0 app=0.2.18.0 os=10.0.22631.0
+2026-11-04T12:52:37.7106141+00:00 stage=Resume code=OpenRequested elapsed_ms=3581 app=0.2.19.0 os=10.0.22631.0
+2026-11-04T12:53:04.1684497+00:00 stage=Capture code=Captured elapsed_ms=1216 app=0.2.19.0 os=10.0.22631.0
+2026-11-04T12:53:04.1713642+00:00 stage=capture_result code=Captured elapsed_ms=0 app=0.2.19.0 os=10.0.22631.0
+2026-11-04T12:53:04.3296078+00:00 stage=capture_commit code=CaptureCommitted elapsed_ms=0 app=0.2.19.0 os=10.0.22631.0
+2026-11-04T12:53:32.5981062+00:00 stage=recent_open code=Validated elapsed_ms=0 app=0.2.19.0 os=10.0.22631.0
+2026-11-04T12:54:37.8032832+00:00 stage=recent_open code=Validated elapsed_ms=0 app=0.2.19.0 os=10.0.22631.0

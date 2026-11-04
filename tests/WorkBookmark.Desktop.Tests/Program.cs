@@ -41,6 +41,7 @@ internal static class Program
         if (args.Length == 3 && args[0] == "--manual-ui") { ManualUiAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--manual-note-regressions") { ManualUiAcceptance.Run(args[1], args[2], noteRegressions: true); return; }
         if (args.Length == 3 && args[0] == "--manual-tree-colors") { ManualUiAcceptance.RunTreeColors(args[1], args[2]); return; }
+        if (args.Length == 3 && args[0] == "--manual-list-stress") { ManualTreeColorsAcceptance.RunListStress(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--manual-list-settings") { ManualListSettingsAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
@@ -422,7 +423,15 @@ internal static class Program
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var capture = typeof(BookmarkApplicationContext).GetMethod("CaptureBrowserAsync", flags)!;
         string settingsPath = Path.Combine(data, "browser-commit"); Directory.CreateDirectory(settingsPath);
-        (UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F15), RecentHotkey = new Hotkey(7, (int)Keys.F16), IntroShown = true }).Save(settingsPath);
+        // This fixture owns browser commit/cancellation, not the independent
+        // startup migration and sticker load. Keep those asynchronous operations
+        // out of its teardown; StickerStartupChecks exercises startup and upgrades.
+        (UserSettings.Default with
+        {
+            CaptureHotkey = new Hotkey(7, (int)Keys.F15), RecentHotkey = new Hotkey(7, (int)Keys.F16),
+            IntroShown = true, DisplayMode = BookmarkDisplayMode.List,
+            StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
+        }).Save(settingsPath);
         var target = new CapturedTarget(TargetKind.WebPage, "https://example.test/document?q=one#two", PageTitle: "검증 페이지");
         void Pump(Func<bool> done)
         {

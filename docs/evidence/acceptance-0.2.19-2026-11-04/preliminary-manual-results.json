@@ -1,0 +1,62 @@
+{
+  "status": "PRELIMINARY: current sticker implementation before 0.2.19 list-focus candidate restart",
+  "productAssemblySha256": "6662dbb894349029cc2694dfe7b60962022fec1e3440478ad9b171355dae3378",
+  "inputPolicy": "User authorized current Computer Use only; no custom native input automation used",
+  "cases": [
+    {
+      "id": "U01",
+      "action": "Human dragged B onto A without modifiers",
+      "userResult": "새 폴더로 묶임",
+      "observedResult": "A/B ParentId both 32639ded-de8e-4559-a0f0-e24bcaea8b08; new folder present; children hidden",
+      "passed": true,
+      "evidence": "user-step01-group.json"
+    },
+    {
+      "id": "U02",
+      "action": "Human expanded/collapsed folder and observed nearby C",
+      "userResult": "펼침·접힘과 C 위치 복구 모두 정상",
+      "observedResult": "2026-11-04T12:06:56Z C temporarily (80,324), saved layout (80,280); 12:06:59Z C returned (80,280); repeated second cycle",
+      "passed": true,
+      "evidence": "folder-toggle-transitions.json"
+    },
+    {
+      "id": "U03",
+      "action": "Human entered Korean memo and clicked control window",
+      "userResult": "한글 입력과 자동 저장 정상",
+      "observedResult": "Exact note 실사용 검증 한글 메모 123 persisted on A; editor closed; other notes unchanged",
+      "passed": true,
+      "evidence": "user-step03-note.json"
+    },
+    {
+      "id": "T01",
+      "action": "Computer Use Ctrl+Alt+Shift+F16 twice",
+      "observedResult": "0 visible then all eligible stickers visible; folder relationships/notes unchanged",
+      "passed": true,
+      "evidence": [
+        "tool-hotkey-hidden.json",
+        "tool-hotkey-shown.json"
+      ]
+    },
+    {
+      "id": "T02",
+      "action": "Computer Use click real folder button through control screenshot overlay",
+      "observedResult": "children hidden; folder collapsed",
+      "passed": true
+    },
+    {
+      "id": "T03",
+      "action": "Computer Use drag C onto existing folder",
+      "observedResult": "No relation or location change observed",
+      "passed": false,
+      "classification": "tool attempt with no effect; not counted as product failure or completed drag acceptance",
+      "evidence": "tool-drag-existing-folder.json"
+    }
+  ],
+  "remaining": [
+    "0.2.19 candidate restart and persistence",
+    "same-app list focus + external switch",
+    "list drag and edge scrolling",
+    "note cancel and delete/restore",
+    "final package and release"
+  ]
+}

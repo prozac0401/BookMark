@@ -336,7 +336,7 @@ internal sealed class StickerForm : Form
         _resume.ContextMenuStrip = _menu;
         _resumeStatus.ContextMenuStrip = _menu;
         MouseDown += DragHeader;
-        _tooltip.SetToolTip(this, "클릭하여 선택 · 드래그하여 이동 · Shift+드래그: 폴더로 묶기/넣기 · Alt: 자유 이동");
+        _tooltip.SetToolTip(this, "클릭하여 선택 · 드래그하여 이동 · 다른 스티커 위에 놓아 폴더로 묶기/넣기 · Alt: 묶지 않고 자유 이동");
         _treeMark.ContextMenuStrip = _menu;
         _header.ContextMenuStrip = _menu;
         _typeIcon.ContextMenuStrip = _menu;
@@ -403,11 +403,12 @@ internal sealed class StickerForm : Form
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
             details += CanRelink(value) ? "\n우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
-        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 선택 · 드래그하여 이동 · 더블클릭/F2로 이름 변경\n왼쪽 버튼: 폴더 열기/닫기" : "\n클릭하여 선택 · 드래그하여 이동 · 더블클릭/F2로 메모 편집") + "\nShift+드래그: 폴더로 묶기/넣기 · Alt: 자유 이동");
+        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 선택 · 드래그하여 이동 · 더블클릭/F2로 이름 변경\n왼쪽 버튼: 폴더 열기/닫기" : "\n클릭하여 선택 · 드래그하여 이동 · 더블클릭/F2로 메모 편집") + "\n다른 스티커 위에 놓아 폴더로 묶기/넣기 · Alt: 묶지 않고 자유 이동");
         _tooltip.SetToolTip(_kind, details + "\n드래그하여 이동");
         _tooltip.SetToolTip(_resumeStatus, issue is null ? "" : issue + "\n" + details);
         _title.AccessibleDescription = details + "\n한 번 클릭하여 선택하고 드래그하여 이동합니다. 더블클릭 또는 F2, Ctrl+E로 " +
-            (value.IsFolder ? "이름을 변경합니다. 왼쪽 버튼으로 폴더를 열고 닫습니다." : empty ? "메모를 추가합니다." : "메모를 편집합니다.");
+            (value.IsFolder ? "이름을 변경합니다. 왼쪽 버튼으로 폴더를 열고 닫습니다." : empty ? "메모를 추가합니다." : "메모를 편집합니다.") +
+            " 다른 스티커 위에 놓으면 폴더로 묶거나 폴더 안으로 이동합니다. Alt를 누르면 묶지 않고 자유롭게 이동합니다.";
         _resumeStatus.AccessibleDescription = issue;
         RefreshActionState();
         PerformLayout();

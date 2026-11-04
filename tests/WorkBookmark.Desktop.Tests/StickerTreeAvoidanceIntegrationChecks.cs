@@ -18,6 +18,9 @@ internal static class StickerTreeAvoidanceIntegrationChecks
         ManualMovement(assert);
         NestedExpansion(assert);
         MultipleExpansions(assert);
+        OpeningDisplacedFolder(assert, restart: false);
+        OpeningDisplacedFolder(assert, restart: true);
+        ReopeningNestedTree(assert);
         MovingExpandedRoot(assert);
         EditingAndResizingFootprint(assert);
         GroupingDisplacedTarget(assert);
@@ -188,6 +191,102 @@ internal static class StickerTreeAvoidanceIntegrationChecks
         fixture.Publish(second);
         assert(p.Bounds == baseline,
             "TAI20 closing all expanded roots restores the shared neighbor without cumulative displacement");
+    }
+
+    private static void OpeningDisplacedFolder(Action<bool, string> assert, bool restart)
+    {
+        var first = Folder("먼저 펼친 프로젝트", 1);
+        var firstChild = Item("첫 프로젝트의 아래쪽 자료", 2) with { ParentId = first.Id };
+        var second = Folder("밀려난 위치에서 펼칠 프로젝트", 3);
+        var secondChild = Item("두 번째 프로젝트 자료", 4) with { ParentId = second.Id };
+        using var fixture = new Fixture(first, firstChild, second, secondChild);
+        Form a = fixture.View(first.Id), ac = fixture.View(firstChild.Id), b = fixture.View(second.Id), bc = fixture.View(secondChild.Id);
+        Rectangle area = Screen.FromControl(a).WorkingArea;
+        int row = a.Height + Scale(a, 8);
+        Point anchor = area.Location + new Size(Scale(a, 40), Scale(a, 40));
+        fixture.Place(a, anchor);
+        fixture.Place(ac, anchor + new Size(Scale(a, 20), row * 4));
+        fixture.Place(b, anchor + new Size(0, row * 2));
+        fixture.Place(bc, b.Location + new Size(Scale(a, 20), row));
+        fixture.Flush();
+        Rectangle aBefore = a.Bounds, acBefore = ac.Bounds, bBefore = b.Bounds, bcBefore = bc.Bounds;
+        var savedBefore = fixture.Saved.ToDictionary(pair => pair.Key, pair => pair.Value);
+
+        fixture.Publish(first with { FolderExpanded = true });
+        Rectangle bDisplaced = b.Bounds, bcDisplaced = bc.Bounds;
+        if (restart)
+        {
+            fixture.Restart();
+            a = fixture.View(first.Id); ac = fixture.View(firstChild.Id);
+            b = fixture.View(second.Id); bc = fixture.View(secondChild.Id);
+        }
+        assert(bDisplaced != bBefore && b.Top > ac.Bottom && !bc.Visible,
+            $"TAI35 restart={restart}: opening the first folder displaces the closed neighboring folder below its expanded tree");
+        fixture.Publish(second with { FolderExpanded = true });
+        assert(a.Bounds == aBefore && ac.Bounds == acBefore && b.Bounds == bDisplaced && bc.Bounds == bcDisplaced && bc.Visible &&
+            !Rectangle.Union(a.Bounds, ac.Bounds).IntersectsWith(Rectangle.Union(b.Bounds, bc.Bounds)),
+            $"TAI36 restart={restart}: opening a displaced folder retains its displayed anchor and does not push the already expanded tree away");
+        for (int repeat = 0; repeat < 3; repeat++)
+        {
+            fixture.Publish(second);
+            fixture.Publish(second with { FolderExpanded = true });
+            Call(fixture.Manager, "UpdateTreeAvoidance");
+        }
+        fixture.Flush();
+        assert(a.Bounds == aBefore && ac.Bounds == acBefore && b.Bounds == bDisplaced && bc.Bounds == bcDisplaced &&
+            savedBefore.All(pair => fixture.Saved[pair.Key] == pair.Value),
+            $"TAI37 restart={restart}: repeated neighboring-folder expansion and recalculation do not reverse directions, accumulate offsets, or overwrite saved placements");
+        fixture.Publish(second);
+        fixture.Publish(first);
+        assert(a.Bounds == aBefore && ac.Bounds == acBefore && b.Bounds == bBefore && bc.Bounds == bcBefore,
+            $"TAI38 restart={restart}: closing both neighboring folders restores every root and descendant to its original coordinates");
+    }
+
+    private static void ReopeningNestedTree(Action<bool, string> assert)
+    {
+        var first = Folder("접었다 다시 펼칠 상위 프로젝트", 1);
+        var nested = Folder("열림 상태를 보존할 하위 프로젝트", 2) with { ParentId = first.Id };
+        var deep = Item("하위 프로젝트 자료", 3) with { ParentId = nested.Id };
+        var second = Folder("상위 프로젝트를 접은 동안 펼칠 프로젝트", 4);
+        var secondChild = Item("먼저 자리를 확보한 자료", 5) with { ParentId = second.Id };
+        using var fixture = new Fixture(first, nested, deep, second, secondChild);
+        Form a = fixture.View(first.Id), n = fixture.View(nested.Id), d = fixture.View(deep.Id),
+            b = fixture.View(second.Id), bc = fixture.View(secondChild.Id);
+        Rectangle area = Screen.FromControl(a).WorkingArea;
+        int row = a.Height + Scale(a, 8);
+        Point anchor = area.Location + new Size(Scale(a, 40), Scale(a, 40));
+        fixture.Place(a, anchor);
+        fixture.Place(n, anchor + new Size(Scale(a, 20), row));
+        fixture.Place(d, anchor + new Size(Scale(a, 40), row * 4));
+        fixture.Place(b, anchor + new Size(0, row * 2));
+        fixture.Place(bc, b.Location + new Size(Scale(a, 20), row));
+        fixture.Flush();
+        Rectangle aBefore = a.Bounds, nBefore = n.Bounds, dBefore = d.Bounds, bBefore = b.Bounds, bcBefore = bc.Bounds;
+        var savedBefore = fixture.Saved.ToDictionary(pair => pair.Key, pair => pair.Value);
+
+        fixture.Publish(first with { FolderExpanded = true });
+        fixture.Publish(nested with { FolderExpanded = true });
+        fixture.Publish(first);
+        fixture.Publish(second with { FolderExpanded = true });
+        assert(!n.Visible && !d.Visible && b.Bounds == bBefore && bc.Bounds == bcBefore && bc.Visible,
+            "TAI39 hiding an expanded nested tree releases its old reservation before another folder is opened");
+        fixture.Publish(first with { FolderExpanded = true });
+        var delta = new Size(a.Left - aBefore.Left, a.Top - aBefore.Top);
+        assert(n.Visible && d.Visible && b.Bounds == bBefore && bc.Bounds == bcBefore &&
+            n.Location == nBefore.Location + delta && d.Location == dBefore.Location + delta &&
+            !Rectangle.Union(a.Bounds, d.Bounds).IntersectsWith(Rectangle.Union(b.Bounds, bc.Bounds)),
+            "TAI40 reopening an ancestor cannot use its hidden nested folder's old priority to displace the already open neighboring tree");
+        Rectangle reopened = a.Bounds;
+        fixture.Publish(first);
+        fixture.Publish(first with { FolderExpanded = true });
+        fixture.Flush();
+        assert(a.Bounds == reopened && b.Bounds == bBefore && bc.Bounds == bcBefore &&
+            savedBefore.All(pair => fixture.Saved[pair.Key] == pair.Value),
+            "TAI41 repeated ancestor reopening preserves the visible tree's priority and all saved coordinates");
+        fixture.Publish(first);
+        fixture.Publish(second);
+        assert(a.Bounds == aBefore && n.Bounds == nBefore && d.Bounds == dBefore && b.Bounds == bBefore && bc.Bounds == bcBefore,
+            "TAI42 closing the neighboring and nested trees restores every original coordinate");
     }
 
     private static void MovingExpandedRoot(Action<bool, string> assert)

@@ -1,0 +1,92 @@
+{
+  "source": "D:/Github_REPOS/BookMark/src/WorkBookmark.App/bin/Release/net10.0-windows/win-x64",
+  "baselineDirectory": "D:/Github_REPOS/BookMark/artifacts/worker-reflection-baseline-20261104",
+  "copiedUtc": "2026-11-04T12:28:48.813Z",
+  "files": [
+    {
+      "file": "Assets/FluentSystemIcons.LICENSE.txt",
+      "bytes": 1334,
+      "sha256": "af18d9dd00792892981af8742c3db0bd760471659e0cbd0f18c04488945b398e"
+    },
+    {
+      "file": "e_sqlite3.dll",
+      "bytes": 1978880,
+      "sha256": "b7385d722c83fb52142a00477a726723745916d22a555711ee89834c1111fb2e"
+    },
+    {
+      "file": "Microsoft.Data.Sqlite.dll",
+      "bytes": 177464,
+      "sha256": "b98d957462be432895b00dccca012d3c127e118d3d4262418014b92c7bbd66cf"
+    },
+    {
+      "file": "SQLitePCLRaw.batteries_v2.dll",
+      "bytes": 5120,
+      "sha256": "815ce410c9eab531dd219318e3ba16c5e38e83d361cfbbdbb4bbca222c497b0b"
+    },
+    {
+      "file": "SQLitePCLRaw.core.dll",
+      "bytes": 51200,
+      "sha256": "af340ac9eb9195795660d7fc1114f486b6ab63998f33176e2f24c8e0acb9aa84"
+    },
+    {
+      "file": "SQLitePCLRaw.provider.e_sqlite3.dll",
+      "bytes": 36864,
+      "sha256": "eb6696e55882c3000333146b1cd4970439601e11fdedae941105ca921f615bd6"
+    },
+    {
+      "file": "WorkBookmark.Core.dll",
+      "bytes": 67584,
+      "sha256": "0057d82af0339bb20f1cb9599c36c62892da43722a19769179dbf39db02a4f90"
+    },
+    {
+      "file": "WorkBookmark.Core.pdb",
+      "bytes": 28676,
+      "sha256": "87c62a39613c37d03f5c9143a79e389f7240986b08a852a64ba120ec328e5c43"
+    },
+    {
+      "file": "WorkBookmark.deps.json",
+      "bytes": 5668,
+      "sha256": "c6943f7fdd97aac88983ec38448ef3b9b2ef78ebdaf01da123c5bc909222f99c"
+    },
+    {
+      "file": "WorkBookmark.dll",
+      "bytes": 337408,
+      "sha256": "f101695786d1c4cd9113081c0282fba18d0295dafbf5e735a8c433a7647b8ddd"
+    },
+    {
+      "file": "WorkBookmark.exe",
+      "bytes": 187392,
+      "sha256": "b4ac789c98c849a4adc9d449107192dabc72f19eb2382412e7092ca2c965c63a"
+    },
+    {
+      "file": "WorkBookmark.pdb",
+      "bytes": 81604,
+      "sha256": "835064c50e583710c307478440648640ee3fbd51cc9fb0af9de1cae15054386e"
+    },
+    {
+      "file": "WorkBookmark.runtimeconfig.json",
+      "bytes": 519,
+      "sha256": "96bc2946dff8790400d652ec7f8de7bb043e954980d59470c112788b68a1fbd3"
+    },
+    {
+      "file": "WorkBookmark.Storage.dll",
+      "bytes": 79872,
+      "sha256": "7280b1cd28759a39aa90df95958e1ce0162f97df9d43b0f7136761e8a43a0d09"
+    },
+    {
+      "file": "WorkBookmark.Storage.pdb",
+      "bytes": 18952,
+      "sha256": "58e6d94f0c9f43a861c40428085940ece731765206a37f9d2b7e6d6921adb34d"
+    },
+    {
+      "file": "WorkBookmark.Windows.dll",
+      "bytes": 129024,
+      "sha256": "d8e21faf2589c7fb7b0ea317577650fe6150e7d0dfb8241c751653f55aec6804"
+    },
+    {
+      "file": "WorkBookmark.Windows.pdb",
+      "bytes": 48472,
+      "sha256": "d700ac493b1b7c758e42bb539b8bfd322002775ef733964952942eba4ff6830c"
+    }
+  ]
+}

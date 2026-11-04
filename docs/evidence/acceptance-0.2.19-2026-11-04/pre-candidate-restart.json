@@ -1,0 +1,513 @@
+{
+  "stage": "observed",
+  "atUtc": "2026-11-04T12:15:07.1255289+00:00",
+  "pid": 3200,
+  "session": 1,
+  "productAssemblySha256": "6662dbb894349029cc2694dfe7b60962022fec1e3440478ad9b171355dae3378",
+  "workerExecutable": "D:\\Github_REPOS\\BookMark\\src\\WorkBookmark.App\\bin\\Release\\net10.0-windows\\win-x64\\WorkBookmark.exe",
+  "sourceUnchanged": true,
+  "failureParentInjected": false,
+  "failureColorInjected": false,
+  "bookmarks": [
+    {
+      "Id": "ce490728-69dc-4ede-b34b-08bb5aaa3f34",
+      "Target": {
+        "Kind": "File",
+        "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C A.txt",
+        "SheetName": null,
+        "CellAddress": null,
+        "HadUnsavedChanges": null,
+        "WordStart": null,
+        "SlideId": null,
+        "SlideNumber": null,
+        "PdfPage": null,
+        "PageTitle": null,
+        "TextOffset": null,
+        "TextContent": null,
+        "TextSelectionEnd": null,
+        "SnapshotTitle": null
+      },
+      "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C A.txt",
+      "DisplayName": "\uD569\uC131 \uBB38\uC11C A.txt",
+      "Note": "\uC2E4\uC0AC\uC6A9 \uAC80\uC99D \uD55C\uAE00 \uBA54\uBAA8 123",
+      "CreatedAtUtc": "2026-11-04T11:18:36.9584609+00:00",
+      "CapturedAtUtc": "2026-11-04T11:18:36.9584609+00:00",
+      "CaptureSequence": 1,
+      "NoteUpdatedAtUtc": "2026-11-04T12:12:07.4878032+00:00",
+      "LastResumeAtUtc": null,
+      "LastResumeResult": null,
+      "DeletedAtUtc": null,
+      "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+      "Color": "Default",
+      "FolderExpanded": false,
+      "IsFolder": false
+    },
+    {
+      "Id": "ce03b2fd-a004-4f9d-a040-d05f0059b11f",
+      "Target": {
+        "Kind": "File",
+        "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C B.txt",
+        "SheetName": null,
+        "CellAddress": null,
+        "HadUnsavedChanges": null,
+        "WordStart": null,
+        "SlideId": null,
+        "SlideNumber": null,
+        "PdfPage": null,
+        "PageTitle": null,
+        "TextOffset": null,
+        "TextContent": null,
+        "TextSelectionEnd": null,
+        "SnapshotTitle": null
+      },
+      "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C B.txt",
+      "DisplayName": "\uD569\uC131 \uBB38\uC11C B.txt",
+      "Note": "B \u00B7 \uC2DC\uC7A5 \uC870\uC0AC \uC790\uB8CC",
+      "CreatedAtUtc": "2026-11-04T11:18:37.094977+00:00",
+      "CapturedAtUtc": "2026-11-04T11:18:37.094977+00:00",
+      "CaptureSequence": 2,
+      "NoteUpdatedAtUtc": "2026-11-04T11:18:37.1085776+00:00",
+      "LastResumeAtUtc": null,
+      "LastResumeResult": null,
+      "DeletedAtUtc": null,
+      "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+      "Color": "Default",
+      "FolderExpanded": false,
+      "IsFolder": false
+    },
+    {
+      "Id": "9a5259db-4370-4ebf-97fd-01be1e39e0d2",
+      "Target": {
+        "Kind": "File",
+        "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C C.txt",
+        "SheetName": null,
+        "CellAddress": null,
+        "HadUnsavedChanges": null,
+        "WordStart": null,
+        "SlideId": null,
+        "SlideNumber": null,
+        "PdfPage": null,
+        "PageTitle": null,
+        "TextOffset": null,
+        "TextContent": null,
+        "TextSelectionEnd": null,
+        "SnapshotTitle": null
+      },
+      "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C C.txt",
+      "DisplayName": "\uD569\uC131 \uBB38\uC11C C.txt",
+      "Note": "C \u00B7 \uACBD\uC7C1 \uC11C\uBE44\uC2A4 \uBE44\uAD50",
+      "CreatedAtUtc": "2026-11-04T11:18:37.4469606+00:00",
+      "CapturedAtUtc": "2026-11-04T11:18:37.4469606+00:00",
+      "CaptureSequence": 3,
+      "NoteUpdatedAtUtc": "2026-11-04T11:18:37.4601282+00:00",
+      "LastResumeAtUtc": null,
+      "LastResumeResult": null,
+      "DeletedAtUtc": null,
+      "ParentId": null,
+      "Color": "Default",
+      "FolderExpanded": false,
+      "IsFolder": false
+    }
+  ],
+  "rows": [
+    {
+      "Id": "9a5259db-4370-4ebf-97fd-01be1e39e0d2",
+      "Note": "C \u00B7 \uACBD\uC7C1 \uC11C\uBE44\uC2A4 \uBE44\uAD50",
+      "ParentId": null,
+      "Color": "Default",
+      "Depth": 0,
+      "HasChildren": false
+    },
+    {
+      "Id": "ce03b2fd-a004-4f9d-a040-d05f0059b11f",
+      "Note": "B \u00B7 \uC2DC\uC7A5 \uC870\uC0AC \uC790\uB8CC",
+      "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+      "Color": "Default",
+      "Depth": 0,
+      "HasChildren": false
+    },
+    {
+      "Id": "ce490728-69dc-4ede-b34b-08bb5aaa3f34",
+      "Note": "\uC2E4\uC0AC\uC6A9 \uAC80\uC99D \uD55C\uAE00 \uBA54\uBAA8 123",
+      "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+      "Color": "Default",
+      "Depth": 0,
+      "HasChildren": false
+    }
+  ],
+  "layouts": [
+    {
+      "BookmarkId": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+      "MonitorDevice": "\\\\.\\DISPLAY2",
+      "Left": 1355,
+      "Top": 277,
+      "Width": 274,
+      "Height": 50,
+      "IsCollapsed": false,
+      "AlwaysOnTop": true,
+      "ParentId": null
+    },
+    {
+      "BookmarkId": "61df2088-2d99-4e29-8cfe-189e5c9a8023",
+      "MonitorDevice": "\\\\.\\DISPLAY2",
+      "Left": 1420,
+      "Top": 87,
+      "Width": 274,
+      "Height": 50,
+      "IsCollapsed": false,
+      "AlwaysOnTop": true,
+      "ParentId": null
+    },
+    {
+      "BookmarkId": "9a5259db-4370-4ebf-97fd-01be1e39e0d2",
+      "MonitorDevice": "\\\\.\\DISPLAY2",
+      "Left": 1469,
+      "Top": 176,
+      "Width": 274,
+      "Height": 50,
+      "IsCollapsed": false,
+      "AlwaysOnTop": true,
+      "ParentId": null
+    },
+    {
+      "BookmarkId": "ce03b2fd-a004-4f9d-a040-d05f0059b11f",
+      "MonitorDevice": "\\\\.\\DISPLAY2",
+      "Left": 1375,
+      "Top": 393,
+      "Width": 274,
+      "Height": 50,
+      "IsCollapsed": false,
+      "AlwaysOnTop": true,
+      "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08"
+    },
+    {
+      "BookmarkId": "ce490728-69dc-4ede-b34b-08bb5aaa3f34",
+      "MonitorDevice": "\\\\.\\DISPLAY2",
+      "Left": 1375,
+      "Top": 451,
+      "Width": 274,
+      "Height": 50,
+      "IsCollapsed": false,
+      "AlwaysOnTop": true,
+      "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08"
+    }
+  ],
+  "windows": [
+    {
+      "type": "Form",
+      "Text": "BookMark \uD2B8\uB9AC\u00B7\uC0C9\uC0C1 \uC2E4\uAE30 \uAC80\uC99D",
+      "Visible": true,
+      "Bounds": {
+        "Location": {
+          "IsEmpty": false,
+          "X": 1289,
+          "Y": 35
+        },
+        "Size": {
+          "IsEmpty": false,
+          "Width": 606,
+          "Height": 619
+        },
+        "X": 1289,
+        "Y": 35,
+        "Width": 606,
+        "Height": 619,
+        "Left": 1289,
+        "Top": 35,
+        "Right": 1895,
+        "Bottom": 654,
+        "IsEmpty": false
+      },
+      "DeviceDpi": 96,
+      "ShowInTaskbar": true,
+      "borderStyle": "Sizable",
+      "TopMost": false,
+      "handle": 17106422,
+      "bookmark": null,
+      "editingNote": false,
+      "background": -986896
+    },
+    {
+      "type": "StickerForm",
+      "Text": "\uC2E4\uC0AC\uC6A9 \uAC80\uC99D \uD55C\uAE00 \uBA54\uBAA8 123 \u00B7 \uC5C5\uBB34 \uCC45\uAC08\uD53C",
+      "Visible": false,
+      "Bounds": {
+        "Location": {
+          "IsEmpty": false,
+          "X": 1375,
+          "Y": 451
+        },
+        "Size": {
+          "IsEmpty": false,
+          "Width": 274,
+          "Height": 50
+        },
+        "X": 1375,
+        "Y": 451,
+        "Width": 274,
+        "Height": 50,
+        "Left": 1375,
+        "Top": 451,
+        "Right": 1649,
+        "Bottom": 501,
+        "IsEmpty": false
+      },
+      "DeviceDpi": 96,
+      "ShowInTaskbar": false,
+      "borderStyle": "SizableToolWindow",
+      "TopMost": true,
+      "handle": 10161232,
+      "bookmark": {
+        "Id": "ce490728-69dc-4ede-b34b-08bb5aaa3f34",
+        "Target": {
+          "Kind": "File",
+          "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C A.txt",
+          "SheetName": null,
+          "CellAddress": null,
+          "HadUnsavedChanges": null,
+          "WordStart": null,
+          "SlideId": null,
+          "SlideNumber": null,
+          "PdfPage": null,
+          "PageTitle": null,
+          "TextOffset": null,
+          "TextContent": null,
+          "TextSelectionEnd": null,
+          "SnapshotTitle": null
+        },
+        "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C A.txt",
+        "DisplayName": "\uD569\uC131 \uBB38\uC11C A.txt",
+        "Note": "\uC2E4\uC0AC\uC6A9 \uAC80\uC99D \uD55C\uAE00 \uBA54\uBAA8 123",
+        "CreatedAtUtc": "2026-11-04T11:18:36.9584609+00:00",
+        "CapturedAtUtc": "2026-11-04T11:18:36.9584609+00:00",
+        "CaptureSequence": 1,
+        "NoteUpdatedAtUtc": "2026-11-04T12:12:07.4878032+00:00",
+        "LastResumeAtUtc": null,
+        "LastResumeResult": null,
+        "DeletedAtUtc": null,
+        "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+        "Color": "Default",
+        "FolderExpanded": false,
+        "IsFolder": false
+      },
+      "editingNote": false,
+      "background": -523
+    },
+    {
+      "type": "StickerForm",
+      "Text": "B \u00B7 \uC2DC\uC7A5 \uC870\uC0AC \uC790\uB8CC \u00B7 \uC5C5\uBB34 \uCC45\uAC08\uD53C",
+      "Visible": false,
+      "Bounds": {
+        "Location": {
+          "IsEmpty": false,
+          "X": 1375,
+          "Y": 393
+        },
+        "Size": {
+          "IsEmpty": false,
+          "Width": 274,
+          "Height": 50
+        },
+        "X": 1375,
+        "Y": 393,
+        "Width": 274,
+        "Height": 50,
+        "Left": 1375,
+        "Top": 393,
+        "Right": 1649,
+        "Bottom": 443,
+        "IsEmpty": false
+      },
+      "DeviceDpi": 96,
+      "ShowInTaskbar": false,
+      "borderStyle": "SizableToolWindow",
+      "TopMost": true,
+      "handle": 8652886,
+      "bookmark": {
+        "Id": "ce03b2fd-a004-4f9d-a040-d05f0059b11f",
+        "Target": {
+          "Kind": "File",
+          "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C B.txt",
+          "SheetName": null,
+          "CellAddress": null,
+          "HadUnsavedChanges": null,
+          "WordStart": null,
+          "SlideId": null,
+          "SlideNumber": null,
+          "PdfPage": null,
+          "PageTitle": null,
+          "TextOffset": null,
+          "TextContent": null,
+          "TextSelectionEnd": null,
+          "SnapshotTitle": null
+        },
+        "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C B.txt",
+        "DisplayName": "\uD569\uC131 \uBB38\uC11C B.txt",
+        "Note": "B \u00B7 \uC2DC\uC7A5 \uC870\uC0AC \uC790\uB8CC",
+        "CreatedAtUtc": "2026-11-04T11:18:37.094977+00:00",
+        "CapturedAtUtc": "2026-11-04T11:18:37.094977+00:00",
+        "CaptureSequence": 2,
+        "NoteUpdatedAtUtc": "2026-11-04T11:18:37.1085776+00:00",
+        "LastResumeAtUtc": null,
+        "LastResumeResult": null,
+        "DeletedAtUtc": null,
+        "ParentId": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+        "Color": "Default",
+        "FolderExpanded": false,
+        "IsFolder": false
+      },
+      "editingNote": false,
+      "background": -523
+    },
+    {
+      "type": "StickerForm",
+      "Text": "C \u00B7 \uACBD\uC7C1 \uC11C\uBE44\uC2A4 \uBE44\uAD50 \u00B7 \uC5C5\uBB34 \uCC45\uAC08\uD53C",
+      "Visible": true,
+      "Bounds": {
+        "Location": {
+          "IsEmpty": false,
+          "X": 1469,
+          "Y": 176
+        },
+        "Size": {
+          "IsEmpty": false,
+          "Width": 274,
+          "Height": 50
+        },
+        "X": 1469,
+        "Y": 176,
+        "Width": 274,
+        "Height": 50,
+        "Left": 1469,
+        "Top": 176,
+        "Right": 1743,
+        "Bottom": 226,
+        "IsEmpty": false
+      },
+      "DeviceDpi": 96,
+      "ShowInTaskbar": false,
+      "borderStyle": "SizableToolWindow",
+      "TopMost": true,
+      "handle": 17041760,
+      "bookmark": {
+        "Id": "9a5259db-4370-4ebf-97fd-01be1e39e0d2",
+        "Target": {
+          "Kind": "File",
+          "Path": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C C.txt",
+          "SheetName": null,
+          "CellAddress": null,
+          "HadUnsavedChanges": null,
+          "WordStart": null,
+          "SlideId": null,
+          "SlideNumber": null,
+          "PdfPage": null,
+          "PageTitle": null,
+          "TextOffset": null,
+          "TextContent": null,
+          "TextSelectionEnd": null,
+          "SnapshotTitle": null
+        },
+        "NormalizedPath": "D:\\Github_REPOS\\BookMark\\artifacts\\manual-ui\\real-use-2026-11-04-launcher\\\uD569\uC131 \uBB38\uC11C C.txt",
+        "DisplayName": "\uD569\uC131 \uBB38\uC11C C.txt",
+        "Note": "C \u00B7 \uACBD\uC7C1 \uC11C\uBE44\uC2A4 \uBE44\uAD50",
+        "CreatedAtUtc": "2026-11-04T11:18:37.4469606+00:00",
+        "CapturedAtUtc": "2026-11-04T11:18:37.4469606+00:00",
+        "CaptureSequence": 3,
+        "NoteUpdatedAtUtc": "2026-11-04T11:18:37.4601282+00:00",
+        "LastResumeAtUtc": null,
+        "LastResumeResult": null,
+        "DeletedAtUtc": null,
+        "ParentId": null,
+        "Color": "Default",
+        "FolderExpanded": false,
+        "IsFolder": false
+      },
+      "editingNote": false,
+      "background": -523
+    },
+    {
+      "type": "StickerForm",
+      "Text": "\uC0C8 \uD3F4\uB354 \u00B7 \uC5C5\uBB34 \uCC45\uAC08\uD53C",
+      "Visible": true,
+      "Bounds": {
+        "Location": {
+          "IsEmpty": false,
+          "X": 1355,
+          "Y": 277
+        },
+        "Size": {
+          "IsEmpty": false,
+          "Width": 274,
+          "Height": 50
+        },
+        "X": 1355,
+        "Y": 277,
+        "Width": 274,
+        "Height": 50,
+        "Left": 1355,
+        "Top": 277,
+        "Right": 1629,
+        "Bottom": 327,
+        "IsEmpty": false
+      },
+      "DeviceDpi": 96,
+      "ShowInTaskbar": false,
+      "borderStyle": "SizableToolWindow",
+      "TopMost": true,
+      "handle": 3018112,
+      "bookmark": {
+        "Id": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+        "Target": {
+          "Kind": "BookmarkFolder",
+          "Path": "",
+          "SheetName": null,
+          "CellAddress": null,
+          "HadUnsavedChanges": null,
+          "WordStart": null,
+          "SlideId": null,
+          "SlideNumber": null,
+          "PdfPage": null,
+          "PageTitle": null,
+          "TextOffset": null,
+          "TextContent": null,
+          "TextSelectionEnd": null,
+          "SnapshotTitle": null
+        },
+        "NormalizedPath": "32639ded-de8e-4559-a0f0-e24bcaea8b08",
+        "DisplayName": "\uC0C8 \uD3F4\uB354",
+        "Note": "",
+        "CreatedAtUtc": "2026-11-04T12:03:41.4991593+00:00",
+        "CapturedAtUtc": "2026-11-04T12:03:41.4991593+00:00",
+        "CaptureSequence": 4,
+        "NoteUpdatedAtUtc": null,
+        "LastResumeAtUtc": null,
+        "LastResumeResult": null,
+        "DeletedAtUtc": null,
+        "ParentId": null,
+        "Color": "Default",
+        "FolderExpanded": false,
+        "IsFolder": true
+      },
+      "editingNote": false,
+      "background": -523
+    }
+  ],
+  "attempts": [
+    {
+      "AtUtc": "2026-11-04T12:08:37.1258677+00:00",
+      "Operation": "parent",
+      "Rejected": false
+    },
+    {
+      "AtUtc": "2026-11-04T12:09:33.2872717+00:00",
+      "Operation": "parent",
+      "Rejected": false
+    },
+    {
+      "AtUtc": "2026-11-04T12:12:28.8338377+00:00",
+      "Operation": "parent",
+      "Rejected": false
+    }
+  ],
+  "acceptanceScope": "Actual product forms and SQLite; host only shows/restarts product views and observes. Native input must target a window returned by the automation provider. Installed Program.Main remains a separate gate."
+}

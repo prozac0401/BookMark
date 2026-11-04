@@ -1,0 +1,23 @@
+{
+  "start": "2026-11-04T20:59:42.9506527+09:00",
+  "durationSeconds": 2.9467217,
+  "logicalProcessors": 4,
+  "groups": [
+    {
+      "category": "assistant-and-ui-automation",
+      "observedProcessCount": 5,
+      "cpuPercent": 14.0
+    },
+    {
+      "category": "build-and-test-tools",
+      "observedProcessCount": 2,
+      "cpuPercent": 6.4
+    },
+    {
+      "category": "other-background-applications",
+      "observedProcessCount": 5,
+      "cpuPercent": 16.1
+    }
+  ],
+  "limitations": "One bounded process CPU sample; not a full-system performance trace. Unrelated application identities omitted."
+}

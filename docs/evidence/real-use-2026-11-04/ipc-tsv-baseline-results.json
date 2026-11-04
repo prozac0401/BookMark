@@ -1,0 +1,218 @@
+[
+  {
+    "test": "D11 protocol-roundtrip",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:08:56.6911743+00:00",
+    "completedUtc": "2026-11-04T12:08:58.6030242+00:00",
+    "milliseconds": 1911,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 all-resumes-share-input-without-cancelling-open",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:08:58.752316+00:00",
+    "completedUtc": "2026-11-04T12:08:58.7856184+00:00",
+    "milliseconds": 33,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D11 oversized-and-truncated-frames",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:08:58.7863411+00:00",
+    "completedUtc": "2026-11-04T12:08:58.809215+00:00",
+    "milliseconds": 22,
+    "responses": [],
+    "fixtureTraces": []
+  },
+  {
+    "test": "D04 valid-result-id",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:08:58.8092887+00:00",
+    "completedUtc": "2026-11-04T12:09:02.9320648+00:00",
+    "milliseconds": 4122,
+    "error": "Valid DTO not accepted: CaptureTimedOut; target present: False.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:08:58.8731557+00:00",
+        "deadlineUtc": "2026-11-04T12:09:01.8196112+00:00",
+        "milliseconds": 3972,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\03-ok-79249dd433084c6b9383ce38734a9375.tsv"
+    ]
+  },
+  {
+    "test": "D04 wrong-request-id-rejected",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:09:02.9329852+00:00",
+    "completedUtc": "2026-11-04T12:09:06.1885675+00:00",
+    "milliseconds": 3255,
+    "error": "Expected InvalidRequest for mismatched response ID; actual: CaptureTimedOut.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:09:02.9381471+00:00",
+        "deadlineUtc": "2026-11-04T12:09:05.9381426+00:00",
+        "milliseconds": 3246,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\04-wrong-id-5c7d6dd0aa4d459c91d6782a1828462d.tsv"
+    ]
+  },
+  {
+    "test": "D04 capture-deadline-no-late-success",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:06.188839+00:00",
+    "completedUtc": "2026-11-04T12:09:07.0486044+00:00",
+    "milliseconds": 859,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\05-late-fb44aaeb839340cbb430f1a74f8bb4c6.tsv"
+    ]
+  },
+  {
+    "test": "D05 resume-deadline-outcome-unknown",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:07.048646+00:00",
+    "completedUtc": "2026-11-04T12:09:07.5842358+00:00",
+    "milliseconds": 535,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\06-late-60ca6c7e0d984342bee63985ed6c3258.tsv"
+    ]
+  },
+  {
+    "test": "O01 web-Office-capture-worker-result",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:09:07.5843739+00:00",
+    "completedUtc": "2026-11-04T12:09:10.6542743+00:00",
+    "milliseconds": 3069,
+    "error": "Expected Captured with exact Office metadata; actual: CaptureTimedOut; target matches: False.",
+    "responses": [
+      {
+        "dispatchedUtc": "2026-11-04T12:09:07.5853603+00:00",
+        "deadlineUtc": "2026-11-04T12:09:10.5853574+00:00",
+        "milliseconds": 3066,
+        "code": "CaptureTimedOut",
+        "requestIdMatches": true,
+        "targetPresent": false,
+        "targetMatches": false
+      }
+    ],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\07-echo-target-a6fb3362bf7c4c3eaec1d97f841e0eb2.tsv"
+    ]
+  },
+  {
+    "test": "O02 web-Office-timeout-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:10.6544596+00:00",
+    "completedUtc": "2026-11-04T12:09:11.5743901+00:00",
+    "milliseconds": 919,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\08-late-d6fafac2445a46adb6dc426f09b3b3c5.tsv"
+    ]
+  },
+  {
+    "test": "O03 web-Office-cancellation-never-claims-position-restored",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:11.5746234+00:00",
+    "completedUtc": "2026-11-04T12:09:12.0661277+00:00",
+    "milliseconds": 491,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\09-late-f00fca7c077b45478e61f5f236980253.tsv"
+    ]
+  },
+  {
+    "test": "O04 extended-deadline-only-for-web-Office-resume",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:12.0661679+00:00",
+    "completedUtc": "2026-11-04T12:09:17.2723695+00:00",
+    "milliseconds": 5206,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\10-document-opened-98a22050cb784f7da3ba018fb046ffd6.tsv"
+    ]
+  },
+  {
+    "test": "U12 single-flight-no-queue",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:17.2729616+00:00",
+    "completedUtc": "2026-11-04T12:09:18.2291327+00:00",
+    "milliseconds": 956,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\11-late-86c7506d76c94f8f852dd16c1f7e71ed.tsv"
+    ]
+  },
+  {
+    "test": "D04 cancellation-discards-response",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:18.2292766+00:00",
+    "completedUtc": "2026-11-04T12:09:18.5005402+00:00",
+    "milliseconds": 271,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\12-late-f07c27493de349368a31520a59644c9d.tsv"
+    ]
+  },
+  {
+    "test": "D06 worker-crash-cleanup",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:18.500576+00:00",
+    "completedUtc": "2026-11-04T12:09:21.4150784+00:00",
+    "milliseconds": 2914,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\13-crash-d8c9ac624f8844fe90271aaf9a84d2ff.tsv"
+    ]
+  },
+  {
+    "test": "D06 worker-child-survives-timeout",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:09:21.4151207+00:00",
+    "completedUtc": "2026-11-04T12:09:24.503273+00:00",
+    "milliseconds": 3088,
+    "error": "Child fixture did not start.",
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\14-spawn-child-c614568da4464debb68e8f1b6ca453ff.tsv"
+    ]
+  },
+  {
+    "test": "D06 dispose-terminates-worker-synchronously",
+    "status": "FAIL",
+    "startedUtc": "2026-11-04T12:09:24.5034974+00:00",
+    "completedUtc": "2026-11-04T12:09:27.56996+00:00",
+    "milliseconds": 3066,
+    "error": "Worker fixture was not ready before Dispose: elapsed=3059ms; request completed=False.",
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\15-own-pid-6fde215ae6994cfab78c5133ebf0c6a3.tsv"
+    ]
+  },
+  {
+    "test": "D04 deadline-boundary-does-not-stick-busy",
+    "status": "PASS",
+    "startedUtc": "2026-11-04T12:09:27.5699975+00:00",
+    "completedUtc": "2026-11-04T12:09:28.6145826+00:00",
+    "milliseconds": 1044,
+    "responses": [],
+    "fixtureTraces": [
+      "D:\\Github_REPOS\\BookMark\\docs\\evidence\\real-use-2026-11-04\\ipc-tsv-baseline-workers\\16-late-309fa3216e584e3e919b576b6c70e9b7.tsv"
+    ]
+  }
+]

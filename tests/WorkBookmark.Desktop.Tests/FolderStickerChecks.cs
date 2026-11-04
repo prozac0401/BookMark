@@ -134,7 +134,7 @@ internal static class FolderStickerChecks
             Cursor.Position = Center(d);
             NativeDrop(manager, c, d.Location + new Size(7, 3));
             assert(drops == 1 && droppedChild == loose.Id && droppedTarget == disk.Id && BookmarkFor(c).ParentId is null,
-                "FS15 Shift-dropping on an ordinary sticker requests atomic folder grouping without an optimistic parent change");
+                "FS15 ordinary dropping on a sticker requests atomic folder grouping without an optimistic parent change");
             Rectangle targetBounds = d.Bounds;
             var grouped = Folder("새 폴더", 7);
             disk = disk with { ParentId = grouped.Id }; loose = loose with { ParentId = grouped.Id };
@@ -144,15 +144,19 @@ internal static class FolderStickerChecks
             assert(h.Visible && !d.Visible && !c.Visible && h.Location == targetBounds.Location &&
                 d.Top > h.Bottom && c.Top > h.Bottom && h.Size == targetBounds.Size,
                 "FS16 a committed grouping replaces the target location with a closed folder and lays out its hidden children once");
-            Rectangle childBefore = c.Bounds;
+            Rectangle[] groupedBefore = [h.Bounds, c.Bounds, d.Bounds];
+            Rectangle[] openTreeBefore = [f.Bounds, a.Bounds, g.Bounds, b.Bounds];
             grouped = grouped with { FolderExpanded = true }; Publish(grouped);
-            assert(c.Visible && d.Visible && c.Bounds == childBefore,
-                "FS17 opening a newly grouped folder reveals its organized children without another layout");
+            var groupDelta = new Size(h.Left - groupedBefore[0].Left, h.Top - groupedBefore[0].Top);
+            assert(c.Visible && d.Visible && new[] { h.Bounds, c.Bounds, d.Bounds }.SequenceEqual(
+                    groupedBefore.Select(bounds => new Rectangle(bounds.Location + groupDelta, bounds.Size))) &&
+                new[] { f.Bounds, a.Bounds, g.Bounds, b.Bounds }.SequenceEqual(openTreeBefore),
+                "FS17 opening a newly grouped folder preserves child offsets and sizes while keeping the previously opened tree fixed");
             grouped = grouped with { FolderExpanded = false }; Publish(grouped);
             Cursor.Position = Center(f);
             NativeDrop(manager, h, f.Location + new Size(7, 3));
             assert(drops == 2 && droppedChild == grouped.Id && droppedTarget == folder.Id &&
-                BookmarkFor(h).ParentId is null && Call(manager, "FindDropTarget", f, Center(a), Keys.Shift) is null,
+                BookmarkFor(h).ParentId is null && Call(manager, "FindDropTarget", f, Center(a), Keys.None) is null,
                 "FS18 a folder can be dropped into another folder while ancestor-to-descendant drops remain invalid");
             grouped = grouped with { ParentId = folder.Id }; Publish(grouped);
             assert(h.Visible && !c.Visible && !d.Visible && BookmarkFor(f).FolderExpanded,
@@ -464,12 +468,12 @@ internal static class FolderStickerChecks
     {
         var property = form.GetType().GetProperty("AdjustMoveBounds", Private)!;
         var adjust = (Func<Rectangle, Keys, Rectangle>)property.GetValue(form)!;
-        property.SetValue(form, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, Keys.Shift)));
+        property.SetValue(form, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, Keys.None)));
         try
         {
             SendMessage(form.Handle, 0x0231, 0, 0);
             MoveRectangle(form, location);
-            Call(manager, "FinishMove", form, true, Cursor.Position, Keys.Shift);
+            Call(manager, "FinishMove", form, true, Cursor.Position, Keys.None);
             SendMessage(form.Handle, 0x0232, 0, 0);
         }
         finally { property.SetValue(form, adjust); }

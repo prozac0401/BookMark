@@ -9,16 +9,44 @@ internal static class Program
     private static async Task<int> Main(string[] args)
     {
         if (args.Contains("--fixture")) return await Fixture(args);
+        if (args.Length == 3 && args[0] == "--production-worker") return await ProductionWorkerStartupChecks.RunAsync(args[1], args[2]);
         string exe = Environment.ProcessPath!;
         var results = new List<object>();
+        var responses = new List<object>();
+        var fixtureTraces = new List<string>();
+        string? traceDirectory = args.SkipWhile(a => a != "--trace-directory").Skip(1).FirstOrDefault();
+        if (traceDirectory is not null) Directory.CreateDirectory(traceDirectory);
         async Task Check(string id, Func<Task> run)
         {
+            responses.Clear(); fixtureTraces.Clear();
+            var startedUtc = DateTimeOffset.UtcNow;
             var watch = Stopwatch.StartNew();
-            try { await run(); passed++; results.Add(new { test = id, status = "PASS", milliseconds = watch.ElapsedMilliseconds }); Console.WriteLine($"PASS {id}"); }
-            catch (Exception e) { results.Add(new { test = id, status = "FAIL", error = e.Message }); Console.WriteLine($"FAIL {id}: {e.Message}"); }
+            try { await run(); passed++; results.Add(new { test = id, status = "PASS", startedUtc, completedUtc = DateTimeOffset.UtcNow, milliseconds = watch.ElapsedMilliseconds, responses = responses.ToArray(), fixtureTraces = fixtureTraces.ToArray() }); Console.WriteLine($"PASS {id}"); }
+            catch (Exception e) { results.Add(new { test = id, status = "FAIL", startedUtc, completedUtc = DateTimeOffset.UtcNow, milliseconds = watch.ElapsedMilliseconds, error = e.Message, responses = responses.ToArray(), fixtureTraces = fixtureTraces.ToArray() }); Console.WriteLine($"FAIL {id}: {e.Message}"); }
         }
         WorkerRequest Request(Operation op = Operation.Capture, double seconds = 3) => new(1, Guid.NewGuid(), op, DateTimeOffset.UtcNow.AddSeconds(seconds), new(1, 1), new(TargetKind.File, @"C:\fixture\report.txt"));
-        WorkerClient Client(string mode) => new(exe, ["--fixture", mode]);
+        WorkerClient Client(string mode, params string[] fixtureArguments)
+        {
+            var arguments = new List<string> { "--fixture", mode };
+            arguments.AddRange(fixtureArguments);
+            if (traceDirectory is not null)
+            {
+                string trace = Path.Combine(traceDirectory, $"{results.Count:D2}-{mode}-{Guid.NewGuid():N}.tsv");
+                fixtureTraces.Add(trace);
+                arguments.AddRange(["--trace", trace]);
+            }
+            return new(exe, arguments);
+        }
+        async Task<WorkerResponse> Observe(WorkerClient client, WorkerRequest request)
+        {
+            var dispatchedUtc = DateTimeOffset.UtcNow;
+            var watch = Stopwatch.StartNew();
+            var response = await client.RunAsync(request);
+            responses.Add(new { dispatchedUtc, deadlineUtc = request.DeadlineUtc, milliseconds = watch.ElapsedMilliseconds,
+                code = response.Code.ToString(), requestIdMatches = response.RequestId == request.RequestId,
+                targetPresent = response.Target is not null, targetMatches = response.Target == request.Target });
+            return response;
+        }
         await Check("D11 protocol-roundtrip", async () =>
         {
             using var stream = new MemoryStream(); var request = Request();
@@ -53,13 +81,14 @@ internal static class Program
         await Check("D04 valid-result-id", async () =>
         {
             using var client = Client("ok"); var request = Request();
-            var result = await client.RunAsync(request);
+            var result = await Observe(client, request);
             Assert(result.RequestId == request.RequestId && result.Code == ResultCode.Captured && result.Target is not null, $"Valid DTO not accepted: {result.Code}; target present: {result.Target is not null}.");
         });
         await Check("D04 wrong-request-id-rejected", async () =>
         {
             using var client = Client("wrong-id");
-            Assert((await client.RunAsync(Request())).Code == ResultCode.InvalidRequest, "Stale ID accepted.");
+            var result = await Observe(client, Request());
+            Assert(result.Code == ResultCode.InvalidRequest, $"Expected InvalidRequest for mismatched response ID; actual: {result.Code}.");
         });
         await Check("D04 capture-deadline-no-late-success", async () =>
         {
@@ -78,8 +107,8 @@ internal static class Program
         {
             using var client = Client("echo-target");
             var target = new CapturedTarget(TargetKind.WordPosition, "https://office.invalid/Shared Documents/한글.docx", HadUnsavedChanges: false, WordStart: 37);
-            var result = await client.RunAsync(Request() with { Target = target });
-            Assert(result.Code == ResultCode.Captured && result.Target == target, "Worker rejected URL Office metadata.");
+            var result = await Observe(client, Request() with { Target = target });
+            Assert(result.Code == ResultCode.Captured && result.Target == target, $"Expected Captured with exact Office metadata; actual: {result.Code}; target matches: {result.Target == target}.");
         });
         await Check("O02 web-Office-timeout-never-claims-position-restored", async () =>
         {
@@ -128,11 +157,13 @@ internal static class Program
         await Check("D06 worker-child-survives-timeout", async () =>
         {
             string marker = Path.Combine(Path.GetTempPath(), $"WorkBookmark-test-{Guid.NewGuid():N}.pid");
-            using var client = new WorkerClient(exe, ["--fixture", "spawn-child", marker]);
+            using var client = Client("spawn-child", marker);
             Process? child = null;
             try
             {
-                var result = await client.RunAsync(Request(seconds: 1.5));
+                // This fixture starts two .NET processes before publishing readiness;
+                // use the normal capture allowance, while still requiring a real timeout.
+                var result = await client.RunAsync(Request());
                 Assert(result.Code == ResultCode.CaptureTimedOut, "Expected timeout.");
                 Assert(File.Exists(marker), "Child fixture did not start.");
                 child = Process.GetProcessById(int.Parse(await File.ReadAllTextAsync(marker)));
@@ -140,27 +171,45 @@ internal static class Program
             }
             finally
             {
-                if (child is not null) { if (!child.HasExited) child.Kill(false); child.Dispose(); }
-                File.Delete(marker); File.Delete(marker + ".pending");
+                if (child is not null)
+                {
+                    try
+                    {
+                        if (!child.HasExited) child.Kill(false);
+                        Assert(child.WaitForExit(1500), "Child fixture did not exit during cleanup.");
+                    }
+                    finally { child.Dispose(); }
+                }
+                await DeleteFixtureMarkersAsync(marker);
             }
         });
         await Check("D06 dispose-terminates-worker-synchronously", async () =>
         {
             string marker = Path.Combine(Path.GetTempPath(), $"WorkBookmark-worker-{Guid.NewGuid():N}.pid");
-            using var client = new WorkerClient(exe, ["--fixture", "own-pid", marker]);
+            using var client = Client("own-pid", marker);
             Process? worker = null;
+            Task<WorkerResponse>? pending = null;
             try
             {
-                Task<WorkerResponse> pending = client.RunAsync(Request(seconds: 4));
-                for (int i = 0; i < 40 && !File.Exists(marker); i++) await Task.Delay(25);
-                Assert(File.Exists(marker), "Worker did not start.");
+                var readiness = Stopwatch.StartNew();
+                pending = client.RunAsync(Request(seconds: 4));
+                // Readiness is a setup prerequisite, not a one-second product SLA.
+                // Leave a full second of the fixture request for the Dispose assertion.
+                while (!File.Exists(marker) && !pending.IsCompleted && readiness.Elapsed < TimeSpan.FromSeconds(3)) await Task.Delay(25);
+                Assert(File.Exists(marker), $"Worker fixture was not ready before Dispose: elapsed={readiness.ElapsedMilliseconds}ms; request completed={pending.IsCompleted}.");
                 worker = Process.GetProcessById(int.Parse(await File.ReadAllTextAsync(marker)));
                 client.Dispose();
                 Assert(worker.WaitForExit(1500), "Worker survived Dispose.");
                 Assert((await pending).Code != ResultCode.Captured, "Disposed request succeeded.");
                 Assert((await client.RunAsync(Request())).Code == ResultCode.InvalidRequest, "Disposed client restarted.");
             }
-            finally { worker?.Dispose(); File.Delete(marker); File.Delete(marker + ".pending"); }
+            finally
+            {
+                client.Dispose();
+                if (pending is not null) await pending.WaitAsync(TimeSpan.FromSeconds(2));
+                worker?.Dispose();
+                await DeleteFixtureMarkersAsync(marker);
+            }
         });
         await Check("D04 deadline-boundary-does-not-stick-busy", async () =>
         {
@@ -180,9 +229,12 @@ internal static class Program
     private static async Task<int> Fixture(string[] args)
     {
         string mode = args[1];
+        bool traceEnabled = Array.IndexOf(args, "--trace") >= 0;
+        if (traceEnabled) TraceFixture(args, "Entered");
         if (mode == "child") { await Task.Delay(30000); return 0; }
         if (mode == "crash") return 17;
         var request = await FrameProtocol.ReadAsync<WorkerRequest>(Console.OpenStandardInput());
+        if (traceEnabled) TraceFixture(args, "RequestRead", request);
         if (mode == "spawn-child")
         {
             var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true };
@@ -195,7 +247,18 @@ internal static class Program
         var response = new WorkerResponse(1, mode == "wrong-id" ? Guid.NewGuid() : request.RequestId,
             mode == "document-opened" ? ResultCode.OfficeDocumentOpened : ResultCode.Captured,
             mode == "echo-target" ? request.Target : new(TargetKind.File, @"C:\fixture\report.txt"), TargetHwnd: mode == "document-opened" ? 123 : 0);
+        if (traceEnabled) TraceFixture(args, "ResponseReady", request);
         await FrameProtocol.WriteAsync(Console.OpenStandardOutput(), response); return 0;
+    }
+    private static void TraceFixture(string[] args, string stage, WorkerRequest? request = null)
+    {
+        string? trace = args.SkipWhile(a => a != "--trace").Skip(1).FirstOrDefault();
+        if (trace is null) return;
+        var observedUtc = DateTimeOffset.UtcNow;
+        using var process = Process.GetCurrentProcess();
+        // Optional test-only diagnostics contain no document metadata and never use stdout.
+        // Keep tracing cheap: JSON reflection metadata here would perturb cold startup.
+        File.AppendAllText(trace, FormattableString.Invariant($"{stage}\t{observedUtc:O}\t{process.Id}\t{process.StartTime.ToUniversalTime():O}\t{request?.RequestId}\t{request?.DeadlineUtc:O}\t{(request is null ? (double?)null : (request.DeadlineUtc - observedUtc).TotalMilliseconds)}") + Environment.NewLine);
     }
     private static async Task PublishPidAsync(string marker, int processId)
     {
@@ -204,6 +267,18 @@ internal static class Program
         string pending = marker + ".pending";
         await File.WriteAllTextAsync(pending, processId.ToString());
         File.Move(pending, marker);
+    }
+    private static async Task DeleteFixtureMarkersAsync(string marker)
+    {
+        // Kill requests termination but does not wait for Windows to release the
+        // fixture's pending PID stream. Only sharing/lock violations merit a bounded retry.
+        var cleanup = Stopwatch.StartNew();
+        while (true)
+        {
+            try { File.Delete(marker + ".pending"); File.Delete(marker); return; }
+            catch (IOException error) when ((error.HResult & 0xffff) is 32 or 33 && cleanup.Elapsed < TimeSpan.FromSeconds(2))
+            { await Task.Delay(25); }
+        }
     }
     private static void Assert(bool condition, string message) { if (!condition) throw new Exception(message); }
 }

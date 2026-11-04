@@ -102,6 +102,25 @@ internal static class StickerTreeAvoidanceChecks
         Rectangle[] distantReservation = [new(0, 20, 100, 120)];
         assert(FindOffsets(distantReservation, neighboringPeers, neighboringMonitor)[0] == Point.Empty,
             "TA17 a distant monitor's reservation leaves an unrelated peer at its existing position");
+
+        Rectangle[] centralTree = [new(400, 250, 200, 200)];
+        (Rectangle Peer, Point Expected)[] directional =
+        [
+            (new(450, 235, 80, 36), new(0, -29)),
+            (new(450, 435, 80, 36), new(0, 23)),
+            (new(370, 310, 80, 36), new(-58, 0)),
+            (new(570, 310, 80, 36), new(38, 0))
+        ];
+        foreach (var (peer, expected) in directional)
+        {
+            Rectangle[][] directionalGroup = [[peer]];
+            Point? offset = FindOffsets(centralTree, directionalGroup, area).Single();
+            Rectangle[][] negativeDirectionalGroup = [[Move(peer, negativeArea.Location)]];
+            Point? negativeOffset = FindOffsets(centralTree.Select(rectangle => Move(rectangle, negativeArea.Location)).ToArray(),
+                negativeDirectionalGroup, negativeArea).Single();
+            assert(offset == expected && negativeOffset == expected && Clear(centralTree, directionalGroup, [offset], area, 8),
+                $"TA18 nearest collision escape follows direction {expected} without changing sign on a negative-origin monitor");
+        }
     }
 
     private static Point?[] FindOffsets(IReadOnlyList<Rectangle> tree, IReadOnlyList<Rectangle[]> groups,

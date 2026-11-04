@@ -1,0 +1,29 @@
+PASS: unsaved new text is a complete restorable snapshot
+PASS: snapshot preserves Unicode and selected UTF-16 range
+PASS: a new empty tab is a valid snapshot
+PASS: dirty marker and localized app suffix do not split identical snapshots after source saving
+PASS: working copy is automatically stored under app LocalAppData with exact text and resolved through host file virtualization
+PASS: physical working copy explicitly stores a UTF-8 BOM
+PASS: repeat resume never overwrites an earlier edited recovery copy
+PASS: empty recovery copies decode to empty text
+PASS: corrupt content fails before a recovery copy is written
+PASS: Korean title matches the complete fresh recovery basename
+PASS: English title matches the complete fresh recovery basename
+PASS: filename-prefix collisions cannot authorize another editor
+PASS: classic CRLF caret converts to a stable LF offset
+PASS: stable LF offset converts back to a classic caret
+PASS: RichEdit already counts a line break as one character
+PASS: an impossible caret inside a CRLF pair fails closed
+PASS: empty documents preserve the initial caret
+PASS: reopen never clamps a caret after text becomes shorter
+PASS: negative offsets cannot be restored
+PASS: UTF-16 offset 0 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 1 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 2 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 3 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 4 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 5 round trips across CRLF without losing surrogate units
+PASS: UTF-16 offset 6 round trips across CRLF without losing surrogate units
+PASS: native selection transport preserves start and end beyond 65,535
+PASS: read-only selection transport does not change text or selection
+RESULT: 28 Notepad snapshot recovery and coordinate checks passed.

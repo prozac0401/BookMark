@@ -1,0 +1,389 @@
+{
+  "coreChecks": {
+    "passed": 86,
+    "total": 86,
+    "wireCompatibilityChecks": 10
+  },
+  "ipcChecks": {
+    "passed": 17,
+    "total": 17,
+    "normalResponses": [
+      {
+        "test": "D04 valid-result-id",
+        "response": {
+          "dispatchedUtc": "2026-11-04T12:41:23.5784405+00:00",
+          "deadlineUtc": "2026-11-04T12:41:26.5775161+00:00",
+          "milliseconds": 1239,
+          "code": "Captured",
+          "requestIdMatches": true,
+          "targetPresent": true,
+          "targetMatches": true
+        }
+      },
+      {
+        "test": "D04 wrong-request-id-rejected",
+        "response": {
+          "dispatchedUtc": "2026-11-04T12:41:24.8221024+00:00",
+          "deadlineUtc": "2026-11-04T12:41:27.8220992+00:00",
+          "milliseconds": 1277,
+          "code": "InvalidRequest",
+          "requestIdMatches": true,
+          "targetPresent": false,
+          "targetMatches": false
+        }
+      },
+      {
+        "test": "O01 web-Office-capture-worker-result",
+        "response": {
+          "dispatchedUtc": "2026-11-04T12:41:27.18558+00:00",
+          "deadlineUtc": "2026-11-04T12:41:30.1855765+00:00",
+          "milliseconds": 1340,
+          "code": "Captured",
+          "requestIdMatches": true,
+          "targetPresent": true,
+          "targetMatches": true
+        }
+      }
+    ]
+  },
+  "productionComparison": {
+    "order": [
+      "reflection",
+      "sourcegen"
+    ],
+    "sameRunner": true,
+    "deadlineSeconds": 3,
+    "reflection": {
+      "executable": "D:\\Github_REPOS\\BookMark\\artifacts\\worker-reflection-baseline-20261104\\WorkBookmark.exe",
+      "executableSha256": "B4AC789C98C849A4ADC9D449107192DABC72F19EB2382412E7092CA2C965C63A",
+      "coreSha256": "0057D82AF0339BB20F1CB9599C36C62892DA43722A19769179DBF39DB02A4F90",
+      "deadlineSeconds": 3,
+      "externalUserAppsAccessed": false,
+      "passed": 6,
+      "total": 6,
+      "checks": [
+        {
+          "iteration": 1,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:42:31.0386351+00:00",
+          "milliseconds": 1528,
+          "deadlineUtc": "2026-11-04T12:42:34.0379642+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 1,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:42:32.5822801+00:00",
+          "milliseconds": 1455,
+          "deadlineUtc": "2026-11-04T12:42:35.5817212+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:42:34.0376269+00:00",
+          "milliseconds": 1613,
+          "deadlineUtc": "2026-11-04T12:42:37.0376244+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:42:35.6511261+00:00",
+          "milliseconds": 1548,
+          "deadlineUtc": "2026-11-04T12:42:38.6511231+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:42:37.1997953+00:00",
+          "milliseconds": 1710,
+          "deadlineUtc": "2026-11-04T12:42:40.199793+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:42:38.9098554+00:00",
+          "milliseconds": 1654,
+          "deadlineUtc": "2026-11-04T12:42:41.9098528+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        }
+      ]
+    },
+    "sourcegen": {
+      "executable": "D:\\Github_REPOS\\BookMark\\artifacts\\ipc-sourcegen-20261104\\bin\\WorkBookmark.App\\release_win-x64\\WorkBookmark.exe",
+      "executableSha256": "B4AC789C98C849A4ADC9D449107192DABC72F19EB2382412E7092CA2C965C63A",
+      "coreSha256": "8890C770D4FA0C9E6BB46ECA02345C6C4E94646BDF49DF6362FC944D0838970B",
+      "deadlineSeconds": 3,
+      "externalUserAppsAccessed": false,
+      "passed": 5,
+      "total": 6,
+      "checks": [
+        {
+          "iteration": 1,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:42:41.3520232+00:00",
+          "milliseconds": 3054,
+          "deadlineUtc": "2026-11-04T12:42:44.3514228+00:00",
+          "code": "CaptureTimedOut",
+          "success": false,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 1,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:42:44.4248272+00:00",
+          "milliseconds": 2500,
+          "deadlineUtc": "2026-11-04T12:42:47.4246585+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:42:46.9249746+00:00",
+          "milliseconds": 1535,
+          "deadlineUtc": "2026-11-04T12:42:49.9249715+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:42:48.4608121+00:00",
+          "milliseconds": 980,
+          "deadlineUtc": "2026-11-04T12:42:51.4608093+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:42:49.4413818+00:00",
+          "milliseconds": 1338,
+          "deadlineUtc": "2026-11-04T12:42:52.4413789+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:42:50.7804074+00:00",
+          "milliseconds": 1154,
+          "deadlineUtc": "2026-11-04T12:42:53.7804047+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        }
+      ]
+    }
+  },
+  "releaseGateSatisfied": null,
+  "limitations": [
+    "Only six synthetic unsupported requests per production binary; no real Office/browser/Explorer target capture.",
+    "Sequential reflection-then-sourcegen order and changing host load/cache state confound attribution.",
+    "First sourcegen production request timed out; this result cannot be described as a complete cold-start fix.",
+    "Production timing is end-to-end WorkerClient elapsed, not isolated JSON deserialization duration.",
+    "Reverse-order measurements passed 6/6 on both binaries; aggregate sourcegen remains 11/12 because its first cold request timed out.",
+    "The sample is small and host load/cache/order vary. The observed medians do not establish a general performance guarantee."
+  ],
+  "nextComparison": "Final packaged binary verification is owned by the parent release task.",
+  "reverseOrderComparison": {
+    "order": [
+      "sourcegen",
+      "reflection"
+    ],
+    "sameRunner": true,
+    "sourcegen": {
+      "executable": "D:\\Github_REPOS\\BookMark\\artifacts\\ipc-sourcegen-20261104\\bin\\WorkBookmark.App\\release_win-x64\\WorkBookmark.exe",
+      "executableSha256": "B4AC789C98C849A4ADC9D449107192DABC72F19EB2382412E7092CA2C965C63A",
+      "coreSha256": "8890C770D4FA0C9E6BB46ECA02345C6C4E94646BDF49DF6362FC944D0838970B",
+      "deadlineSeconds": 3,
+      "externalUserAppsAccessed": false,
+      "passed": 6,
+      "total": 6,
+      "checks": [
+        {
+          "iteration": 1,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:49:43.2632387+00:00",
+          "milliseconds": 1022,
+          "deadlineUtc": "2026-11-04T12:49:46.2622426+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 1,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:49:44.3204776+00:00",
+          "milliseconds": 1415,
+          "deadlineUtc": "2026-11-04T12:49:47.3203463+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:49:45.7365449+00:00",
+          "milliseconds": 1196,
+          "deadlineUtc": "2026-11-04T12:49:48.7365421+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:49:46.9329158+00:00",
+          "milliseconds": 2165,
+          "deadlineUtc": "2026-11-04T12:49:49.9329095+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:49:49.0985381+00:00",
+          "milliseconds": 1443,
+          "deadlineUtc": "2026-11-04T12:49:52.0985351+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:49:50.5416306+00:00",
+          "milliseconds": 1526,
+          "deadlineUtc": "2026-11-04T12:49:53.5416271+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        }
+      ]
+    },
+    "reflection": {
+      "executable": "D:\\Github_REPOS\\BookMark\\artifacts\\worker-reflection-baseline-20261104\\WorkBookmark.exe",
+      "executableSha256": "B4AC789C98C849A4ADC9D449107192DABC72F19EB2382412E7092CA2C965C63A",
+      "coreSha256": "0057D82AF0339BB20F1CB9599C36C62892DA43722A19769179DBF39DB02A4F90",
+      "deadlineSeconds": 3,
+      "externalUserAppsAccessed": false,
+      "passed": 6,
+      "total": 6,
+      "checks": [
+        {
+          "iteration": 1,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:49:52.8682231+00:00",
+          "milliseconds": 1737,
+          "deadlineUtc": "2026-11-04T12:49:55.8672505+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 1,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:49:54.6214369+00:00",
+          "milliseconds": 1173,
+          "deadlineUtc": "2026-11-04T12:49:57.6212602+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:49:55.7949482+00:00",
+          "milliseconds": 1190,
+          "deadlineUtc": "2026-11-04T12:49:58.7949459+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 2,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:49:56.9850549+00:00",
+          "milliseconds": 1879,
+          "deadlineUtc": "2026-11-04T12:49:59.9850521+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "Capture",
+          "startedUtc": "2026-11-04T12:49:58.864739+00:00",
+          "milliseconds": 1647,
+          "deadlineUtc": "2026-11-04T12:50:01.8647358+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        },
+        {
+          "iteration": 3,
+          "operation": "ValidateRelink",
+          "startedUtc": "2026-11-04T12:50:00.5123833+00:00",
+          "milliseconds": 826,
+          "deadlineUtc": "2026-11-04T12:50:03.5123771+00:00",
+          "code": "UnsupportedTarget",
+          "success": true,
+          "ExternalActionStarted": false
+        }
+      ]
+    }
+  },
+  "aggregate": {
+    "reflection": {
+      "passed": 12,
+      "total": 12,
+      "minimumElapsedMilliseconds": 826,
+      "maximumElapsedMilliseconds": 1879,
+      "medianElapsedMilliseconds": 1580.5
+    },
+    "sourcegen": {
+      "passed": 11,
+      "total": 12,
+      "minimumElapsedMilliseconds": 980,
+      "maximumElapsedMilliseconds": 3054,
+      "medianElapsedMilliseconds": 1429
+    }
+  },
+  "latestCandidateChecksPassed": true,
+  "coldStartCompletelyResolved": false,
+  "releaseDecision": "Deferred to final package probe and user acceptance; this investigation is complete. No Program UI-initialization change or further performance scope was introduced.",
+  "deadlineClarification": {
+    "probeDeadlineSeconds": 3,
+    "productionCaptureDeadlineSeconds": 3,
+    "productionValidateRelinkDeadlineSeconds": 15,
+    "note": "ValidateRelink uses an intentionally stricter 3-second startup comparison window; this is not its production 15-second deadline."
+  },
+  "references": [
+    {
+      "topic": "Source generation moves JSON metadata collection to compilation; measured startup improvement must still be verified",
+      "url": "https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/source-generation-modes"
+    }
+  ]
+}

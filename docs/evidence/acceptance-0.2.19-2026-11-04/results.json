@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.19",
+  "documentState": "FUNCTIONAL_ACCEPTANCE_RECORDED_PENDING_PACKAGE",
+  "functionalAcceptance": "PASS",
+  "verdict": "PENDING_PACKAGE",
+  "deployment": "NOT_VERIFIED",
+  "fixtureShutdown": {
+    "status": "PASS",
+    "listStage": "exit",
+    "listExitUtc": "2026-11-04T13:08:47.7003097+00:00",
+    "remainingProductWindows": 0,
+    "evidence": ["candidate-tree-exit.json", "candidate-list-exit.json"]
+  },
+  "date": "2026-11-04",
+  "scope": "Actual product forms and SQLite in an isolated synthetic fixture; final package verification covers published Program.Main smoke where feasible, MSI structure/admin extraction/file hashes, and six uploaded asset hashes.",
+  "inputPolicy": {
+    "automatedInput": "Existing Computer Use APIs only",
+    "humanInput": "Recorded separately from tool input",
+    "customNativeInputAutomationUsed": false,
+    "guessedWindowIdBindingUsed": false,
+    "testOnlyProductWindowStyleChangeUsed": false
+  },
+  "binaries": {
+    "initialManual": {
+      "appDllSha256": "6662dbb894349029cc2694dfe7b60962022fec1e3440478ad9b171355dae3378",
+      "scope": "Initial manual and Computer Use observations; not the current focus/sourcegen candidate"
+    },
+    "intermediateFocusBuild": {
+      "appDllSha256": "f101695786d1c4cd9113081c0282fba18d0295dafbf5e735a8c433a7647b8ddd",
+      "scope": "Focused list/settings checks and launcher preparation; no inferred native acceptance"
+    },
+    "currentCandidate": {
+      "appDllSha256": "28e47e1799072de8c3c0ed02f9c9363a752a348554f64290e9ee22cd96dbfc05",
+      "coreDllSha256": "dbf3fa40af24e4be1acb7937811cee18354fefdebc7f72a9ef94516cc3a445f7",
+      "desktopTestsDllSha256": "93facddad7e90aedcd9a365d2349307f39425d364c378d2365f21f49b456ad74",
+      "scope": "Current candidate C01-C09 functional scenarios, including restart, real resume/capture, focus, note cancellation, drag/scroll, existing-folder insert/detach and delete/restore; full Desktop component suite"
+    }
+  },
+  "completed": [
+    {
+      "id": "U01",
+      "binary": "initialManual",
+      "input": "human",
+      "status": "PASS",
+      "claim": "Unmodified B-to-A drag created a folder; A and B share its ParentId and collapsed children are hidden.",
+      "evidence": ["user-step01-group.json"]
+    },
+    {
+      "id": "U02",
+      "binary": "initialManual",
+      "input": "human",
+      "status": "PASS",
+      "claim": "Folder expansion/collapse and temporary C avoidance/restoration confirmed by user and state transitions; saved layout unchanged.",
+      "evidence": ["folder-toggle-transitions.json", "user-step02-after.json"]
+    },
+    {
+      "id": "U03",
+      "binary": "initialManual",
+      "input": "human",
+      "status": "PASS",
+      "claim": "User confirmed Korean input and automatic save; exact note persisted on A and editor closed.",
+      "note": "실사용 검증 한글 메모 123",
+      "evidence": ["user-step03-note.json"]
+    },
+    {
+      "id": "T01",
+      "binary": "initialManual",
+      "input": "computer-use",
+      "status": "PASS",
+      "claim": "Real visibility hotkey hid then showed eligible stickers without changing relationships or notes.",
+      "evidence": ["tool-hotkey-hidden.json", "tool-hotkey-shown.json"]
+    },
+    {
+      "id": "C01",
+      "binary": "currentCandidate",
+      "input": "candidate restart and read-only SQLite observation",
+      "status": "PASS",
+      "claim": "Restart retained A/B folder membership, A Korean note, and C root membership; current observation includes the folder record.",
+      "evidence": ["pre-candidate-restart.json", "candidate-restart.json"]
+    },
+    {
+      "id": "C02",
+      "binary": "currentCandidate",
+      "input": "computer-use",
+      "status": "PASS",
+      "claim": "C resume button opened the synthetic file in Notepad and persisted OpenRequested.",
+      "limitation": "OpenRequested is not a claim of verified document position restoration.",
+      "observedElapsedMilliseconds": 3581,
+      "evidence": ["candidate-real-capture.json", "candidate-diagnostic.log"]
+    },
+    {
+      "id": "C03",
+      "binary": "currentCandidate",
+      "input": "computer-use",
+      "status": "PASS",
+      "claim": "Ctrl+Alt+Shift+F15 captured active Notepad content; Captured and CaptureCommitted plus exact synthetic NotepadSnapshot persisted in SQLite.",
+      "capturedBookmarkId": "abfe5e2e-885d-4134-aca9-b712af731bbd",
+      "sourceUnchanged": true,
+      "observedCaptureElapsedMilliseconds": 1216,
+      "evidence": ["candidate-real-capture.json", "candidate-diagnostic.log"]
+    },
+    {
+      "id": "C04",
+      "binary": "currentCandidate",
+      "input": "human",
+      "status": "PASS",
+      "userResult": "검색 유지·취소 모두 정상",
+      "claim": "User confirmed search remains when clicking the same-app control window; transitions retain the 실사용 search and matching A/ancestor results.",
+      "evidence": ["user-step04-transitions.json", "user-step04-after.json"]
+    },
+    {
+      "id": "C05",
+      "binary": "currentCandidate",
+      "input": "human",
+      "status": "PASS",
+      "userResult": "검색 유지·취소 모두 정상",
+      "claim": "User cancelled A's edited memo with Esc; observed draft was discarded and the original exact saved note remains.",
+      "note": "실사용 검증 한글 메모 123",
+      "toolInterruption": "Physical Esc intentionally interrupted a Computer Use call; the next list_windows call recovered. Not classified as a product failure.",
+      "evidence": ["user-step04-transitions.json", "user-step04-after.json"]
+    },
+    {
+      "id": "C07",
+      "binary": "currentCandidate",
+      "input": "human",
+      "status": "PASS",
+      "claim": "User confirmed long-list drag/edge-scroll behavior; observations show topIndex 0 to 25 downward and 25 to 0 upward. Items 30 and 01 were committed under the same new folder.",
+      "folderId": "2f1e78f5-2302-4e64-b4fd-b3735dbfe4cd",
+      "sourceBookmarkId": "bd821fb6-81cc-457a-98d3-cb0c96427586",
+      "targetBookmarkId": "36e1cf83-210d-47ad-a0fe-f459b4d62438",
+      "observationIntervalMilliseconds": 500,
+      "limitation": "Confirms actual bidirectional scrolling and grouping, not native measurement of exact 300/120 ms timer intervals. Existing-folder insert/detach is recorded separately as C09.",
+      "evidence": ["user-step05-transitions.json", "user-step05-after.json"]
+    },
+    {
+      "id": "C06",
+      "binary": "currentCandidate",
+      "input": "computer-use",
+      "status": "PASS",
+      "claim": "Sky activation of Edge succeeded; recent list visibility changed from true before the external-app transition to false afterward.",
+      "beforeUtc": "2026-11-04T13:07:46.7728386+00:00",
+      "afterUtc": "2026-11-04T13:08:35.0234349+00:00",
+      "limitation": "Snapshot timestamps do not measure hide latency. A subsequent browser state query was blocked by URL policy; activation and product list visibility were independently observed.",
+      "evidence": ["candidate-focus-before.json", "candidate-focus-after.json"]
+    },
+    {
+      "id": "C08",
+      "binary": "currentCandidate",
+      "input": "human",
+      "status": "PASS",
+      "claim": "User confirmed item 30 deletion and restoration. Seven snapshots include its deleted state; final restore retains original folder parent and note, with DeletedAtUtc null.",
+      "bookmarkId": "bd821fb6-81cc-457a-98d3-cb0c96427586",
+      "restoredParentId": "2f1e78f5-2302-4e64-b4fd-b3735dbfe4cd",
+      "restoredNote": "스크롤 항목 30",
+      "deletedStateObservationCount": 7,
+      "evidence": ["user-step07-transitions.json", "user-step07-after.json"]
+    },
+    {
+      "id": "C09",
+      "binary": "currentCandidate",
+      "input": "human",
+      "status": "PASS",
+      "claim": "User confirmed item 29 insertion into the existing folder and detachment to the root. Intermediate parent equals that folder; final ParentId is null and note is preserved.",
+      "bookmarkId": "8e767f36-4514-46e5-bb78-3f30d75ddd1b",
+      "intermediateParentId": "2f1e78f5-2302-4e64-b4fd-b3735dbfe4cd",
+      "finalParentId": null,
+      "note": "스크롤 항목 29",
+      "evidence": ["user-step06-transitions.json", "user-step06-after.json"]
+    }
+  ],
+  "unconfirmedAttempts": [
+    {
+      "id": "T03",
+      "binary": "initialManual",
+      "input": "computer-use",
+      "status": "NO_OBSERVED_EFFECT",
+      "claim": "Attempted C-to-existing-folder drag produced no observed relation or location change.",
+      "classification": "Not a completed drag acceptance and not a confirmed product defect",
+      "evidence": ["tool-drag-existing-folder.json", "preliminary-manual-results.json"]
+    }
+  ],
+  "automatedRegression": [
+    {
+      "suite": "Desktop full",
+      "binary": "currentCandidate",
+      "passed": 713,
+      "total": 713,
+      "exitCode": 0,
+      "cleanEndOfLog": true,
+      "physicalInputAcceptance": false,
+      "evidence": ["../real-use-2026-11-04/shutdown-fixture-fix-full.log"]
+    },
+    {
+      "suite": "List/settings focused",
+      "binary": "intermediateFocusBuild",
+      "passed": 123,
+      "total": 123,
+      "exitCode": 0,
+      "physicalInputAcceptance": false,
+      "evidence": ["../real-use-2026-11-04/focus-fix-list-settings-literal.log"]
+    },
+    {
+      "suite": "Core sourcegen isolated build",
+      "passed": 86,
+      "total": 86,
+      "evidence": ["../real-use-2026-11-04/sourcegen-core-tests.log"]
+    },
+    {
+      "suite": "IPC sourcegen isolated build",
+      "passed": 17,
+      "total": 17,
+      "evidence": ["../real-use-2026-11-04/sourcegen-ipc.log"]
+    }
+  ],
+  "workerTiming": {
+    "scope": "Synthetic UnsupportedTarget requests to isolated production builds; not real target capture",
+    "reverseOrder": { "sourcegenPassed": 6, "sourcegenTotal": 6, "reflectionPassed": 6, "reflectionTotal": 6 },
+    "sourcegenAggregate": { "passed": 11, "total": 12, "initialColdTimeoutRetained": true },
+    "coldStartFullyResolved": false,
+    "generalPerformanceGuarantee": false,
+    "evidence": ["../real-use-2026-11-04/sourcegen-investigation-summary.json"]
+  },
+  "historicalAnomalies": [
+    {
+      "issue": "713 assertions passed followed by WinForms SynchronizationContext continuation exception during fixture teardown",
+      "resolution": "BrowserCommitChecks now excludes unrelated asynchronous startup migration/sticker loading using List/current-version settings; subsequent full run ended cleanly.",
+      "limitation": "Does not establish real application close-during-startup safety",
+      "evidence": ["../real-use-2026-11-04/focus-fix-full-repro.log", "../real-use-2026-11-04/shutdown-fixture-fix-full.log"]
+    },
+    {
+      "issue": "Initial CreateGraphics exception in SV15 path",
+      "resolution": "Not reproduced in subsequent full runs; SV15 passed. No speculative product catch added.",
+      "evidence": ["../real-use-2026-11-04/focus-fix-list-settings.log", "../real-use-2026-11-04/shutdown-fixture-fix-full.log"]
+    }
+  ],
+  "pending": [
+    { "id": "P01", "status": "NOT_YET_VERIFIED", "case": "Published Program.Main smoke where feasible; MSI structure, administrative extraction and hashes of all extracted files; six release assets and uploaded hashes" }
+  ],
+  "scopeLimitations": [
+    {
+      "case": "Actual user installation, upgrade and uninstall full lifecycle",
+      "status": "NOT_RUN",
+      "requiredForThisChangeAcceptance": false,
+      "note": "Recorded as an unexecuted scope limitation, not an additional acceptance gate"
+    }
+  ],
+  "preservation": {
+    "preliminaryEvidenceOverwritten": false,
+    "sourceUnchangedMeaning": "Prepared synthetic source file hashes, not the complete product source tree",
+    "oldHashResultsPromotedToCurrentNativeResults": false
+  }
+}

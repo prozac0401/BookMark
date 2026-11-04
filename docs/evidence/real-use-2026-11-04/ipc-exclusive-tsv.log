@@ -1,0 +1,18 @@
+PASS D11 protocol-roundtrip
+PASS D11 all-resumes-share-input-without-cancelling-open
+PASS D11 oversized-and-truncated-frames
+FAIL D04 valid-result-id: Valid DTO not accepted: CaptureTimedOut; target present: False.
+PASS D04 wrong-request-id-rejected
+PASS D04 capture-deadline-no-late-success
+PASS D05 resume-deadline-outcome-unknown
+FAIL O01 web-Office-capture-worker-result: Expected Captured with exact Office metadata; actual: CaptureTimedOut; target matches: False.
+PASS O02 web-Office-timeout-never-claims-position-restored
+PASS O03 web-Office-cancellation-never-claims-position-restored
+PASS O04 extended-deadline-only-for-web-Office-resume
+PASS U12 single-flight-no-queue
+PASS D04 cancellation-discards-response
+PASS D06 worker-crash-cleanup
+FAIL D06 worker-child-survives-timeout: Child fixture did not start.
+FAIL D06 dispose-terminates-worker-synchronously: Worker fixture was not ready before Dispose: elapsed=3040ms; request completed=False.
+PASS D04 deadline-boundary-does-not-stick-busy
+13/17 passed

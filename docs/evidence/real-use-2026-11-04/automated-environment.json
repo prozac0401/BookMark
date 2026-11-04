@@ -1,0 +1,26 @@
+{
+  "recordedAt": "2026-11-04T20:12:29.4709052+09:00",
+  "source": "Current working tree, including pre-existing uncommitted changes",
+  "head": "843e75e2888ce87b9e12252f7cd8249c5210c272",
+  "sdk": "10.0.401",
+  "node": "v24.13.1",
+  "os": "Microsoft Windows NT 10.0.22631.0",
+  "scope": "Restore, Release solution build, non-UI automated regression suites",
+  "modified": [
+    " M README.md",
+    " M docs/quick-start.ko.md",
+    " M docs/user-manual.ko.md",
+    " M src/WorkBookmark.App/StickerManager.cs",
+    " M src/WorkBookmark.App/UI/RecentForm.cs",
+    " M src/WorkBookmark.App/UI/StickerForm.cs",
+    " M tests/WorkBookmark.Desktop.Tests/FolderIntegrationChecks.cs",
+    " M tests/WorkBookmark.Desktop.Tests/FolderStickerChecks.cs",
+    " M tests/WorkBookmark.Desktop.Tests/RecentTreeChecks.cs",
+    " M tests/WorkBookmark.Desktop.Tests/StickerInteractionChecks.cs",
+    " M tests/WorkBookmark.Desktop.Tests/StickerTreeAvoidanceChecks.cs",
+    " M tests/WorkBookmark.Desktop.Tests/StickerTreeAvoidanceIntegrationChecks.cs",
+    " M tests/WorkBookmark.Desktop.Tests/StickerTreeChecks.cs",
+    "?? docs/evidence/drag-folders-2026-11-04/",
+    "?? docs/evidence/real-use-2026-11-04/"
+  ]
+}
