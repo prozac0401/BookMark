@@ -39,8 +39,6 @@ internal static class BookmarkRefreshChecks
             Task<Bookmark?> oldActive = Refresh(context, bookmark.Id);
             queued.WaitForCount(1); // The active snapshot was read; its UI continuation is held.
             repository.SoftDelete(bookmark.Id);
-            SetField(context, "_undoId", (Guid?)bookmark.Id);
-            SetField(context, "_undoUntil", DateTimeOffset.UtcNow.AddMinutes(1));
             Task<Bookmark?> newDeleted = Refresh(context, bookmark.Id);
             queued.WaitForCount(2);
             queued.RunLast();
@@ -48,7 +46,7 @@ internal static class BookmarkRefreshChecks
                 "RF01 authoritative deleted snapshot removes the matching sticker");
             queued.RunFirst();
             assert(oldActive.IsCompletedSuccessfully && oldActive.Result is null && Forms().Length == 0 &&
-                Field<Guid?>(context, "_undoId") == bookmark.Id && repository.Get(bookmark.Id)!.DeletedAtUtc is not null,
+                repository.CanUndo && repository.Get(bookmark.Id)!.DeletedAtUtc is not null,
                 "RF02 late active snapshot cannot recreate a deleted sticker or discard its undo");
 
             Task<Bookmark?> oldDeleted = Refresh(context, bookmark.Id);
@@ -61,8 +59,8 @@ internal static class BookmarkRefreshChecks
             queued.RunFirst();
             var current = (Bookmark)Forms().Single().GetType().GetProperty("Bookmark")!.GetValue(Forms().Single())!;
             assert(newActive.IsCompletedSuccessfully && oldDeleted.IsCompletedSuccessfully && oldDeleted.Result is null &&
-                current.DeletedAtUtc is null && current.Note == "가장 최근에 저장한 메모" && Field<Guid?>(context, "_undoId") is null,
-                "RF03 late deleted snapshot cannot remove a recaptured bookmark or restore stale undo");
+                current.DeletedAtUtc is null && current.Note == "가장 최근에 저장한 메모" && repository.CanUndo,
+                "RF03 late deleted snapshot cannot remove a recaptured bookmark or replace session undo history");
         }
         finally { SynchronizationContext.SetSynchronizationContext(previous); }
 

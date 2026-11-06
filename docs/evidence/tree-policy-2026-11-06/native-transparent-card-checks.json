@@ -1,0 +1,54 @@
+{
+  "result": "PASS_WITH_RECORDED_SCOPE",
+  "productAssemblySha256": "a5e5cf3bcb4698184e4215d10e7b18029c8353737018f9d3b10262dcd1a6e468",
+  "userAcceptedAppearance": true,
+  "userPreference": "Match the folder card shape as closely as possible; shared content width/default height and 8-DIP rounded child corners retained.",
+  "nativeMonitors": [
+    {
+      "dpi": 96,
+      "defaultRootClientWidth": 260,
+      "childWidth": 260,
+      "compactRowHeight": 36
+    },
+    {
+      "dpi": 120,
+      "defaultRootClientWidth": 326,
+      "childWidth": 326,
+      "compactRowHeight": 45
+    }
+  ],
+  "nativeRegion": {
+    "cardCentersCovered": true,
+    "cardCornersCovered": false,
+    "interCardGapsCovered": false
+  },
+  "editorObservedAtUtc": "2026-11-06T13:53:22.1282160Z",
+  "editorPanelHeight": 142,
+  "compactPanelHeight": 82,
+  "acceptedStructureWrites": 12,
+  "rejectedWrites": 0,
+  "observedBDetached": true,
+  "finalChildren": [
+    {
+      "Note": "자식 자동저장 보존",
+      "SiblingOrder": 1
+    },
+    {
+      "Note": "B · 시장 조사 자료",
+      "SiblingOrder": 2
+    }
+  ],
+  "peerCLayout": {
+    "Left": 104,
+    "Top": 280,
+    "Width": 274,
+    "Height": 50
+  },
+  "sourceUnchanged": true,
+  "normalExitAtUtc": "2026-11-06T14:00:25.3713675+00:00",
+  "limitations": [
+    "User performed additional grouping, detaching, deleting/undoing, resizing and source opening. This was not a single isolated detach/undo trial; final parent and relative A/B order were verified, not equality of every sibling-order number to the starting state.",
+    "Widths were checked in settled states. Intermediate manual resize observations included pending row reflow; no claim that every intermediate sampled frame matched is made.",
+    "This run did not repeat the earlier Korean IME composition matrix. Earlier native IME results are recorded separately."
+  ]
+}

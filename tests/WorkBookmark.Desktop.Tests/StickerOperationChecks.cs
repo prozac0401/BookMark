@@ -82,7 +82,8 @@ internal static class StickerOperationChecks
         noteEditor.Text = "이 스티커에서 저장할 다음 작업";
         rejectNoteWrite = true;
         FocusSticker(sibling);
-        PumpUntil(() => Field<Label>(origin, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal));
+        PumpUntil(() => (Field<Label>(origin, "_noteStatus").Text + Field<Label>(origin, "_noteStatus").AccessibleDescription)
+            .Contains("저장하지 못했습니다", StringComparison.Ordinal));
         assert(repository.Get(first.Id)!.Note == "" && noteEditor.Text == "이 스티커에서 저장할 다음 작업" &&
             (bool)origin.GetType().GetProperty("IsEditingNote")!.GetValue(origin)! && origin.Bounds == bounds && sibling.ContainsFocus,
             "SO07 a failed automatic repository write keeps the draft and destination focus without changing stored data");

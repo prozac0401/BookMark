@@ -1,0 +1,26 @@
+{
+  "recordedAtUtc": "2026-11-06T11:23:31.820749+00:00",
+  "status": "interrupted-by-unhandled-framework-exception",
+  "run": "stickers-after-dpi-startup.log",
+  "lastCheck": "SV08",
+  "startupBottomAnchorCheck": "SS12 passed before exception",
+  "exception": "System.InvalidOperationException: Collection was modified; enumeration operation may not execute.",
+  "stack": [
+    "System.Collections.Generic.Dictionary`2.ValueCollection.Enumerator.MoveNext()",
+    "System.Windows.Forms.ListBox.ListBoxAccessibleObject.ResetListItemAccessibleObjects()",
+    "System.Windows.Forms.ListBox.ReleaseUiaProvider(HWND handle)",
+    "System.Windows.Forms.Control.WmDestroy(Message& m)",
+    "System.Windows.Forms.Control.WndProc(Message& m)",
+    "System.Windows.Forms.ListBox.WndProc(Message& m)",
+    "System.Windows.Forms.NativeWindow.Callback(HWND hWnd, UInt32 msg, WPARAM wparam, LPARAM lparam)"
+  ],
+  "runtime": "Microsoft.WindowsDesktop.App 10.0.12",
+  "observation": "Read from native Microsoft .NET exception details using CUA; selected Quit. Exit code was zero but no RESULT line exists, so run is not a pass.",
+  "productAssemblySha256": "a983dbb49ce0703eec1b02ff3bbc4728b97936f01073f0517f04131d1e8c0511",
+  "statusOfCause": "Stack is inside WinForms accessibility teardown; triggering cause not established.",
+  "reproducedRuns": [
+    "stickers-after-dpi-startup.log",
+    "stickers-after-dpi-startup-retry.log"
+  ],
+  "reproduction": "Both runs stopped after SV08 with the same native exception stack. Neither run has a completion RESULT line."
+}

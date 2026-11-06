@@ -46,8 +46,8 @@ internal static class StickerIntegrationChecks
             expectedWidth = (int)Math.Round(380 * 96F / first.DeviceDpi);
             PumpUntil(() => repository.GetStickerLayouts().Any(layout => layout.BookmarkId == values[0].Id && layout.Width == expectedWidth));
             var placement = repository.GetStickerLayouts().Single(layout => layout.BookmarkId == values[0].Id);
-            assert(placement.Width == (int)Math.Round(380 * 96F / first.DeviceDpi) && placement.Height == (int)Math.Round(360 * 96F / first.DeviceDpi),
-                "SM03 resized sticker commits expanded dimensions in logical pixels");
+            assert(placement.Width == (int)Math.Round(380 * 96F / first.DeviceDpi) && placement.Height == (int)Math.Round(first.MinimumSize.Height * 96F / first.DeviceDpi) && first.Height == first.MinimumSize.Height,
+                "SM03 resized root commits its width and fixed compact height in logical pixels");
             var bounds = first.Bounds;
             repository.UpdateNote(values[0].Id, "복원 후에도 유지할 메모");
             var changed = repository.Get(values[0].Id)!;
@@ -85,12 +85,12 @@ internal static class StickerIntegrationChecks
             Invoke(context, "PublishBookmark", fresh);
             assert(Forms().Length == 26 && Forms().All(form => !form.Visible), "SM12 capture respects explicit hide-all without losing new bookmark");
             Pump(Call(context, "DeleteAsync", fresh));
-            typeof(BookmarkApplicationContext).GetField("_undoUntil", Private)!.SetValue(context, DateTimeOffset.UtcNow.AddSeconds(-1));
             Pump(Call(context, "UndoAsync"));
-            assert(repository.Get(fresh.Id)!.DeletedAtUtc is not null, "SM13 expired quick undo cannot restore a record");
+            assert(repository.Get(fresh.Id)!.DeletedAtUtc is null, "SM13 session undo restores a deletion without a quick-undo deadline");
+            Pump(Call(context, "DeleteAsync", repository.Get(fresh.Id)!));
             Pump(Call(context, "RestoreBookmarkAsync", fresh.Id));
             assert(repository.Get(fresh.Id)!.DeletedAtUtc is null && repository.ListDeleted().Count == 0,
-                "SM14 persistent deleted-items restoration works after quick undo expires");
+                "SM14 persistent deleted-items restoration remains available alongside session undo");
 
             var clamp = managerType.GetMethod("RestoreBounds", BindingFlags.NonPublic | BindingFlags.Static)!;
             var offscreen = placement with { Left = 50000, Top = -50000, Width = 380, Height = 360 };
@@ -98,7 +98,7 @@ internal static class StickerIntegrationChecks
             var corrected = (Rectangle)clamp.Invoke(null, [offscreen, area, 144, new Size(420, 450)])!;
             assert(area.Contains(corrected) && corrected.Size == new Size(570, 540),
                 "SM15 missing/offscreen display placement clamps within work area at 150 percent scaling");
-            context.ExitThread();
+            Pump(Call(context, "RequestExitAsync"));
             assert(repository.ListActive().Count == 26 && Forms().Length == 0 && repository.GetStickerLayouts().Count == 26,
                 "SM16 application shutdown preserves bookmarks and final sticker placements");
         }

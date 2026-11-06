@@ -5,12 +5,13 @@ public sealed record BookmarkTreeRow(Bookmark Bookmark, int Depth, bool HasChild
 /// <summary>Projects bookmark relationships without changing capture order or persisted parent links.</summary>
 public static class BookmarkTree
 {
-    /// <summary>Active items in parent-first order, with newest captured siblings first. Unavailable parents become roots.</summary>
+    /// <summary>Parent-first rows in saved sibling order; legacy rows fall back to capture order. Unavailable parents become roots.</summary>
     public static IReadOnlyList<BookmarkTreeRow> Flatten(IEnumerable<Bookmark> items, ISet<Guid>? collapsed = null)
     {
         ArgumentNullException.ThrowIfNull(items);
         var ordered = items.Where(item => item.DeletedAtUtc is null)
-            .OrderByDescending(item => item.CaptureSequence).ThenBy(item => item.Id).DistinctBy(item => item.Id).ToArray();
+            .OrderBy(item => item.SiblingOrder ?? -item.CaptureSequence).ThenByDescending(item => item.CaptureSequence)
+            .ThenBy(item => item.Id).DistinctBy(item => item.Id).ToArray();
         var byId = ordered.ToDictionary(item => item.Id);
         var parents = ordered.ToDictionary(item => item.Id,
             item => item.ParentId is Guid parent && parent != item.Id && byId.ContainsKey(parent) ? (Guid?)parent : null);
@@ -79,8 +80,7 @@ public static class BookmarkTree
         if (id == Guid.Empty || targetId == Guid.Empty || id == targetId) return false;
         var byId = items.DistinctBy(item => item.Id).ToDictionary(item => item.Id);
         if (!byId.TryGetValue(id, out var source) || source.DeletedAtUtc is not null ||
-            !byId.TryGetValue(targetId, out var target) || target.DeletedAtUtc is not null ||
-            target.IsFolder && source.ParentId == targetId) return false;
+            !byId.TryGetValue(targetId, out var target) || target.DeletedAtUtc is not null) return false;
         var visited = new HashSet<Guid>();
         Guid? current = targetId;
         while (current is Guid ancestor)

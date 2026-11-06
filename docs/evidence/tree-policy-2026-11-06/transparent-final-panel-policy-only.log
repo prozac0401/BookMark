@@ -1,0 +1,34 @@
+PASS: SP01 visible children share one shaped viewport and closed descendants stay hidden
+PASS: SP02 opening a folder never displaces its root or an overlapping external sticker
+PASS: SP03 sibling rows follow persisted order without independent coordinates
+PASS: SP04 nested expansion grows only its own content and preserves external positions
+PASS: SP05 folding removes the hidden row and closes its gap without moving the root
+PASS: SP06 editing reflows following siblings inside the panel while peer/root positions remain fixed
+PASS: SP07 failed draft storage prevents hiding the containing tree
+PASS: SP08 cancelling an editor returns following rows to their compact positions
+PASS: SP09 hiding from a child hides its complete tree and leaves other roots shown
+PASS: SP10 revealing a tree restores its folder states with no orphan child or peer movement
+PASS: SP11 transparent card gaps target the visible sticker underneath instead of the panel rectangle
+PASS: SP26 a transparent gap with no underlying card is a desktop detach target
+PASS: SP27 a clipped rounded corner targets the visible card underneath
+PASS: SP28 a clipped rounded corner over empty desktop permits detach
+PASS: SP29 a visible foreground child still covers and blocks the lower card
+PASS: SP30 overlapping visible cards follow native z-order after raising another tree
+PASS: SP31 the dragged source remains excluded and its visible original row does not target a covered peer
+PASS: SP12 child desktop drop previews a detached root with a concrete saved placement
+PASS: SP13 detaching commits the preview position and the source panel contraction cannot move it
+PASS: SP14 a visible insertion edge carries exact parent and sibling identity
+PASS: SP15 Alt never creates an independently positioned child
+PASS: SP16 failed root placement storage leaves the displayed and saved anchor unchanged
+PASS: SP17 a successful root placement moves its own panel and does not move another sticker
+PASS: SP18 applying an undo layout restores the root and derives child positions again
+PASS: SP19 derived child geometry is never written as an independent placement
+PASS: SP20 detaching an expanded subtree previews its attached descendant panel
+PASS: SP21 detached subtree commits both header and panel preview geometry
+PASS: SP22 restoring a deleted hidden root preserves session hiding for the complete tree
+PASS: SP23 120-DPI root preview uses the native fixed header height instead of scaling its old frame
+PASS: SP24 moving back to 96 DPI preserves logical root width despite the source's larger minimum
+PASS: SP25 child detach uses destination DPI and restores the exact preview without inheriting source minimum height
+PASS: SP32 the visible scrollbar blocks desktop detach without selecting a row
+PASS: SP33 a row extending behind a native scrollbar cannot become a drop target outside the viewport client
+RESULT: 33 panel policy checks passed.

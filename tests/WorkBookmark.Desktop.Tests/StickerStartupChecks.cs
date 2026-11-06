@@ -42,6 +42,7 @@ internal static class StickerStartupChecks
         Form[] Forms() => ((System.Collections.IEnumerable)manager.GetType().GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
         Form FormFor(Guid id) => Forms().Single(form => BookmarkFor(form).Id == id);
         int resumeRequests = 0;
+        int startupDpi = 96;
         Action<Bookmark> resumed = _ => resumeRequests++;
         manager.GetType().GetEvent("ResumeRequested", Private)!.GetAddMethod(true)!.Invoke(manager, [resumed]);
 
@@ -50,13 +51,16 @@ internal static class StickerStartupChecks
             // No call to ShowBookmarks/SetEnabledAsync: startup alone must reveal
             // active stickers while leaving a deliberately deleted record hidden.
             PumpUntil(() => Forms().Length == 2 && Forms().All(form => form.Visible));
+            startupDpi = FormFor(first.Id).DeviceDpi;
             assert(Forms().All(form => !form.InvokeRequired) && Forms().All(form => BookmarkFor(form).Id != deleted.Id),
                 "SS01 a legacy List installation automatically starts active stickers on the UI thread before any view hotkey");
             assert(Forms().All(IsNativeTopMost),
                 "SS02 startup restores legacy unpinned stickers as native always-on-top windows");
-            assert((bool)FormFor(collapsed.Id).GetType().GetProperty("IsCollapsed")!.GetValue(FormFor(collapsed.Id))! &&
+            var collapsedForm = FormFor(collapsed.Id);
+            assert(!(bool)collapsedForm.GetType().GetProperty("IsCollapsed")!.GetValue(collapsedForm)! &&
+                collapsedForm.Height == collapsedForm.MinimumSize.Height && collapsedForm.MaximumSize.Height == collapsedForm.MinimumSize.Height &&
                 !Field<Form>(context, "_recent").Visible && UserSettings.Load(directory).DisplayMode == BookmarkDisplayMode.Stickers,
-                "SS03 startup retains collapsed presentation and saved sticker mode without opening the list");
+                "SS03 startup presents legacy collapsed stickers as fixed-height compact roots without opening the list");
             var size = (Size)manager.GetType().GetProperty("DefaultExpandedSize96", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
             var layouts = repository.GetStickerLayouts().ToDictionary(value => value.BookmarkId);
             assert(layouts.Values.All(layout => layout.Width == size.Width && layout.Height == size.Height) &&
@@ -90,14 +94,17 @@ internal static class StickerStartupChecks
             PumpUntil(() => Forms().Length == 4 && Forms().All(form => form.Visible));
             assert(Forms().All(IsNativeTopMost) && FormFor(first.Id).Bounds == originalBounds &&
                 FormFor(collapsed.Id).Bounds == collapsedBounds && BookmarkFor(FormFor(first.Id)).Note == "숨긴 동안 갱신한 메모",
-                "SS06 explicit reveal restores every sticker above ordinary windows with its position and collapsed size intact");
+                "SS06 explicit reveal restores every sticker above ordinary windows with its position and compact root size intact");
             assert(resumeRequests == 0 && !worker.IsBusy && repository.ListActive().All(bookmark => bookmark.LastResumeAtUtc is null),
                 "SS07 startup, capture and reveal never request resume or open a bookmarked target");
         }
         finally { context.ExitThread(); }
 
+        // The compact root fits here, but its historical expanded height does
+        // not. Restoring that old height before clamping would shift the anchor.
+        int bottomAnchor96 = Math.Max(0, (int)Math.Floor(screen.WorkingArea.Height * 96d / startupDpi) - 100);
         var customLayout = repository.GetStickerLayouts().Single(layout => layout.BookmarkId == first.Id)
-            with { Width = 410, Height = 330 };
+            with { Top = bottomAnchor96, Width = 410, Height = 330 };
         repository.SaveStickerLayout(customLayout);
         var chosen = UserSettings.Load(directory) with { DisplayMode = BookmarkDisplayMode.List };
         chosen.Save(directory);
@@ -125,10 +132,18 @@ internal static class StickerStartupChecks
                 Form[] Restarted() => ((System.Collections.IEnumerable)nextManager.GetType().GetProperty("Forms", Private)!.GetValue(nextManager)!).Cast<Form>().ToArray();
                 PumpUntil(() => Restarted().Length == repository.ListActive().Count && Restarted().All(form => form.Visible));
                 var restored = Restarted().Single(form => BookmarkFor(form).Id == first.Id);
-                var expected = (Rectangle)nextManager.GetType().GetMethod("RestoreBounds", BindingFlags.Static | BindingFlags.NonPublic)!
-                    .Invoke(null, [customLayout, screen.WorkingArea, restored.DeviceDpi, restored.MinimumSize])!;
-                assert(restored.Bounds == expected,
-                    "SS12 later user-sized stickers restore at restart without returning to the compact default");
+                Rectangle area = screen.WorkingArea;
+                double scale = Math.Max(96, restored.DeviceDpi) / 96d;
+                int requestedX = area.Left + (int)Math.Round(customLayout.Left * scale);
+                int requestedY = area.Top + (int)Math.Round(customLayout.Top * scale);
+                int requestedWidth = (int)Math.Round(customLayout.Width * scale);
+                int width = Math.Clamp(requestedWidth, Math.Min(restored.MinimumSize.Width, area.Width), area.Width);
+                int height = Math.Min(restored.MinimumSize.Height, area.Height);
+                var expected = new Rectangle(Math.Clamp(requestedX, area.Left, area.Right - width),
+                    Math.Clamp(requestedY, area.Top, area.Bottom - height), width, height);
+                assert(requestedY + (int)Math.Round(customLayout.Height * scale) > area.Bottom &&
+                    expected.Top == requestedY && expected.Width == requestedWidth && restored.Bounds == expected,
+                    "SS12 restarting a tall historical layout near the screen bottom retains its saved anchor and width using only the compact root height");
             }
             finally { next.ExitThread(); }
         }
@@ -203,11 +218,13 @@ internal static class StickerStartupChecks
                     .Invoke(null, [expectedRecordedDpi, screen.WorkingArea, restoredRecordedDpi.DeviceDpi, restoredRecordedDpi.MinimumSize])!;
                 var expected = (Rectangle)managerType.GetMethod("RestoreBounds", BindingFlags.Static | BindingFlags.NonPublic)!
                     .Invoke(null, [customLayout, screen.WorkingArea, restored.DeviceDpi, restored.MinimumSize])!;
+                expected.Height = restored.MinimumSize.Height;
+                expectedRecordedBounds.Height = restoredRecordedDpi.MinimumSize.Height;
                 assert(compact.ClientSize == new Size((int)Math.Round(260 * compact.DeviceDpi / 96F), (int)Math.Round(36 * compact.DeviceDpi / 96F)) &&
                     restored.Bounds == expected && repository.GetStickerLayouts().Single(layout => layout.BookmarkId == custom.Id) == customLayout &&
                     restoredRecordedDpi.Bounds == expectedRecordedBounds &&
                     repository.GetStickerLayouts().Single(layout => layout.BookmarkId == recordedDpi.Id) == expectedRecordedDpi,
-                    $"SS18 reopening stickers upgraded from version {previousVersion} restores one-line defaults, recorded-size migrations and unchanged custom windows");
+                    $"SS18 reopening stickers upgraded from version {previousVersion} uses compact root heights, preserves saved positions and widths, and leaves historical layout records unchanged");
             }
             finally { context.ExitThread(); }
         }

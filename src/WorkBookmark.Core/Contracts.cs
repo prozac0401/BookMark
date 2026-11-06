@@ -9,11 +9,15 @@ public sealed record TargetSnapshot(long Hwnd, uint ProcessId, long ProcessStart
 public sealed record NotepadObservation(string ContentFingerprint, int TextOffset, int SelectionEnd, bool HadUnsavedChanges);
 public sealed record WorkerRequest(int ProtocolVersion, Guid RequestId, Operation Operation, DateTimeOffset DeadlineUtc, TargetSnapshot? Snapshot = null, CapturedTarget? Target = null, NotepadObservation? ExpectedNotepad = null, bool MonitorInput = false);
 public sealed record WorkerResponse(int ProtocolVersion, Guid RequestId, ResultCode Code, CapturedTarget? Target = null, bool ExternalActionStarted = false, long TargetHwnd = 0, NotepadObservation? NotepadObservation = null);
-public sealed record Bookmark(Guid Id, CapturedTarget Target, string NormalizedPath, string DisplayName, string Note, DateTimeOffset CreatedAtUtc, DateTimeOffset CapturedAtUtc, long CaptureSequence, DateTimeOffset? NoteUpdatedAtUtc, DateTimeOffset? LastResumeAtUtc, ResultCode? LastResumeResult, DateTimeOffset? DeletedAtUtc, Guid? ParentId = null, BookmarkColor Color = BookmarkColor.Default, bool FolderExpanded = false)
+public sealed record Bookmark(Guid Id, CapturedTarget Target, string NormalizedPath, string DisplayName, string Note, DateTimeOffset CreatedAtUtc, DateTimeOffset CapturedAtUtc, long CaptureSequence, DateTimeOffset? NoteUpdatedAtUtc, DateTimeOffset? LastResumeAtUtc, ResultCode? LastResumeResult, DateTimeOffset? DeletedAtUtc, Guid? ParentId = null, BookmarkColor Color = BookmarkColor.Default, bool FolderExpanded = false, long? SiblingOrder = null)
 {
  public bool IsFolder => Target.Kind == TargetKind.BookmarkFolder;
 }
 public sealed record FolderDropCommit(Bookmark? CreatedFolder, IReadOnlyList<Bookmark> ChangedItems);
+public enum BookmarkDropKind { MoveInto, InsertBefore, Group, Detach }
+public enum BookmarkSortMode { Name, Recent }
+public sealed record BookmarkDropRequest(Guid BookmarkId, BookmarkDropKind Kind, Guid? TargetId = null, Guid? BeforeId = null, StickerLayout? RootLayout = null);
+public sealed record BookmarkUndoResult(IReadOnlyList<Guid> ChangedIds);
 public sealed record CaptureCommit(Bookmark Bookmark, bool ExistingNotePreserved, bool RestoredDeleted);
 public sealed record SearchResults(IReadOnlyList<Bookmark> Items, bool HasMore);
 /// <summary>Sticker position and expanded size in 96-DPI logical units relative to the monitor working area, with the parent relationship at placement time.</summary>
@@ -25,12 +29,18 @@ public interface IBookmarkRepository : IDisposable {
  IReadOnlyList<Bookmark> ListDeleted(int limit = 100) => [];
  IReadOnlyList<StickerLayout> GetStickerLayouts() => [];
  void SaveStickerLayout(StickerLayout layout) => throw new BookmarkException(ResultCode.InvalidRequest);
+ /// <summary>One completed user move/resize/arrangement, committed and undone as a unit.</summary>
+ void SaveStickerLayouts(IReadOnlyList<StickerLayout> layouts) { foreach (var layout in layouts) SaveStickerLayout(layout); }
+ bool CanUndo => false;
+ BookmarkUndoResult Undo() => new([]);
  void SetParent(Guid id, Guid? parentId) => throw new BookmarkException(ResultCode.InvalidRequest);
  void SetColor(Guid id, BookmarkColor color) => throw new BookmarkException(ResultCode.InvalidRequest);
  Bookmark CreateFolder(string name, Guid? parentId = null) => throw new BookmarkException(ResultCode.InvalidRequest);
  void RenameFolder(Guid id, string name) => throw new BookmarkException(ResultCode.InvalidRequest);
  void SetFolderExpanded(Guid id, bool expanded) => throw new BookmarkException(ResultCode.InvalidRequest);
  FolderDropCommit DropOnto(Guid id, Guid targetId) => throw new BookmarkException(ResultCode.InvalidRequest);
+ FolderDropCommit ApplyDrop(BookmarkDropRequest request) => throw new BookmarkException(ResultCode.InvalidRequest);
+ FolderDropCommit SortChildren(Guid parentId, BookmarkSortMode mode) => throw new BookmarkException(ResultCode.InvalidRequest);
  Bookmark? Get(Guid id);
  void UpdateNote(Guid id, string note);
  void SoftDelete(Guid id);

@@ -13,7 +13,7 @@ internal static class BookmarkFolderChecks
         try
         {
             Run("F-S01 Linkless folders persist names, nested membership, expansion and independent colors", Lifecycle);
-            Run("F-S02 Ordinary bookmark drops atomically create a closed folder at the target parent", Grouping);
+            Run("F-S02 Ordinary bookmark drops atomically create an open folder at the target sibling position", Grouping);
             Run("F-S03 Folder drops preserve expansion, subtree, snapshots and capture history", FolderMoves);
             Run("F-S04 Cycle, unavailable-target and folder-only operation validation preserves data", Validation);
             Run("F-S05 Failed grouping, folder create, rename and expansion roll back every affected row", Rollback);
@@ -49,7 +49,7 @@ internal static class BookmarkFolderChecks
                 repo.SetFolderExpanded(folder.Id, true);
                 repo.SetColor(folder.Id, BookmarkColor.Blue);
                 folder = folder with { DisplayName = "프로젝트 계획", FolderExpanded = true, Color = BookmarkColor.Blue };
-                Check(repo.Get(folder.Id) == folder && repo.Get(nested.Id) == nested && repo.Get(link.Id) == link with { ParentId = nested.Id },
+                Check(repo.Get(folder.Id) == folder && repo.Get(nested.Id) == nested && repo.Get(link.Id) == link with { ParentId = nested.Id, SiblingOrder = 0 },
                     "Folder name/expansion/color updates change no descendant fields or capture metadata.");
             }
             using var reopened = new SqliteBookmarkRepository(database);
@@ -80,14 +80,14 @@ internal static class BookmarkFolderChecks
             repo.SaveStickerLayout(layout);
             var commit = repo.DropOnto(b.Id, a.Id);
             var folder = commit.CreatedFolder!;
-            Check(folder.IsFolder && folder.DisplayName == "새 폴더" && folder.ParentId == outer.Id && !folder.FolderExpanded
+            Check(folder.IsFolder && folder.DisplayName == "새 폴더" && folder.ParentId == outer.Id && folder.FolderExpanded
                 && folder.CaptureSequence == b.CaptureSequence + 1 && commit.ChangedItems.Select(item => item.Id).ToHashSet().SetEquals([folder.Id, a.Id, b.Id]),
-                "Dropping B onto ordinary A creates exactly one closed folder beside A's previous siblings.");
-            Check(repo.Get(a.Id) == a with { ParentId = folder.Id } && repo.Get(b.Id) == b with { ParentId = folder.Id }
+                "Dropping B onto ordinary A creates exactly one open folder beside A's previous siblings.");
+            Check(repo.Get(a.Id) == a with { ParentId = folder.Id, SiblingOrder = 0 } && repo.Get(b.Id) == b with { ParentId = folder.Id, SiblingOrder = 1 }
                 && repo.Get(outer.Id) == outer && repo.GetStickerLayouts().Single(item => item.BookmarkId == a.Id) == layout,
                 "Grouping changes only the membership of A/B and preserves their complete history, colors and raw geometry.");
-            Check(repo.GetStickerLayouts().Single(item => item.BookmarkId == folder.Id) == layout with { BookmarkId = folder.Id, ParentId = folder.ParentId },
-                "The newly grouped folder atomically inherits A's saved anchor with its own topology snapshot.");
+            Check(repo.GetStickerLayouts().All(item => item.BookmarkId != folder.Id),
+                "A nested group inherits its target's sibling slot and does not gain an independent screen anchor.");
             var sibling = repo.UpsertCapture(Target("C")).Bookmark;
             repo.SetParent(sibling.Id, folder.Id);
             var second = repo.DropOnto(sibling.Id, a.Id);
@@ -95,10 +95,8 @@ internal static class BookmarkFolderChecks
                 "Two links already in the same folder can form a nested folder.");
             repo.Dispose();
             using var reopened = new SqliteBookmarkRepository(database);
-            Check(reopened.GetStickerLayouts().Single(item => item.BookmarkId == folder.Id) == layout with { BookmarkId = folder.Id, ParentId = outer.Id }
-                && reopened.GetStickerLayouts().Single(item => item.BookmarkId == second.CreatedFolder.Id) == layout with { BookmarkId = second.CreatedFolder.Id, ParentId = folder.Id }
-                && reopened.GetStickerLayouts().Single(item => item.BookmarkId == a.Id) == layout,
-                "Exiting after list-only grouping retains each new folder anchor and A's exact original geometry for the first sticker reveal.");
+            Check(reopened.GetStickerLayouts().Count == 1 && reopened.GetStickerLayouts().Single(item => item.BookmarkId == a.Id) == layout,
+                "List-only nested grouping retains A's legacy geometry without persisting new child coordinates.");
         }
 
         void FolderMoves()
@@ -112,14 +110,14 @@ internal static class BookmarkFolderChecks
             repo.SetFolderExpanded(destination.Id, true);
             destination = repo.Get(destination.Id)!;
             var result = repo.DropOnto(source.Id, destination.Id);
-            Check(result.CreatedFolder is null && repo.Get(source.Id) == source with { ParentId = destination.Id }
-                && repo.Get(destination.Id) == destination && repo.Get(nested.Id) == nested && repo.Get(leaf.Id) == leaf with { ParentId = nested.Id },
+            Check(result.CreatedFolder is null && repo.Get(source.Id) == source with { ParentId = destination.Id, SiblingOrder = 0 }
+                && repo.Get(destination.Id) == destination && repo.Get(nested.Id) == nested && repo.Get(leaf.Id) == leaf with { ParentId = nested.Id, SiblingOrder = 0 },
                 "Moving a folder preserves descendant relationships and the destination's explicit expanded state.");
             var before = repo.ListActive().ToArray();
-            Check(!BookmarkTree.CanDropOnto(before, source.Id, destination.Id) && repo.DropOnto(source.Id, destination.Id).ChangedItems.Count == 0
+            Check(BookmarkTree.CanDropOnto(before, source.Id, destination.Id) && repo.DropOnto(source.Id, destination.Id).ChangedItems.Count == 0
                 && repo.ListActive().SequenceEqual(before), "Dropping into the same parent is a no-op without another folder or sequence change.");
             repo.SetParent(source.Id, null);
-            Check(repo.Get(source.Id) == source && repo.Get(nested.Id) == nested, "Detaching a folder preserves the entire subtree.");
+            Check(repo.Get(source.Id) == source with { SiblingOrder = 1 } && repo.Get(nested.Id) == nested, "Detaching a folder preserves the entire subtree and assigns root order.");
             var linkTarget = repo.UpsertCapture(Target("target")).Bookmark;
             var grouped = repo.DropOnto(source.Id, linkTarget.Id);
             Check(grouped.CreatedFolder is { IsFolder: true } && repo.Get(nested.Id)!.ParentId == source.Id,
@@ -212,7 +210,7 @@ internal static class BookmarkFolderChecks
                 "The consistent migration backup retains the full original version 7 graph and schema.");
             using var repo = new SqliteBookmarkRepository(database);
             var originals = expected.Select(row => repo.Get(row.Id)!).ToArray();
-            Check(expected.Zip(originals).All(pair => pair.Second with { ParentId = pair.First.ParentId } == pair.First),
+            Check(expected.Zip(originals).All(pair => pair.Second with { ParentId = pair.First.ParentId, SiblingOrder = null } == pair.First),
                 "Original identities, link targets, notes, colors, capture ordering and deleted/resume history remain exact.");
             var outer = repo.Get(originals[0].ParentId!.Value)!;
             var inner = repo.Get(originals[1].ParentId!.Value)!;
@@ -227,7 +225,7 @@ internal static class BookmarkFolderChecks
                 "Migrated wrappers inherit their original parent's exact saved anchor without altering any original layout.");
             using (var db = Open(database))
             {
-                Check(Scalar(db, "PRAGMA user_version") == 8 && Scalar(db, "SELECT count(*) FROM pragma_foreign_key_check") == 0
+                Check(Scalar(db, "PRAGMA user_version") == 9 && Scalar(db, "SELECT count(*) FROM pragma_foreign_key_check") == 0
                     && Scalar(db, "SELECT count(*) FROM attachment") == expected.Length && Scalar(db, "SELECT count(*) FROM sqlite_master WHERE name IN ('preserve_trigger','preserve_custom_index')") == 2,
                     "Migration preserves custom indexes/triggers and foreign-key dependents without cascade deletion or dangling references.");
             }

@@ -1,0 +1,22 @@
+{
+  "productVersion": "0.2.20",
+  "productAssemblySha256": "52fd110885db0d43bbda1333d4c8eeda273f6d83e549fdf36c43cd1922f76bbe",
+  "checks": [
+    {
+      "mode": "--list-lifetime-only",
+      "passed": 5,
+      "exitCode": 0
+    },
+    {
+      "mode": "--stickers-only",
+      "passed": 362,
+      "exitCode": 0
+    },
+    {
+      "mode": "--tree-panel-dpi-only",
+      "passed": 8,
+      "exitCode": 0
+    }
+  ],
+  "scope": "Focused runs overlap and must not be added to the full release suite total. DPI run uses actual monitor transitions but is not physical pointer input. The renderer was subsequently changed only in test code to honor the actual child Region."
+}

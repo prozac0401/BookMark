@@ -49,12 +49,12 @@ internal static class StickerAlignmentChecks
                 "SA02 a visible neighboring sticker aligns the dragged sticker's row and adjacent spacing");
             assert(Snap(manager, moving, proposed, Keys.Alt) == proposed,
                 "SA03 holding Alt bypasses magnetic alignment without changing the saved preference");
-            peer.Hide();
+            Wait((Task)Invoke(manager, "HideTreeAsync", BookmarkFor(peer).Id)!);
             var nearSelf = new Rectangle(moving.Left + 3, moving.Top + 3, moving.Width, moving.Height);
             assert(Snap(manager, moving, proposed, Keys.None) == proposed &&
                 Snap(manager, moving, nearSelf, Keys.None) == nearSelf,
                 "SA04 hidden stickers and the moving sticker itself cannot attract a drag");
-            peer.Show();
+            Invoke(manager, "ShowTree", BookmarkFor(peer).Id);
 
             // Exercise the native message and the manager's installed callback, while
             // keeping ambient physical modifier keys from affecting this synthetic drag.
@@ -78,11 +78,16 @@ internal static class StickerAlignmentChecks
             assert(PlacementMatches(repository, moving),
                 "SA06 finishing the native drag persists the final snapped position in normalized monitor coordinates");
 
+            Size movingBefore = moving.Size, peerBefore = peer.Size;
             moving.Size += new Size(24, 20);
             Invoke(moving, "OnResizeEnd", EventArgs.Empty);
             peer.Size += new Size(12, 24);
             Invoke(peer, "OnResizeEnd", EventArgs.Empty);
-            Field<ToolStripMenuItem>(peer, "_collapseMenu").PerformClick();
+            Invoke(peer, "UpdateMenu");
+            assert(moving.Width == movingBefore.Width + 24 && peer.Width == peerBefore.Width + 12 &&
+                moving.Height == movingBefore.Height && peer.Height == peerBefore.Height &&
+                !Field<ToolStripMenuItem>(peer, "_collapseMenu").Available,
+                "SA07A managed roots preserve their compact header height while allowing width changes");
             var ordered = Forms(manager).OrderByDescending(form => BookmarkFor(form).CaptureSequence).ToArray();
             var sizes = ordered.Select(form => form.Size).ToArray();
             var expanded = ordered.Select(form => (Size)form.GetType().GetProperty("ExpandedSize")!.GetValue(form)!).ToArray();
@@ -96,17 +101,18 @@ internal static class StickerAlignmentChecks
                 // Pure layout behavior has separate checks. Here its result verifies
                 // that each real tray item dispatches the matching mode and order.
                 var expectedBounds = Arrangement(ordered, area, mode);
-                Invoke(manager, "HideAll");
+                Wait((Task)Invoke(manager, "HideAllAsync")!);
                 arrangement.DropDownItems.OfType<ToolStripMenuItem>().Single(item => item.Text == label).PerformClick();
-                PumpUntil(() => !Field<bool>(manager, "_showPending") && ordered.All(form => form.Visible));
+                PumpUntil(() => !Field<bool>(manager, "_showPending") && ordered.All(form => form.Visible) &&
+                    ordered.Select(form => form.Bounds).SequenceEqual(expectedBounds));
                 Flush(manager);
                 assert(ordered.Select(form => form.Bounds).SequenceEqual(expectedBounds) &&
                     ordered.Select(form => form.Size).SequenceEqual(sizes) &&
                     ordered.Select(form => (Size)form.GetType().GetProperty("ExpandedSize")!.GetValue(form)!).SequenceEqual(expanded) &&
-                    (bool)peer.GetType().GetProperty("IsCollapsed")!.GetValue(peer)! &&
+                    !(bool)peer.GetType().GetProperty("IsCollapsed")!.GetValue(peer)! &&
                     ordered.All(form => PlacementMatches(repository, form)) &&
                     repository.Get(first.Id)!.Note == "정렬 후에도 유지할 메모" && BookmarkFor(moving).Note == "정렬 후에도 유지할 메모",
-                    $"SA08 {mode} tray arrangement reveals stickers, dispatches the selected layout and preserves sizes, collapse state and notes in storage");
+                    $"SA08 {mode} tray arrangement reveals roots, dispatches the selected layout and preserves widths, compact heights and notes in storage");
             }
         }
         finally { context.ExitThread(); }
@@ -162,6 +168,11 @@ internal static class StickerAlignmentChecks
         var save = (Task)Invoke(manager, "SavePendingAsync")!;
         PumpUntil(() => save.IsCompleted);
         save.GetAwaiter().GetResult();
+    }
+    private static void Wait(Task task)
+    {
+        PumpUntil(() => task.IsCompleted);
+        task.GetAwaiter().GetResult();
     }
     private static void PumpUntil(Func<bool> ready)
     {

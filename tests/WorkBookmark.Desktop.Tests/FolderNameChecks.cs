@@ -34,11 +34,16 @@ internal static class FolderNameChecks
         reject = false;
         var pending = (Task)save.Invoke(form, null)!;
         assert(name.ReadOnly && !pending.IsCompleted, "FN03 a pending folder save protects the input from conflicting edits");
+        var committed = (Task<bool>)type.GetMethod("CommitPendingEditAsync", Private)!.Invoke(form, null)!;
+        assert(!committed.IsCompleted && calls == 2,
+            "FN08 a visibility or exit gate awaits the existing save instead of starting a duplicate commit");
         ((Task)save.Invoke(form, null)!).GetAwaiter().GetResult();
         assert(calls == 2, "FN04 repeated save cannot create duplicate folders while the first commit is pending");
         gate.SetResult();
         while (!pending.IsCompleted) { Application.DoEvents(); Thread.Sleep(1); }
         pending.GetAwaiter().GetResult();
+        while (!committed.IsCompleted) { Application.DoEvents(); Thread.Sleep(1); }
+        assert(committed.GetAwaiter().GetResult(), "FN09 the commit gate reports success after the pending folder save closes its editor");
         assert(saved == "분기별 기획", "FN05 successful retry sends one trimmed folder name");
         using var rename = (Form)constructor.Invoke(["자료", true, (Func<string, Task>)(_ => Task.CompletedTask)]);
         assert(rename.Text == "폴더 이름 변경" && ((TextBox)type.GetField("_name", Private)!.GetValue(rename)!).MaxLength == 100,

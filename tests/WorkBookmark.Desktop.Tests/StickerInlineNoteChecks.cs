@@ -170,6 +170,7 @@ internal static class StickerInlineNoteChecks
         Invoke(form, "ApplyPresentation", false, true);
 
         RunAutoSave(form, assert);
+        RunImeSaveBoundaries(assert);
         EditingGeometry(assert);
     }
 
@@ -238,11 +239,19 @@ internal static class StickerInlineNoteChecks
         PumpEvents();
         assert(writes == 3 && Editing(form),
             "STN21 leaving during synthetic IME composition defers automatic persistence");
+        editor.Text = "마지막 글자 보";
         SendMessage(editor.Handle, 0x010E, nint.Zero, nint.Zero);
-        editor.Text = "조합이 확정된 최종 메모";
+        bool resultArrivedBeforeSave = false;
+        // Model the Korean IME ordering where its result reaches the native
+        // editor after END and after the already-posted automatic-save callback.
+        form.BeginInvoke((Action)(() =>
+        {
+            resultArrivedBeforeSave = writes == 3 && Editing(form) && !editor.ReadOnly;
+            editor.Text = "마지막 글자 보존";
+        }));
         PumpUntil(() => !Editing(form));
-        assert(writes == 4 && stored == "조합이 확정된 최종 메모" && other.ContainsFocus && form.Bounds == normalBounds,
-            "STN22 deferred automatic save waits for the committed IME text and keeps the destination focused");
+        assert(resultArrivedBeforeSave && writes == 4 && stored == "마지막 글자 보존" && other.ContainsFocus && form.Bounds == normalBounds,
+            "STN22 automatic save waits for an IME result delivered after END and preserves its final syllable without taking focus");
 
         Begin(form, persist);
         editor.Text = "다시 돌아와 계속 편집";
@@ -272,6 +281,66 @@ internal static class StickerInlineNoteChecks
         PumpUntil(() => !Editing(form));
         assert(delayedWrites == 1 && other.ContainsFocus && Field<Button>(form, "_title").Text == "자동저장 진행 중" && form.Bounds == normalBounds,
             "STN25 a delayed automatic save completes in the background without reactivating its sticker");
+    }
+
+    private static void RunImeSaveBoundaries(Action<bool, string> assert)
+    {
+        using var form = Create(Sample());
+        StickerType.GetProperty("ManagedTreeInteractions", Instance)!.SetValue(form, true);
+        form.Show();
+        using var other = new Form { Text = "IME save boundary test", ShowInTaskbar = false };
+        other.Controls.Add(new TextBox { Text = "Other window", Dock = DockStyle.Top });
+        other.Show();
+        var editor = Field<TextBox>(form, "_noteEditor");
+        int writes = 0;
+        string? stored = null;
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        Begin(form, text => { writes++; stored = text; return completion.Task; });
+        editor.Text = "명시적 저장도 마지막 글자 보";
+        SendMessage(editor.Handle, 0x010D, nint.Zero, nint.Zero);
+        SendMessage(editor.Handle, 0x010E, nint.Zero, nint.Zero);
+        Task<bool> first = Commit(form), second = Commit(form);
+        form.BeginInvoke((Action)(() => editor.Text = "명시적 저장도 마지막 글자 보존"));
+        PumpUntil(() => writes > 0);
+        assert(writes == 1 && stored == "명시적 저장도 마지막 글자 보존" && !first.IsCompleted && !second.IsCompleted,
+            "STN39 concurrent explicit commits wait for the final IME text and join one pending write");
+        completion.SetResult();
+        Pump(first); Pump(second);
+        assert(first.Result && second.Result && writes == 1 && !Editing(form),
+            "STN40 both explicit commit callers observe the same successful IME-safe save");
+
+        Func<string, Task> persist = text => { writes++; stored = text; return Task.CompletedTask; };
+        Begin(form, persist);
+        editor.Text = "읽기 전용 전환 전의 전체 초안";
+        EventHandler nativeModeChange = (_, _) => { if (editor.ReadOnly) editor.Text = "전환 중 변경된 텍스트"; };
+        editor.ReadOnlyChanged += nativeModeChange;
+        try { Pump(Save(form)); }
+        finally { editor.ReadOnlyChanged -= nativeModeChange; }
+        assert(writes == 2 && stored == "읽기 전용 전환 전의 전체 초안" && Field<Button>(form, "_title").Text == stored,
+            "STN41 persistence snapshots the draft before a native read-only transition can change editor text");
+
+        Begin(form, persist);
+        editor.Text = "조합 종료 뒤 돌아와 계속 편집";
+        SendMessage(editor.Handle, 0x010D, nint.Zero, nint.Zero);
+        FocusOther(other);
+        PumpEvents();
+        SendMessage(editor.Handle, 0x010E, nint.Zero, nint.Zero);
+        form.BeginInvoke((Action)(() => { form.Activate(); editor.Focus(); }));
+        PumpEvents();
+        assert(writes == 2 && Editing(form) && editor.Focused && editor.Text == "조합 종료 뒤 돌아와 계속 편집",
+            "STN42 returning during the IME settling delay keeps the draft editable without an automatic write");
+        Command(form, Keys.Escape);
+
+        Begin(form, persist);
+        editor.Text = "조합 종료 뒤 취소할 초안";
+        SendMessage(editor.Handle, 0x010D, nint.Zero, nint.Zero);
+        FocusOther(other);
+        PumpEvents();
+        SendMessage(editor.Handle, 0x010E, nint.Zero, nint.Zero);
+        form.BeginInvoke((Action)(() => Command(form, Keys.Escape)));
+        PumpEvents();
+        assert(writes == 2 && !Editing(form) && form.Visible && Field<Button>(form, "_title").Text == stored,
+            "STN43 cancelling during the IME settling delay discards the queued automatic save");
     }
 
     private static void EditingGeometry(Action<bool, string> assert)
@@ -356,6 +425,7 @@ internal static class StickerInlineNoteChecks
     private static void Invoke(Form form, string name, params object[] arguments) => StickerType.GetMethod(name)!.Invoke(form, arguments);
     private static void Begin(Form form, Func<string, Task> save) => Invoke(form, "BeginNoteEdit", save);
     private static Task Save(Form form) => (Task)StickerType.GetMethod("SaveNoteAsync", Instance)!.Invoke(form, null)!;
+    private static Task<bool> Commit(Form form) => (Task<bool>)StickerType.GetMethod("CommitPendingEditAsync", Instance)!.Invoke(form, null)!;
     private static void Deactivate(Form form) => typeof(Form).GetMethod("OnDeactivate", Instance)!.Invoke(form, [EventArgs.Empty]);
     private static void FocusOther(Form other)
     {

@@ -2,45 +2,49 @@ using System.Drawing;
 
 namespace WorkBookmark.App;
 
-/// <summary>Parent-first rows with a small indentation; overflow continues in reachable columns.</summary>
+internal enum StickerTreeOpeningSide { Below, Above }
+
+internal sealed record StickerTreeViewportPlan(Rectangle Bounds, StickerTreeOpeningSide Side, int ContentHeight);
+
+/// <summary>Measures visible rows and attaches one bounded viewport to a fixed root.</summary>
 internal static class StickerTreeLayout
 {
-    internal static IReadOnlyList<Rectangle> Arrange(IReadOnlyList<(Size Size, int Depth)> rows,
-        Point anchor, Rectangle workingArea, int dpi)
+    internal static int MeasureContentHeight(IEnumerable<int> rowHeights, int dpi)
     {
-        if (rows.Count == 0) return [];
-        int Scale(int value) => Math.Max(1, (int)Math.Round(value * Math.Max(96, dpi) / 96d));
-        int indent = Scale(20), gap = Scale(8);
-        int width = rows.Max(row => row.Size.Width + row.Depth * indent);
-        int height = rows.Sum(row => row.Size.Height) + (rows.Count - 1) * gap;
-        int column = Math.Clamp(anchor.X, workingArea.Left, Math.Max(workingArea.Left, workingArea.Right - width));
-        int top = Math.Clamp(anchor.Y, workingArea.Top, Math.Max(workingArea.Top, workingArea.Bottom - height));
-        int right = column, page = 0;
-        var result = new Rectangle[rows.Count];
-        for (int index = 0; index < rows.Count; index++)
+        int gap = Scale(8, dpi);
+        long height = 0;
+        int count = 0;
+        foreach (int rowHeight in rowHeights)
         {
-            var (size, depth) = rows[index];
-            if (index > 0 && top + size.Height > workingArea.Bottom)
-            {
-                column = right + gap;
-                top = workingArea.Top;
-                if (column + width > workingArea.Right)
-                {
-                    // As with the existing arrangement, excess pages cascade so
-                    // every individual sticker retains a reachable title/drag area.
-                    page++;
-                    column = workingArea.Left + (page % 6) * indent;
-                    top += (page % 6) * indent;
-                }
-                right = column;
-            }
-            int left = Math.Clamp(column + depth * indent, workingArea.Left,
-                Math.Max(workingArea.Left, workingArea.Right - size.Width));
-            int y = Math.Clamp(top, workingArea.Top, Math.Max(workingArea.Top, workingArea.Bottom - size.Height));
-            result[index] = new Rectangle(new Point(left, y), size);
-            right = Math.Max(right, left + size.Width);
-            top = y + size.Height + gap;
+            if (count++ > 0) height += gap;
+            height += Math.Max(0, rowHeight);
         }
-        return result;
+        return (int)Math.Min(int.MaxValue, height);
     }
+
+    /// <summary>Plans a bounded child viewport without changing the root anchor.</summary>
+    internal static StickerTreeViewportPlan? PlanViewport(Rectangle rootBounds, Rectangle workingArea,
+        int contentHeight, int dpi, StickerTreeOpeningSide? preferredSide = null)
+    {
+        if (contentHeight <= 0 || rootBounds.Width <= 0 || workingArea.Width <= 0 || workingArea.Height <= 0 ||
+            rootBounds.Left < workingArea.Left || rootBounds.Right > workingArea.Right) return null;
+        int border = Scale(1, dpi);
+        int minimum = Scale(36, dpi) + border * 2;
+        int below = Math.Max(0, workingArea.Bottom - rootBounds.Bottom);
+        int above = Math.Max(0, rootBounds.Top - workingArea.Top);
+        StickerTreeOpeningSide side;
+        if (preferredSide is { } chosen) side = chosen;
+        else if (below >= minimum) side = StickerTreeOpeningSide.Below;
+        else if (above >= minimum) side = StickerTreeOpeningSide.Above;
+        else return null;
+        int available = side == StickerTreeOpeningSide.Below ? below : above;
+        if (available < minimum) return null;
+        int height = (int)Math.Min(available, (long)contentHeight + border * 2);
+        int top = side == StickerTreeOpeningSide.Below ? rootBounds.Bottom : rootBounds.Top - height;
+        var bounds = new Rectangle(rootBounds.Left, top, rootBounds.Width, height);
+        return workingArea.Contains(bounds) ? new(bounds, side, contentHeight) : null;
+    }
+
+    private static int Scale(int value, int dpi) => Math.Max(1, (int)Math.Round(value * Math.Max(96, dpi) / 96d));
+
 }

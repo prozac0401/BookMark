@@ -10,6 +10,7 @@ internal sealed class FolderNameForm : Form
     private readonly Button _cancel = new() { Text = "취소" };
     private readonly Func<string, Task> _commit;
     private bool _saving;
+    private Task? _pendingSave;
 
     internal FolderNameForm(string name, bool rename, Func<string, Task> commit)
     {
@@ -47,7 +48,21 @@ internal sealed class FolderNameForm : Form
         return base.ProcessCmdKey(ref message, keyData);
     }
 
-    private async Task SaveAsync()
+    internal async Task<bool> CommitPendingEditAsync()
+    {
+        if (IsDisposed) return true;
+        if (_name.IsComposing) { Activate(); _name.Focus(); return false; }
+        await (_pendingSave is { IsCompleted: false } pending ? pending : SaveAsync());
+        if (IsDisposed) return true;
+        Activate(); _name.Focus();
+        return false;
+    }
+    private Task SaveAsync()
+    {
+        if (_pendingSave is { IsCompleted: false }) return Task.CompletedTask;
+        return _pendingSave = SaveCoreAsync();
+    }
+    private async Task SaveCoreAsync()
     {
         if (_saving || IsDisposed) return;
         string name;

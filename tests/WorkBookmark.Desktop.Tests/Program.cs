@@ -17,9 +17,16 @@ internal static class Program
     static void Assert(bool condition, string name) { Checks.Add(new { name, passed = condition }); if (!condition) throw new Exception("FAIL: " + name); Console.WriteLine("PASS: " + name); }
     [STAThread] static void Main(string[] args)
     {
+        bool manualSession = args.Length > 0 && (args[0].StartsWith("--manual-", StringComparison.Ordinal) || args[0] == "--preview-sticker-interactions");
+        // Automated checks must fail with a nonzero exit code instead of waiting
+        // indefinitely in the default WinForms exception dialog (whose Quit can
+        // otherwise end a failed run with exit code zero).
+        if (!manualSession) Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+        if (args.Length == 1 && args[0] == "--tree-panel-dpi-only")
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--sticker-interaction-only" or "--sticker-layout-feedback-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component";
+        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--sticker-interaction-only" or "--inline-note-only" or "--sticker-layout-feedback-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component" or "--context-policy-only" or "--tree-panel-only" or "--tree-panel-dpi-only" or "--panel-policy-only" or "--list-policy-only" or "--list-lifetime-only" or "--tree-regression-only" or "--sticker-persistence-only";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -28,7 +35,8 @@ internal static class Program
             try { RunSafely(args); }
             finally { Application.ExitThread(); }
         }));
-        Application.Run();
+        try { Application.Run(); }
+        catch (Exception error) { Console.Error.WriteLine(error); Environment.ExitCode = 1; }
     }
     private static void RunSafely(string[] args)
     {
@@ -45,15 +53,75 @@ internal static class Program
         if (args.Length == 3 && args[0] == "--manual-list-settings") { ManualListSettingsAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
+        if (args.Length == 1 && args[0] == "--list-lifetime-only")
+        {
+            RecentLifetimeChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} list lifetime checks passed.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--inline-note-only")
+        {
+            StickerInlineNoteChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} inline note checks passed. Native IME input remains a separate manual gate.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--sticker-persistence-only")
+        {
+            StickerPersistenceChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} sticker persistence checks passed.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--tree-regression-only")
+        {
+            FolderStickerChecks.Run(Assert);
+            StickerTreeChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} tree regression checks passed.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--list-policy-only")
+        {
+            RecentLifetimeChecks.Run(Assert);
+            RecentTreeChecks.Run(Assert);
+            FolderListChecks.Run(Assert);
+            AdditionalFormChecks.Run(Assert);
+            BookmarkRefreshChecks.Run(Path.Combine(Path.GetTempPath(), "WorkBookmark-ListPolicy-" + Guid.NewGuid().ToString("N")), Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} list policy checks passed.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--context-policy-only")
+        {
+            ContextPolicyChecks.Run(Path.Combine(Path.GetTempPath(), "WorkBookmark-ContextPolicy-" + Guid.NewGuid().ToString("N")), Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} context policy checks passed.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--panel-policy-only")
+        {
+            StickerPanelPolicyChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} panel policy checks passed.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--tree-panel-only")
+        {
+            StickerTreePanelChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} tree panel checks passed.");
+            return;
+        }
+        if (args.Length == 1 && args[0] == "--tree-panel-dpi-only")
+        {
+            StickerTreePanelChecks.MixedDpi(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} native mixed-DPI tree panel checks passed.");
+            return;
+        }
+        if (args.Length == 2 && args[0] == "--render-tree-panel") { StickerTreePanelChecks.Render(args[1]); return; }
         if (args.Length == 1 && args[0] == "--input-monitor-only") { InputMonitorChecks.Run(Assert); return; }
         if (args.Length == 1 && args[0] == "--stickers-only") { RunStickerChecks(); return; }
         if (args.Length == 1 && args[0] == "--sticker-layout-feedback-only")
         {
             StickerInteractionChecks.Run(Assert);
             StickerSnapChecks.Run(Assert);
-            StickerTreeAvoidanceChecks.Run(Assert);
-            StickerTreeAvoidanceIntegrationChecks.Run(Assert);
-            Console.WriteLine($"RESULT: {Checks.Count} sticker movement and tree avoidance checks passed. Physical pointer input remains a separate manual check.");
+            StickerTreePanelChecks.Run(Assert);
+            StickerPanelPolicyChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} sticker movement and rounded tree panel checks passed. Physical pointer input remains a separate manual check.");
             return;
         }
         if (args.Length == 1 && args[0] == "--sticker-interaction-only")
@@ -91,8 +159,8 @@ internal static class Program
         {
             RecentTreeChecks.Run(Assert);
             StickerTreeChecks.Run(Assert);
-            StickerTreeAvoidanceChecks.Run(Assert);
-            StickerTreeAvoidanceIntegrationChecks.Run(Assert);
+            StickerTreePanelChecks.Run(Assert);
+            StickerPanelPolicyChecks.Run(Assert);
             BookmarkColorChecks.Run(Assert);
             HierarchyIntegrationChecks.Run(Path.Combine(Path.GetTempPath(), "WorkBookmark-Hierarchy-" + Guid.NewGuid().ToString("N")), Assert);
             Console.WriteLine($"RESULT: {Checks.Count} hierarchy checks passed. Physical mouse input remains a separate manual check.");
@@ -131,6 +199,7 @@ internal static class Program
         StickerInlineNoteChecks.Run(Assert);
         BookmarkTypeIconChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
+        RecentLifetimeChecks.Run(Assert);
         StickerVisibilityChecks.Run(Path.Combine(data, "sticker-visibility"), Assert);
         NoteReadVisibilityChecks.Run(Path.Combine(data, "note-read-visibility"), Assert);
         StickerArrangeNoteChecks.Run(Path.Combine(data, "arrange-note"), Assert);
@@ -142,8 +211,8 @@ internal static class Program
         BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
         RecentTreeChecks.Run(Assert);
         StickerTreeChecks.Run(Assert);
-        StickerTreeAvoidanceChecks.Run(Assert);
-        StickerTreeAvoidanceIntegrationChecks.Run(Assert);
+        StickerTreePanelChecks.Run(Assert);
+        StickerPanelPolicyChecks.Run(Assert);
         HierarchyIntegrationChecks.Run(Path.Combine(data, "hierarchy"), Assert);
         BookmarkColorChecks.Run(Assert);
         ColorIntegrationChecks.Run(Path.Combine(data, "colors"), Assert);
@@ -151,6 +220,7 @@ internal static class Program
         FolderStickerChecks.Run(Assert);
         FolderNameChecks.Run(Assert);
         FolderIntegrationChecks.Run(Path.Combine(data, "folders"), Assert);
+        ContextPolicyChecks.Run(Path.Combine(data, "tree-policy"), Assert);
         StickerPersistenceChecks.Run(Assert);
         ResumeNotificationChecks.Run(Path.Combine(data, "resume-notifications"), Assert);
         var custom = UserSettings.Default with { CaptureHotkey = new Hotkey(7, (int)Keys.F19), RecentHotkey = new Hotkey(7, (int)Keys.F20), IntroShown = true };
@@ -242,12 +312,13 @@ internal static class Program
         StickerInteractionChecks.Run(Assert);
         StickerInlineNoteChecks.Run(Assert);
         StickerStartupChecks.Run(Path.Combine(data, "sticker-startup"), Assert);
+        RecentLifetimeChecks.Run(Assert);
         StickerVisibilityChecks.Run(Path.Combine(data, "sticker-visibility"), Assert);
         NoteReadVisibilityChecks.Run(Path.Combine(data, "note-read-visibility"), Assert);
         StickerArrangeNoteChecks.Run(Path.Combine(data, "arrange-note"), Assert);
         StickerSnapChecks.Run(Assert);
-        StickerTreeAvoidanceChecks.Run(Assert);
-        StickerTreeAvoidanceIntegrationChecks.Run(Assert);
+        StickerTreePanelChecks.Run(Assert);
+        StickerPanelPolicyChecks.Run(Assert);
         StickerArrangementChecks.Run(Assert);
         StickerAlignmentChecks.Run(Path.Combine(data, "sticker-alignment"), Assert);
         StickerPersistenceChecks.Run(Assert);

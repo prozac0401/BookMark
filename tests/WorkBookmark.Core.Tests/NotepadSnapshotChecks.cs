@@ -119,14 +119,14 @@ internal static class NotepadSnapshotChecks
             else
             {
                 using var migrated = new SqliteBookmarkRepository(database);
-                foreach (var item in expected) Check(migrated.Get(item.Id) == item, "All version 3 fields must survive migration unchanged.");
+                foreach (var item in expected) Check(migrated.Get(item.Id) == item with { SiblingOrder = -item.CaptureSequence }, "All version 3 fields must survive migration unchanged.");
             }
             CheckVersionThree(Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single(), before);
             using var repo = new SqliteBookmarkRepository(database);
-            foreach (var item in expected) Check(repo.Get(item.Id) == item, "Successful retry preserves old rows.");
+            foreach (var item in expected) Check(repo.Get(item.Id) == item with { SiblingOrder = -item.CaptureSequence }, "Successful retry preserves old rows.");
             Check(repo.UpsertCapture(Snapshot()).Bookmark.CaptureSequence == 24, "Version 8 preserves version 3 capture sequence.");
             using var db = Open(database);
-            Check(Scalar(db, "PRAGMA user_version") == 8 && Scalar(db, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name IN ('text_content','text_selection_end','snapshot_title')") == 3,
+            Check(Scalar(db, "PRAGMA user_version") == 9 && Scalar(db, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name IN ('text_content','text_selection_end','snapshot_title')") == 3,
                 "Schema version 5 exposes each snapshot field once.");
         }
 

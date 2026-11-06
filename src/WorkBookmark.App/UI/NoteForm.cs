@@ -11,6 +11,7 @@ internal sealed class NoteForm : Form
     private readonly Button _save;
     private readonly Func<string, Task> _saveNote;
     private bool _saving, _closing, _shown, _saveAfterComposition;
+    private Task? _pendingSave;
     public NoteForm(Bookmark bookmark, Func<string, Task> saveNote)
     {
         UiStyle.Apply(this);
@@ -55,7 +56,21 @@ internal sealed class NoteForm : Form
         }
         return base.ProcessCmdKey(ref message, keyData);
     }
-    private async Task SaveAsync()
+    internal async Task<bool> CommitPendingEditAsync()
+    {
+        if (IsDisposed) return true;
+        if (_note.IsComposing) { Activate(); _note.Focus(); return false; }
+        await (_pendingSave is { IsCompleted: false } pending ? pending : SaveAsync());
+        if (IsDisposed) return true;
+        Activate(); _note.Focus();
+        return false;
+    }
+    private Task SaveAsync()
+    {
+        if (_pendingSave is { IsCompleted: false }) return Task.CompletedTask;
+        return _pendingSave = SaveCoreAsync();
+    }
+    private async Task SaveCoreAsync()
     {
         if (_saving || _closing || IsDisposed) return;
         _saving = true; _save.Enabled = false; _note.ReadOnly = true;

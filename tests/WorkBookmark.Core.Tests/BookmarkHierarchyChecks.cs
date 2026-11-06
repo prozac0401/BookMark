@@ -50,18 +50,18 @@ internal static class BookmarkHierarchyChecks
                 repo.SaveStickerLayout(layout);
                 repo.SetParent(child.Id, parent.Id);
                 repo.SetParent(grandchild.Id, child.Id);
-                Check(repo.Get(child.Id) == child with { ParentId = parent.Id }, "Attaching changes only the parent link.");
+                Check(repo.Get(child.Id) == child with { ParentId = parent.Id, SiblingOrder = 0 }, "Attaching changes only parent and sibling order.");
                 repo.SetParent(child.Id, other.Id);
-                Check(repo.Get(child.Id) == child with { ParentId = other.Id } && repo.Get(grandchild.Id) == grandchild with { ParentId = child.Id },
+                Check(repo.Get(child.Id) == child with { ParentId = other.Id, SiblingOrder = 0 } && repo.Get(grandchild.Id) == grandchild with { ParentId = child.Id, SiblingOrder = 0 },
                     "Moving a subtree preserves its descendants and every non-hierarchy field.");
             }
             using var reopened = new SqliteBookmarkRepository(database);
-            Check(reopened.Get(child.Id) == child with { ParentId = other.Id } && reopened.Get(grandchild.Id) == grandchild with { ParentId = child.Id }
+            Check(reopened.Get(child.Id) == child with { ParentId = other.Id, SiblingOrder = 0 } && reopened.Get(grandchild.Id) == grandchild with { ParentId = child.Id, SiblingOrder = 0 }
                 && reopened.GetStickerLayouts().Single() == layout, "Parent links, subtree, geometry and the independently saved placement parent survive repository restart.");
             Check(reopened.GetStickerLayouts().Single().ParentId != reopened.Get(child.Id)!.ParentId,
                 "A relationship changed while stickers are closed remains distinguishable from the saved placement after restart.");
             reopened.SetParent(child.Id, null);
-            Check(reopened.Get(child.Id) == child && reopened.Get(grandchild.Id)!.ParentId == child.Id, "Detaching moves only the subtree root.");
+            Check(reopened.Get(child.Id) == child with { SiblingOrder = 2 } && reopened.Get(grandchild.Id)!.ParentId == child.Id, "Detaching moves only the subtree root and its root sibling order.");
             reopened.SaveStickerLayout(layout with { ParentId = null });
             Check(reopened.GetStickerLayouts().Single() == layout with { ParentId = null }, "Saving a detached placement clears its parent snapshot without changing geometry.");
             Check(reopened.UpsertCapture(Target("after-move")).Bookmark.CaptureSequence == other.CaptureSequence + 1,
@@ -164,18 +164,18 @@ internal static class BookmarkHierarchyChecks
             else
             {
                 using var migrated = new SqliteBookmarkRepository(database);
-                Check(expected.All(item => migrated.Get(item.Id) == item), "All version 5 bookmark fields survive the migration.");
+                Check(expected.All(item => migrated.Get(item.Id) == item with { SiblingOrder = -item.CaptureSequence }), "All version 5 bookmark fields survive the migration.");
             }
             CheckOld(Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single());
             using var repo = new SqliteBookmarkRepository(database);
-            Check(expected.All(item => repo.Get(item.Id) == item) && repo.GetStickerLayouts().Count == expected.Count
+            Check(expected.All(item => repo.Get(item.Id) == item with { SiblingOrder = -item.CaptureSequence }) && repo.GetStickerLayouts().Count == expected.Count
                 && repo.GetStickerLayouts().All(layout => layout.ParentId is null)
                 && Rows(database, "SELECT bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top FROM sticker_layouts ORDER BY bookmark_id") == beforeLayouts,
                 "Hierarchy migration preserves active and deleted records and their complete sticker geometry, with unknown placement parents starting null.");
             using (var db = Open(database))
             {
-                Check(Scalar(db, "PRAGMA user_version") == 8 && Scalar(db, "SELECT count(*) FROM pragma_foreign_key_list('bookmarks') WHERE \"from\"='parent_id' AND \"table\"='bookmarks'") == 1,
-                    "Schema 8 parent links reference existing bookmark identities.");
+                Check(Scalar(db, "PRAGMA user_version") == 9 && Scalar(db, "SELECT count(*) FROM pragma_foreign_key_list('bookmarks') WHERE \"from\"='parent_id' AND \"table\"='bookmarks'") == 1,
+                    "Schema 9 parent links reference existing bookmark identities.");
                 Execute(db, "PRAGMA foreign_keys=ON");
                 foreach (var sql in new[] { "UPDATE bookmarks SET parent_id='missing'", "UPDATE bookmarks SET parent_id=id" })
                 {
@@ -210,11 +210,11 @@ internal static class BookmarkHierarchyChecks
             Check(!repo.List().Items.Any(item => item.Id == parent.Id) && rows.Count == 135 && rows[0].Bookmark.Id == parent.Id && rows[0].HasChildren,
                 "Tree projection includes an old parent beyond recent-list and search limits.");
             Check(rows.Skip(1).All(row => row.Depth == 1 && !row.HasChildren)
-                && rows.Skip(1).Select(row => row.Bookmark.Id).SequenceEqual(children.Reverse().Select(item => item.Id)),
-                "Sibling order follows descending capture sequence under its parent.");
+                && rows.Skip(1).Select(row => row.Bookmark.Id).SequenceEqual(children.Select(item => item.Id)),
+                "New child moves append in their persisted sibling order.");
             Check(BookmarkTree.Flatten(repo.ListActive(), new HashSet<Guid> { parent.Id }).Count == 1,
                 "Collapsed branches hide every descendant, without promoting hidden children to roots.");
-            var tied = children.Take(2).Select(item => item with { CaptureSequence = 1 }).ToArray();
+            var tied = children.Take(2).Select(item => item with { CaptureSequence = 1, SiblingOrder = null }).ToArray();
             Check(BookmarkTree.Flatten(tied).Select(row => row.Bookmark.Id).SequenceEqual(tied.OrderBy(item => item.Id).Select(item => item.Id)),
                 "Equal capture sequence has deterministic identity tie-breaking, and missing parents project as roots.");
         }

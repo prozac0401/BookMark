@@ -45,7 +45,7 @@ internal static class StickerVisibilityChecks
                 PumpUntil(() => Forms(manager).Length == 2 && Forms(manager).All(form => form.Visible));
                 Form origin = Forms(manager).Single(form => BookmarkFor(form).Id == first.Id);
                 origin.Location += new Size(-20, 20);
-                Field<ToolStripMenuItem>(origin, "_collapseMenu").PerformClick();
+                Invoke(origin, "OnResizeEnd", EventArgs.Empty);
                 var bounds = origin.Bounds;
                 Pump(Call(manager, "SavePendingAsync"));
                 var layout = repository.GetStickerLayouts().Single(value => value.BookmarkId == first.Id);
@@ -59,10 +59,10 @@ internal static class StickerVisibilityChecks
                 PressViewHotkey(context);
                 PumpUntil(() => Forms(manager).All(form => form.Visible));
                 assert(ReferenceEquals(origin, Forms(manager).Single(form => BookmarkFor(form).Id == first.Id)) &&
-                    origin.Bounds == bounds && (bool)origin.GetType().GetProperty("IsCollapsed")!.GetValue(origin)! &&
+                    origin.Bounds == bounds && !(bool)origin.GetType().GetProperty("IsCollapsed")!.GetValue(origin)! &&
                     BookmarkFor(origin).Note == "토글 전후 유지할 메모" &&
                     repository.GetStickerLayouts().Single(value => value.BookmarkId == first.Id) == layout,
-                    "SV03 the next hotkey restores every sticker with its identity, position, collapse state and note intact");
+                    "SV03 the next hotkey restores every compact root with its identity, position and note intact");
                 origin.Close();
                 PressViewHotkey(context);
                 assert(Forms(manager).All(form => !form.Visible),
@@ -163,19 +163,22 @@ internal static class StickerVisibilityChecks
         var editor = Field<TextBox>(form, "_noteEditor");
         editor.Text = "숨겨도 유지할 저장 실패 초안";
         Task saving = Call(form, "SaveNoteAsync");
-        Pump(Call(fixture.Manager, "ToggleVisibilityAsync"));
-        assert(!form.Visible && fixture.Loads.Count == 1,
-            "SV15 a note opened while globally hidden is still a visible sticker and the hotkey hides it during save");
+        Task hiding = Call(fixture.Manager, "ToggleVisibilityAsync");
+        assert(!hiding.IsCompleted && form.Visible && fixture.Loads.Count == 1,
+            "SV15 hiding a tree waits for its in-flight draft save without concealing the editor");
         save.SetException(new IOException("Synthetic note failure"));
         Pump(saving);
-        assert(!form.Visible && editor.Text == "숨겨도 유지할 저장 실패 초안" &&
+        Pump(hiding);
+        assert(form.Visible && editor.Text == "숨겨도 유지할 저장 실패 초안" &&
             (bool)form.GetType().GetProperty("IsEditingNote")!.GetValue(form)!,
-            "SV16 late note-save failure retains its draft without revealing a hidden sticker");
+            "SV16 a failed draft save cancels hiding and retains the visible editable draft");
+        Invoke(form, "CancelNoteEdit");
+        Pump(Call(fixture.Manager, "ToggleVisibilityAsync"));
         Task reveal = Call(fixture.Manager, "ToggleVisibilityAsync");
         fixture.Complete(1);
         Pump(reveal);
-        assert(form.Visible && editor.Text == "숨겨도 유지할 저장 실패 초안",
-            "SV17 revealing after a failed hidden save preserves the pending note draft");
+        assert(form.Visible && !(bool)form.GetType().GetProperty("IsEditingNote")!.GetValue(form)! && BookmarkFor(form).Note == fixture.Bookmark.Note,
+            "SV17 explicit draft cancellation allows hide/reveal while retaining the stored note");
     }
 
     private static void CancelledArrangement(Action<bool, string> assert)

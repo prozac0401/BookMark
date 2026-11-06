@@ -1,0 +1,30 @@
+{
+  "result": "PASS",
+  "userConfirmed": true,
+  "enteredText": "자식 한글 입력",
+  "compositionOnlyAtUtc": "2026-11-06T12:43:31.2564375+00:00",
+  "enterSavedAtUtc": "2026-11-06T12:43:32.7499822+00:00",
+  "cancelledDraft": "취소할 자식 초안",
+  "cancelKeptSavedTextAtUtc": "2026-11-06T12:43:52.0498651+00:00",
+  "siblingFocusSavedText": "자식 자동저장 보존",
+  "siblingFocusSavedAtUtc": "2026-11-06T12:44:14.3709007+00:00",
+  "panelHeights": [
+    82,
+    142,
+    82
+  ],
+  "rootBounds": [
+    457,
+    61,
+    274,
+    50
+  ],
+  "peerCBounds": [
+    104,
+    280,
+    274,
+    50
+  ],
+  "hierarchyOrderUnchanged": true,
+  "nativeInput": "User performed Korean IME typing and mouse actions; logs were observed only."
+}

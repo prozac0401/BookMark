@@ -1,0 +1,18 @@
+{
+  "cancel": {
+    "result": "PASS for stored-value preservation",
+    "oldValue": "한글 입력 확인",
+    "discardedDraft": "취소할 초안",
+    "userConfirmedFirstEscKeepsEditor": true,
+    "firstEscIntermediateState": "Not independently established by 500 ms changed-state sampling."
+  },
+  "focusLoss": {
+    "result": "FAIL",
+    "composingDraft": "마지막 글자 보존",
+    "storedValue": "마지막 글자 보",
+    "draftObservedAt": "2026-11-06T12:27:35.0994636+00:00",
+    "savedObservedAt": "2026-11-06T12:27:41.1949216+00:00",
+    "userObserved": "Reported normal; exact persisted text disproves complete save."
+  },
+  "source": "native-ime-root-cancel-focus-observed.json"
+}

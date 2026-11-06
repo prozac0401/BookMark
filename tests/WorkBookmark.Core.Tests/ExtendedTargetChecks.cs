@@ -88,14 +88,14 @@ internal static class ExtendedTargetChecks
             string before = SnapshotVersionTwo(database);
             using (var repo = new SqliteBookmarkRepository(database))
             {
-                foreach (var row in expected) Check(repo.Get(row.Id) == row, "Every version 2 target and history field must migrate unchanged.");
+                foreach (var row in expected) Check(repo.Get(row.Id) == row with { SiblingOrder = -row.CaptureSequence }, "Every version 2 target and history field must migrate unchanged.");
                 Check(repo.List().Items.Count == expected.Count(row => row.DeletedAtUtc is null), "Migrated deletion state must remain effective.");
                 Check(repo.UpsertCapture(Notepad(37)).Bookmark.CaptureSequence == 24, "Schema 5 continues the version 2 metadata sequence.");
             }
             string backup = Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single();
             CheckVersionTwo(backup, before);
             using var current = Open(database);
-            Check(Scalar(current, "PRAGMA user_version") == 8 && Scalar(current, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name='text_offset'") == 1,
+            Check(Scalar(current, "PRAGMA user_version") == 9 && Scalar(current, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name='text_offset'") == 1,
                 "Schema 5 exposes exactly one text offset column.");
         }
 
@@ -108,7 +108,7 @@ internal static class ExtendedTargetChecks
             CheckVersionTwo(database, before);
             CheckVersionTwo(Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single(), before);
             using var retried = new SqliteBookmarkRepository(database);
-            foreach (var row in expected) Check(retried.Get(row.Id) == row, "Retry must retain every version 2 target and history field.");
+            foreach (var row in expected) Check(retried.Get(row.Id) == row with { SiblingOrder = -row.CaptureSequence }, "Retry must retain every version 2 target and history field.");
             Check(retried.UpsertCapture(Notepad(37)).Bookmark.CaptureSequence == 24, "Retry keeps the original version 2 sequence.");
         }
 
@@ -209,14 +209,14 @@ internal static class ExtendedTargetChecks
             var legacy = CreateLegacy(database);
             using (var repo = new SqliteBookmarkRepository(database))
             {
-                Check(repo.Get(legacy.Active.Id) == legacy.Active && repo.Get(legacy.Deleted.Id) == legacy.Deleted, "All legacy fields, notes, result, timestamps and deletion state must migrate unchanged.");
+                Check(repo.Get(legacy.Active.Id) == legacy.Active with { SiblingOrder = -legacy.Active.CaptureSequence } && repo.Get(legacy.Deleted.Id) == legacy.Deleted with { SiblingOrder = -legacy.Deleted.CaptureSequence }, "All legacy fields, notes, result, timestamps and deletion state must migrate unchanged.");
                 Check(repo.List().Items.Single().Id == legacy.Active.Id, "Deleted legacy rows remain hidden.");
                 Check(repo.UpsertCapture(Slide(257, 2)).Bookmark.CaptureSequence == 12, "The existing sequence continues at 12 after migration.");
             }
             string backup = Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single();
             CheckLegacy(backup, legacy);
             using var current = Open(database);
-            Check(Scalar(current, "PRAGMA user_version") == 8, "Migrated schema version must be 8.");
+            Check(Scalar(current, "PRAGMA user_version") == 9, "Migrated schema version must be 9.");
             Check(Scalar(current, "SELECT count(*) FROM pragma_table_info('bookmarks') WHERE name IN ('word_start','slide_id','slide_number','pdf_page','page_title','text_offset')") == 6, "All new position/browser columns must exist.");
         }
 
@@ -229,7 +229,7 @@ internal static class ExtendedTargetChecks
             CheckLegacy(Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single(), legacy);
             using (var raw = Open(database)) Check(Scalar(raw, "SELECT count(*) FROM sqlite_master WHERE name IN ('bookmarks_v1','bookmarks_previous')") == 0, "Rolled-back table rename cannot leak.");
             using var retried = new SqliteBookmarkRepository(database);
-            Check(retried.Get(legacy.Active.Id) == legacy.Active && retried.Get(legacy.Deleted.Id) == legacy.Deleted, "Retry must retain both original rows.");
+            Check(retried.Get(legacy.Active.Id) == legacy.Active with { SiblingOrder = -legacy.Active.CaptureSequence } && retried.Get(legacy.Deleted.Id) == legacy.Deleted with { SiblingOrder = -legacy.Deleted.CaptureSequence }, "Retry must retain both original rows.");
             Check(retried.UpsertCapture(Word(37)).Bookmark.CaptureSequence == 12, "Retry keeps the original sequence.");
         }
     }

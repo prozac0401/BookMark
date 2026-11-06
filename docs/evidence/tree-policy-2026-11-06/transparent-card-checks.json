@@ -1,0 +1,43 @@
+{
+  "productVersion": "0.2.20",
+  "productAssemblySha256": "a5e5cf3bcb4698184e4215d10e7b18029c8353737018f9d3b10262dcd1a6e468",
+  "result": "PASS",
+  "releaseBuild": {
+    "warnings": 0,
+    "errors": 0
+  },
+  "checks": [
+    {
+      "mode": "--tree-panel-only",
+      "passed": 30,
+      "exitCode": 0
+    },
+    {
+      "mode": "--panel-policy-only",
+      "passed": 33,
+      "exitCode": 0
+    },
+    {
+      "mode": "--tree-panel-dpi-only",
+      "passed": 10,
+      "exitCode": 0
+    }
+  ],
+  "corrections": [
+    "TP24 originally examined native hit coverage while root, host and child were all hidden. The fixture now displays the root; hidden/show editor restoration is separately checked by TP29/30.",
+    "SP26 originally called Form.Hide on a manager-owned view, which was immediately shown again. The fixture now uses HideTreeAsync and asserts that the peer is actually hidden.",
+    "TP17 exposed stale horizontal/vertical scrollbars after shrinking a long tree: 260x82 viewport, 243x65 client, scroll Y=-17. Reflow now clears obsolete native ranges before final geometry; the original test was strengthened to require zero scroll, no bars and restored width."
+  ],
+  "render": {
+    "result": "PASS",
+    "scenes": [
+      "compact",
+      "child editor",
+      "root editor",
+      "scrolled editor",
+      "above root"
+    ],
+    "method": "Controlled DrawToBitmap composition with the actual native Region mask. This is not a desktop/DWM screenshot."
+  },
+  "scope": "Focused runs overlap the full suite and are not added to its total. DPI checks use native monitor transitions, not physical pointer input."
+}

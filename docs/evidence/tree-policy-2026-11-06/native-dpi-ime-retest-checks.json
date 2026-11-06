@@ -1,0 +1,43 @@
+{
+  "mixedDpiPhysicalDrag": "PASS",
+  "userConfirmed": true,
+  "observedDpi": [
+    96,
+    120
+  ],
+  "panelSizes": {
+    "96": [
+      274,
+      82
+    ],
+    "120": [
+      342,
+      102
+    ]
+  },
+  "childRowSizes": {
+    "96": [
+      272,
+      36
+    ],
+    "120": [
+      340,
+      45
+    ]
+  },
+  "checkedSnapshots": 35,
+  "peerCStayedAt": [
+    104,
+    280,
+    274,
+    50
+  ],
+  "previewAndCommitEquality": "Confirmed for sampled stationary drops at 12:40:42.815, 12:41:31.334 and 12:41:33.356 UTC; not inferred for drops with pointer movement after last sample.",
+  "rootImeFocusLoss": "PASS",
+  "composingFullTextAtUtc": "2026-11-06T21:41:59.7943851+09:00",
+  "settlingEditorUnfocusedDbStillOldAtUtc": "2026-11-06T21:42:06.3943576+09:00",
+  "savedFullTextAtUtc": "2026-11-06T21:42:06.9065247+09:00",
+  "savedText": "마지막 글자 보존",
+  "remaining": "Embedded child native IME Enter/cancel/sibling focus transition.",
+  "followUp": "The child IME gate recorded as remaining above subsequently passed; see native-ime-child-checks.json. These measurements precede the later visual card-width and transparent-gap changes."
+}

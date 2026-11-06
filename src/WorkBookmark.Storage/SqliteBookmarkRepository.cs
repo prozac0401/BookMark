@@ -5,14 +5,14 @@ using WorkBookmark.Core;
 namespace WorkBookmark.Storage;
 
 /// <summary>One local writer. Every successful mutation has committed before it returns.</summary>
-public sealed class SqliteBookmarkRepository : IBookmarkRepository
+public sealed partial class SqliteBookmarkRepository : IBookmarkRepository
 {
     private readonly string _connectionString;
     private readonly object _gate = new();
     private readonly Action<string>? _beforeCommit;
     private readonly Func<DateTimeOffset> _utcNow;
     private bool _disposed;
-    private const int SchemaVersion = 8;
+    private const int SchemaVersion = 9;
     private const string LegacyColumns = "id,kind,path,normalized_path,sheet_name,cell_address,display_name,note,created_at_utc,captured_at_utc,capture_sequence,note_updated_at_utc,had_unsaved_changes,last_resume_at_utc,last_resume_result,deleted_at_utc";
 
     private const string VersionTwoColumns = LegacyColumns + ",word_start,slide_id,slide_number,pdf_page,page_title";
@@ -20,7 +20,8 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
     private const string VersionFourColumns = VersionThreeColumns + ",text_content,text_selection_end,snapshot_title";
     private const string VersionSixColumns = VersionFourColumns + ",parent_id";
     private const string VersionSevenColumns = VersionSixColumns + ",color";
-    private const string Columns = VersionSevenColumns + ",folder_expanded";
+    private const string VersionEightColumns = VersionSevenColumns + ",folder_expanded";
+    private const string Columns = VersionEightColumns + ",sibling_order";
     private const string VersionFiveStickerColumns = "bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top";
     private const string StickerColumns = VersionFiveStickerColumns + ",parent_id";
 
@@ -64,7 +65,7 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
             }
             else
             {
-                using var verify = Command(db, null, "SELECT " + (version == 1 ? LegacyColumns : version == 2 ? VersionTwoColumns : version == 3 ? VersionThreeColumns : version < 6 ? VersionFourColumns : version == 6 ? VersionSixColumns : VersionSevenColumns) + " FROM bookmarks LIMIT 0");
+                using var verify = Command(db, null, "SELECT " + (version == 1 ? LegacyColumns : version == 2 ? VersionTwoColumns : version == 3 ? VersionThreeColumns : version < 6 ? VersionFourColumns : version == 6 ? VersionSixColumns : version == 7 ? VersionSevenColumns : VersionEightColumns) + " FROM bookmarks LIMIT 0");
                 using var reader = verify.ExecuteReader();
             }
             if (version >= 5)
@@ -108,11 +109,12 @@ public sealed class SqliteBookmarkRepository : IBookmarkRepository
                 using (var createHierarchy = Command(db, tx, HierarchySchemaSql)) createHierarchy.ExecuteNonQuery();
             if (version < 7)
                 using (var createColor = Command(db, tx, "ALTER TABLE bookmarks ADD COLUMN color INTEGER NOT NULL DEFAULT 0 CHECK(color BETWEEN 0 AND 6);")) createColor.ExecuteNonQuery();
-            MigrateFolders(db, tx);
+            if (version < 8) MigrateFolders(db, tx);
+            MigrateSiblingOrder(db, tx);
             using (var foreignKeys = Command(db, tx, "PRAGMA foreign_key_check"))
             using (var reader = foreignKeys.ExecuteReader())
                 if (reader.Read()) throw new BookmarkException(ResultCode.PersistenceFailed);
-            using (var setVersion = Command(db, tx, "PRAGMA user_version=8;")) setVersion.ExecuteNonQuery();
+            using (var setVersion = Command(db, tx, "PRAGMA user_version=9;")) setVersion.ExecuteNonQuery();
             _beforeCommit?.Invoke("migration");
             tx.Commit();
             using (var finish = Command(db, null, "PRAGMA foreign_keys=ON; PRAGMA legacy_alter_table=OFF;")) finish.ExecuteNonQuery();
@@ -206,7 +208,7 @@ ALTER TABLE sticker_layouts ADD COLUMN parent_id TEXT;";
         foreach (var item in schemaObjects.Where(item => item.Kind == "index"))
             using (var create = Command(db, tx, item.Sql)) create.ExecuteNonQuery();
 
-        var records = ReadAll(db, tx);
+        var records = ReadAll(db, tx, VersionEightColumns);
         var byId = records.ToDictionary(item => item.Id);
         var complete = new HashSet<Guid>();
         foreach (var item in records)
@@ -280,6 +282,8 @@ VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,
                     ("$sequence", sequence), ("$unsaved", target.HadUnsavedChanges), ("$slideNumber", target.SlideNumber), ("$title", target.PageTitle), ("$id", id.ToString()));
                 update.ExecuteNonQuery();
             }
+            if (old is null)
+                ExecuteExisting(db, tx, id, "UPDATE bookmarks SET sibling_order=$order WHERE id=$id", ("$order", PrependOrder(db, tx, null)));
             return new CaptureCommit(FindId(db, tx, id)!, !string.IsNullOrEmpty(old?.Note), old?.DeletedAtUtc != null);
         });
     }
@@ -343,18 +347,21 @@ VALUES($id,$kind,$path,$normalized,$sheet,$cell,$display,'',$now,$now,$sequence,
     public void SaveStickerLayout(StickerLayout layout)
     {
         ValidateStickerLayout(layout, ResultCode.InvalidRequest);
-        Write("sticker-layout", (db, tx) =>
-        {
-            using (var exists = Command(db, tx, "SELECT 1 FROM bookmarks WHERE id=$id", ("$id", layout.BookmarkId.ToString())))
-                if (exists.ExecuteScalar() is null) throw new BookmarkException(ResultCode.TargetUnavailable);
-            using var command = Command(db, tx, @"INSERT INTO sticker_layouts (bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top,parent_id)
+        Write("sticker-layout", (db, tx) => SaveLayout(db, tx, layout));
+    }
+
+    private static int SaveLayout(SqliteConnection db, SqliteTransaction tx, StickerLayout layout)
+    {
+        ValidateStickerLayout(layout, ResultCode.InvalidRequest);
+        using (var exists = Command(db, tx, "SELECT 1 FROM bookmarks WHERE id=$id", ("$id", layout.BookmarkId.ToString())))
+            if (exists.ExecuteScalar() is null) throw new BookmarkException(ResultCode.TargetUnavailable);
+        using var command = Command(db, tx, @"INSERT INTO sticker_layouts (bookmark_id,monitor_device,left_offset,top_offset,width,height,is_collapsed,always_on_top,parent_id)
 VALUES($id,$monitor,$left,$top,$width,$height,$collapsed,$topmost,$parent)
 ON CONFLICT(bookmark_id) DO UPDATE SET monitor_device=excluded.monitor_device,left_offset=excluded.left_offset,top_offset=excluded.top_offset,
 width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,always_on_top=excluded.always_on_top,parent_id=excluded.parent_id",
-                ("$id", layout.BookmarkId.ToString()), ("$monitor", layout.MonitorDevice), ("$left", layout.Left), ("$top", layout.Top),
-                ("$width", layout.Width), ("$height", layout.Height), ("$collapsed", layout.IsCollapsed), ("$topmost", layout.AlwaysOnTop), ("$parent", layout.ParentId?.ToString()));
-            return command.ExecuteNonQuery();
-        });
+            ("$id", layout.BookmarkId.ToString()), ("$monitor", layout.MonitorDevice), ("$left", layout.Left), ("$top", layout.Top),
+            ("$width", layout.Width), ("$height", layout.Height), ("$collapsed", layout.IsCollapsed), ("$topmost", layout.AlwaysOnTop), ("$parent", layout.ParentId?.ToString()));
+        return command.ExecuteNonQuery();
     }
 
     private static void ValidateStickerLayout(StickerLayout layout, ResultCode failure)
@@ -369,8 +376,13 @@ width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,a
     {
         if (note == null || note.Length > 500 || note.Any(c => c is '\r' or '\n' or '\0' or '\u0085' or '\u2028' or '\u2029'))
             throw new BookmarkException(ResultCode.InvalidRequest);
-        Write("note", (db, tx) => ExecuteExisting(db, tx, id,
-            "UPDATE bookmarks SET note=$note,note_updated_at_utc=$now WHERE id=$id", ("$note", note), ("$now", Timestamp())));
+        Write("note", (db, tx) =>
+        {
+            Bookmark current = FindId(db, tx, id) ?? throw new BookmarkException(ResultCode.TargetUnavailable);
+            if (current.Note == note) return 0;
+            return ExecuteExisting(db, tx, id, "UPDATE bookmarks SET note=$note,note_updated_at_utc=$now WHERE id=$id",
+                ("$note", note), ("$now", Timestamp()));
+        });
     }
 
     public void SetParent(Guid id, Guid? parentId)
@@ -378,24 +390,10 @@ width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,a
         if (id == Guid.Empty || parentId == Guid.Empty || id == parentId) throw new BookmarkException(ResultCode.InvalidRequest);
         Write("parent", (db, tx) =>
         {
-            var child = FindId(db, tx, id);
-            if (child is null || child.DeletedAtUtc is not null) throw new BookmarkException(ResultCode.TargetUnavailable);
-            if (parentId is Guid proposedParent)
-            {
-                var parent = FindId(db, tx, proposedParent);
-                if (parent is null || parent.DeletedAtUtc is not null) throw new BookmarkException(ResultCode.TargetUnavailable);
-                if (!parent.IsFolder) throw new BookmarkException(ResultCode.InvalidRequest);
-                // Follow retained links through deleted nodes too: restoring one must never reveal a cycle.
-                var visited = new HashSet<Guid>();
-                Guid? current = proposedParent;
-                while (current is Guid ancestor)
-                {
-                    if (ancestor == id || !visited.Add(ancestor)) throw new BookmarkException(ResultCode.InvalidRequest);
-                    using var readParent = Command(db, tx, "SELECT parent_id FROM bookmarks WHERE id=$id", ("$id", ancestor.ToString()));
-                    current = readParent.ExecuteScalar() is string value ? Guid.Parse(value) : null;
-                }
-            }
-            return ExecuteExisting(db, tx, id, "UPDATE bookmarks SET parent_id=$parent WHERE id=$id", ("$parent", parentId?.ToString()));
+            var child = RequireActive(db, tx, id);
+            if (parentId is Guid parent) RequireFolder(db, tx, parent);
+            if (child.ParentId == parentId) return new FolderDropCommit(null, []);
+            return ApplyDrop(db, tx, new(id, parentId is null ? BookmarkDropKind.Detach : BookmarkDropKind.MoveInto, parentId));
         });
     }
 
@@ -407,6 +405,8 @@ width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,a
             if (parentId is Guid parent) RequireFolder(db, tx, parent);
             Guid id = Guid.NewGuid();
             InsertFolder(db, tx, id, name, parentId, Timestamp(), NextSequence(db, tx));
+            ExecuteExisting(db, tx, id, "UPDATE bookmarks SET sibling_order=$order WHERE id=$id",
+                ("$order", parentId is null ? PrependOrder(db, tx, null) : AppendOrder(db, tx, parentId)));
             return FindId(db, tx, id)!;
         });
     }
@@ -432,21 +432,8 @@ width=excluded.width,height=excluded.height,is_collapsed=excluded.is_collapsed,a
         if (id == Guid.Empty || targetId == Guid.Empty || id == targetId) throw new BookmarkException(ResultCode.InvalidRequest);
         return Write("folder-drop", (db, tx) =>
         {
-            Bookmark source = RequireActive(db, tx, id), target = RequireActive(db, tx, targetId);
-            if (target.IsFolder && source.ParentId == targetId) return new FolderDropCommit(null, []);
-            if (!BookmarkTree.CanDropOnto(ReadAll(db, tx), id, targetId)) throw new BookmarkException(ResultCode.InvalidRequest);
-            if (target.IsFolder)
-            {
-                ExecuteExisting(db, tx, id, "UPDATE bookmarks SET parent_id=$parent WHERE id=$id", ("$parent", targetId.ToString()));
-                return new FolderDropCommit(null, [FindId(db, tx, id)!, target]);
-            }
-            Guid folderId = Guid.NewGuid();
-            InsertFolder(db, tx, folderId, "새 폴더", target.ParentId, Timestamp(), NextSequence(db, tx));
-            CloneFolderLayout(db, tx, targetId, folderId, target.ParentId);
-            foreach (Guid childId in new[] { targetId, id })
-                ExecuteExisting(db, tx, childId, "UPDATE bookmarks SET parent_id=$parent WHERE id=$id", ("$parent", folderId.ToString()));
-            Bookmark created = FindId(db, tx, folderId)!;
-            return new FolderDropCommit(created, [created, FindId(db, tx, targetId)!, FindId(db, tx, id)!]);
+            Bookmark target = RequireActive(db, tx, targetId);
+            return ApplyDrop(db, tx, new(id, target.IsFolder ? BookmarkDropKind.MoveInto : BookmarkDropKind.Group, targetId));
         });
     }
 
@@ -493,9 +480,9 @@ SELECT $folder,monitor_device,left_offset,top_offset,width,height,is_collapsed,a
         clone.ExecuteNonQuery();
     }
 
-    private static List<Bookmark> ReadAll(SqliteConnection db, SqliteTransaction tx)
+    private static List<Bookmark> ReadAll(SqliteConnection db, SqliteTransaction tx, string columns = Columns)
     {
-        using var command = Command(db, tx, "SELECT " + Columns + " FROM bookmarks");
+        using var command = Command(db, tx, "SELECT " + columns + " FROM bookmarks");
         using var reader = command.ExecuteReader();
         var rows = new List<Bookmark>();
         while (reader.Read()) rows.Add(Materialize(reader));
@@ -509,8 +496,12 @@ SELECT $folder,monitor_device,left_offset,top_offset,width,height,is_collapsed,a
             "UPDATE bookmarks SET color=$color WHERE id=$id AND deleted_at_utc IS NULL", ("$color", (int)color)));
     }
 
-    public void SoftDelete(Guid id) => Write("delete", (db, tx) => ExecuteExisting(db, tx, id,
-        "UPDATE bookmarks SET deleted_at_utc=$now WHERE id=$id", ("$now", Timestamp())));
+    public void SoftDelete(Guid id) => Write("delete", (db, tx) =>
+    {
+        Bookmark current = FindId(db, tx, id) ?? throw new BookmarkException(ResultCode.TargetUnavailable);
+        return current.DeletedAtUtc is not null ? 0 : ExecuteExisting(db, tx, id,
+            "UPDATE bookmarks SET deleted_at_utc=$now WHERE id=$id", ("$now", Timestamp()));
+    });
 
     public void Restore(Guid id) => Write("restore", (db, tx) => ExecuteExisting(db, tx, id,
         "UPDATE bookmarks SET deleted_at_utc=NULL WHERE id=$id"));
@@ -574,9 +565,13 @@ SELECT $folder,monitor_device,left_offset,top_offset,width,height,is_collapsed,a
     private T Write<T>(string operation, Func<SqliteConnection, SqliteTransaction, T> action) => Read(db =>
     {
         using var tx = db.BeginTransaction();
+        bool undoable = IsUndoable(operation);
+        if (undoable) BeginUndoCapture(db, tx);
         T result = action(db, tx);
+        UndoEntry? undo = undoable ? CompleteUndoCapture(db, tx) : null;
         _beforeCommit?.Invoke(operation);
         tx.Commit();
+        if (undo is { Patches.Count: > 0 }) _undo.Push(undo);
         return result;
     });
 
@@ -624,7 +619,8 @@ SELECT $folder,monitor_device,left_offset,top_offset,width,height,is_collapsed,a
             StringOrNull(row, 22), row.IsDBNull(23) ? null : row.GetInt32(23), StringOrNull(row, 24))),
         row.GetString(3), row.GetString(6), row.GetString(7), DateTimeOffset.Parse(row.GetString(8), CultureInfo.InvariantCulture),
         DateTimeOffset.Parse(row.GetString(9), CultureInfo.InvariantCulture), row.GetInt64(10), DateOrNull(row, 11), DateOrNull(row, 13),
-        row.IsDBNull(14) ? null : (ResultCode)row.GetInt32(14), DateOrNull(row, 15), row.IsDBNull(25) ? null : Guid.Parse(row.GetString(25)), ValidatedColor(row.GetInt32(26)), row.GetBoolean(27));
+        row.IsDBNull(14) ? null : (ResultCode)row.GetInt32(14), DateOrNull(row, 15), row.IsDBNull(25) ? null : Guid.Parse(row.GetString(25)), ValidatedColor(row.GetInt32(26)), row.GetBoolean(27),
+        row.FieldCount > 28 && !row.IsDBNull(28) ? row.GetInt64(28) : null);
         if (row.GetInt32(27) is not (0 or 1) || !bookmark.IsFolder && bookmark.FolderExpanded)
             throw new BookmarkException(ResultCode.PersistenceFailed);
         if (bookmark.IsFolder)

@@ -1,0 +1,11 @@
+PASS: TPD01 native monitor transitions run in a PerMonitorV2 process
+PASS: TPD02 96->120 DPI (\\.\DISPLAY1): native panel bounds immediately match the root-derived plan
+PASS: TPD03 96->120 DPI (\\.\DISPLAY1): no delayed autoscale changes the panel or root anchor
+PASS: TPD04 96->120 DPI (\\.\DISPLAY1): host and rows share the destination DPI and exact row geometry
+PASS: TPD06 96->120 DPI (\\.\DISPLAY1): native hit coverage follows rounded faces and excludes transparent gaps and corners
+PASS: TPD02 120->96 DPI (\\.\DISPLAY2): native panel bounds immediately match the root-derived plan
+PASS: TPD03 120->96 DPI (\\.\DISPLAY2): no delayed autoscale changes the panel or root anchor
+PASS: TPD04 120->96 DPI (\\.\DISPLAY2): host and rows share the destination DPI and exact row geometry
+PASS: TPD06 120->96 DPI (\\.\DISPLAY2): native hit coverage follows rounded faces and excludes transparent gaps and corners
+PASS: TPD05 the native round trip exercised monitors with different DPI settings
+RESULT: 10 native mixed-DPI tree panel checks passed.

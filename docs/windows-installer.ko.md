@@ -2,11 +2,11 @@
 
 일반 사용자의 설치·사용·백업·문제 해결은 **[설치 및 사용 매뉴얼](user-manual.ko.md)**에서 한 번에 확인할 수 있습니다. 이 문서는 MSI 운영·빌드·검증의 상세 안내입니다.
 
-**0.2.19 설치 안내입니다.** 실사용 기능 시나리오, 자동검사 1,142개와 최종 MSI 검사 54개·관리 추출 파일 해시 대조를 통과했습니다. 배포 파일은 [0.2.19 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.19)에서 받을 수 있습니다. 최종 검사와 확인 범위는 릴리스 안내 및 첨부 검증 JSON을 기준으로 합니다.
+**0.2.20 설치 안내입니다.** 폴더 조작, 서로 다른 화면 배율 사이의 이동, 루트·자식의 한글 입력과 드래그 저장 실패 시 데이터 유지를 사람의 직접 조작으로 확인했습니다. 외형 변경 전후를 구분한 실기 범위는 [릴리스 안내](release-notes-v0.2.20.md)에 기록합니다. 전체 자동검사·패키지 검사·게시 자산 대조의 최종 결과는 [0.2.20 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.20)의 본문과 첨부 검증 자료를 기준으로 합니다.
 
-`WorkBookmark-0.2.19-win-x64.msi`는 Windows x64용 사용자별 설치 패키지로 준비합니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
+`WorkBookmark-0.2.20-win-x64.msi`는 Windows x64용 사용자별 설치 패키지입니다. .NET 런타임을 포함하므로 별도의 .NET 설치가 필요하지 않습니다. 파일은 `%LOCALAPPDATA%\Programs\WorkBookmark`에 설치하며, 관리자 권한을 요청하지 않습니다. 조직의 Windows Installer 실행 정책은 별도로 적용됩니다.
 
-0.2.19는 **Shift 없이 스티커를 다른 스티커 위에 끌어 놓아 폴더로 묶습니다.** 일반 스티커 위에 놓으면 새 폴더를 만들고, 기존 폴더 위에 놓으면 그 안으로 이동합니다. 대상의 배경색이 바뀐 것을 확인하고 놓으세요. **Alt를 누르면 자석 정렬과 폴더 묶기를 건너뛰고 자유롭게 이동합니다.** 여러 폴더를 펼칠 때 먼저 열린 트리의 위치를 우선 유지하고, 목록에서 드래그하는 동안 검색 응답이 도착해도 표시된 행을 유지합니다. 주변 스티커의 임시 이동·접을 때 원위치 복구, 한 줄 스티커·단축키는 유지합니다. **DB는 0.2.12부터 사용한 v8을 유지하며 스키마 변경이 없습니다.** [0.2.19 릴리스 안내](release-notes-v0.2.19.md)에서 변경 내용과 검증 범위를 확인합니다. 기존 0.2.4의 사용자 지정 설치 경로 수정은 유지하며 [당시 설치 검증 기록](evidence/install-location-2026-09-27/README.md)을 보존합니다.
+0.2.20은 **최상위 스티커를 기준으로 하위 항목을 공통 영역에 정렬**합니다. 개별 둥근 카드만 보이며 카드 사이와 모서리 바깥은 배경이 보입니다. 공통 정렬·스크롤은 유지하고, 실제 카드와 스크롤바만 뒤를 가리며 클릭·드롭 범위도 보이는 영역과 일치합니다. 자식 카드 폭은 루트의 실제 보이는 내용 폭에 맞춥니다. 펼침·접힘·편집으로 주변 스티커를 밀지 않습니다. 루트는 트리 전체를 이동하고, 자식은 드래그 안내에 따라 순서·소속을 바꾸거나 빈 바탕화면으로 분리합니다. **Alt는 루트의 자석·묶기를 끄고 자식 드래그는 취소**합니다. 현재 세션의 마지막 변경 되돌리기, 서로 다른 화면 배율의 미리보기·확정 배치, 한글 조합 후 자동저장도 보완했습니다. **DB는 첫 실행에서 백업 후 v9로 이전합니다.** [0.2.20 릴리스 안내](release-notes-v0.2.20.md)에서 변경 내용과 검증 범위를 확인합니다. 기존 0.2.4의 사용자 지정 설치 경로 수정은 유지하며 [당시 설치 검증 기록](evidence/install-location-2026-09-27/README.md)을 보존합니다.
 
 **0.2.3 이하를 사용자 지정 경로에 설치했다면 기존 MSI와 원래 INSTALLFOLDER를 지정해 먼저 제거한 뒤 새로 설치하세요.** 기본 경로의 일반 업데이트는 이전 릴리스에서 확인했습니다. 이번 릴리스의 검증 범위는 위 릴리스 안내를 참고하세요. [설치 경로 이행 안내](windows-installer.ko.md)를 먼저 확인하세요.
 
@@ -27,7 +27,7 @@
 
 더 높은 버전의 MSI를 실행하면 같은 사용자의 이전 MSI 설치를 자동으로 찾아 제거한 뒤 새 버전을 설치합니다. 기본 경로 설치는 먼저 제거할 필요가 없습니다. 0.2.3 이하 사용자 지정 경로는 아래 이행 절차를 따르세요. 교체와 제거 전에 앱에 정상 종료를 요청합니다. 책갈피·메모·설정과 로그인 자동 실행 선택은 보존합니다. 포터블 ZIP 폴더는 Windows Installer에 등록된 설치가 아니므로 자동 제거 대상에 포함하지 않습니다. 낮은 버전으로의 덮어쓰기는 차단하며, 같은 버전의 실행은 Windows Installer 유지 관리 동작을 따릅니다. MSI를 다시 배포할 때에는 세 자리 제품 버전을 올려야 합니다.
 
-0.2.12는 기존 DB를 v8로 갱신하고 변경 전 `bookmarks.db.pre-migration-….bak`를 데이터 폴더에 남겼습니다. 0.2.19는 v8 DB를 그대로 사용하므로 0.2.12·0.2.13·0.2.14-test.2·0.2.14·0.2.15·0.2.16·0.2.17·0.2.18에서 업데이트할 때 추가 이전이 없습니다. 0.2.11 이하에서 처음 업데이트하면 같은 백업·v8 이전을 수행합니다. **0.2.11 이하는 갱신된 DB를 읽을 수 없습니다.** 그 버전으로 복귀하려면 현재 데이터 보존과 이전 전 백업 복원이 필요하며, 복원한 백업 이후의 기록은 포함되지 않습니다. [백업·복원 안내](user-manual.ko.md#maintenance)를 확인하세요.
+0.2.20은 기존 DB를 처음 열 때 `bookmarks.db.pre-migration-….bak`를 데이터 폴더에 남긴 뒤 **v9**로 이전합니다. 0.2.12~0.2.19가 사용한 v8 DB도 이번에는 이전 대상입니다. 책갈피·메모·관계·색상·열림 상태와 기존 배치 기록을 보존하고, 형제 표시 순서를 저장합니다. 새 화면에서 자식 좌표는 공통 패널이 정하며 루트 위치·폭을 유지합니다. **0.2.19는 v9 DB를 읽을 수 없으므로 이전 전 백업 없이는 복귀할 수 없습니다.** 복귀하려면 현재 데이터 폴더를 별도로 보존한 뒤 이전 전 백업의 복사본을 복원해야 합니다. 백업 이후 추가·수정한 기록은 복원본에 포함되지 않습니다. [백업·복원 안내](user-manual.ko.md#maintenance)를 확인하세요.
 
 **설정 → 앱 → 설치된 앱 → WorkBookmark → 제거**, 또는 **제어판 → 프로그램 및 기능 → WorkBookmark → 제거**를 이용합니다. 실행 파일, 시작 메뉴 및 자동 실행 바로가기를 제거합니다. 책갈피와 설정 데이터는 보존하므로 재설치 후 이어서 사용할 수 있습니다. 데이터까지 삭제하려면 앱 제거 후 `%LOCALAPPDATA%\WorkBookmark`를 사용자가 별도로 삭제합니다.
 
@@ -38,9 +38,9 @@
 새 설치에서 경로를 지정한 예입니다. 기본 설치 화면은 경로 선택 기능을 제공하지 않습니다.
 
 ```powershell
-msiexec /i "WorkBookmark-0.2.19-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
-msiexec /fa "WorkBookmark-0.2.19-win-x64.msi"
-msiexec /x "WorkBookmark-0.2.19-win-x64.msi"
+msiexec /i "WorkBookmark-0.2.20-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
+msiexec /fa "WorkBookmark-0.2.20-win-x64.msi"
+msiexec /x "WorkBookmark-0.2.20-win-x64.msi"
 ```
 
 **0.2.3 이하 사용자 지정 경로 설치는 먼저 기존 MSI에 원래 경로를 지정하여 제거하세요.** 이전 MSI는 설치 경로를 기록하지 않았으므로 일반 복구·제거가 기본 경로를 사용하고 원래 폴더에 파일을 남길 수 있습니다. 새 MSI도 과거 패키지의 제거 코드를 소급 변경하지 못합니다. 기본 경로의 기존 설치는 평소대로 업데이트할 수 있습니다.
@@ -49,12 +49,12 @@ msiexec /x "WorkBookmark-0.2.19-win-x64.msi"
 # 기존 설치 경로를 확인하고 앱을 정상 종료한 후 순서대로 실행
 msiexec /x "WorkBookmark-0.2.3-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
 # 위 제거의 성공을 확인한 다음 새 버전을 설치
-msiexec /i "WorkBookmark-0.2.19-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
+msiexec /i "WorkBookmark-0.2.20-win-x64.msi" INSTALLFOLDER="D:\Apps\WorkBookmark"
 ```
 
 사용자 데이터 폴더는 위 경로와 별도이며 제거 시 보존합니다. 원래 경로가 불명확하거나 이미 복구 후 두 위치에 파일이 생긴 경우에는 기존 설치 로그·바로가기 대상을 먼저 확인하세요. 임의의 폴더를 일괄 삭제하지 마세요.
 
-개발자는 `scripts/test-install-location.ps1`로 설치가 없는 일반 사용자 환경에서 후보 SHA-256을 고정하고 사용자 지정 경로의 복구·제거, 기본 경로 0.2.3 업데이트, 이전 사용자 지정 경로의 명시적 이전 절차를 순차 검증합니다. 기존 사용자 데이터는 내용 대신 해시로 보존 여부를 확인하며, 설치 파일 외의 시험용 파일도 남기는지 확인합니다. 시험용 후속 MSI를 사용하는 업데이트 검사와 118개 실기 체크포인트의 결과는 [0.2.4 설치 경로 검증 기록](evidence/install-location-2026-09-27/README.md)에 남겼습니다.
+`scripts/test-install-location.ps1`은 0.2.4 당시 설치 경로 검증용이며 과거 버전을 명시합니다. 0.2.20에 그대로 실행하는 검사가 아닙니다. 당시에는 설치가 없는 일반 사용자 환경에서 후보 SHA-256을 고정하고 사용자 지정 경로의 복구·제거, 기본 경로 0.2.3 업데이트와 이전 사용자 지정 경로의 명시적 이전을 확인했습니다. 기존 사용자 데이터는 내용 대신 해시로 대조했습니다. 시험용 후속 MSI를 사용하는 업데이트 검사와 118개 실기 체크포인트는 [0.2.4 설치 경로 검증 기록](evidence/install-location-2026-09-27/README.md)에 보존합니다.
 
 ## 빌드
 
@@ -65,19 +65,19 @@ Windows에서 저장소 SDK 및 Node를 사용합니다.
 ./scripts/build.ps1 -Msi
 
 # 별도 obj/bin에서 검증/게시 (기존 실행 파일의 잠금과 병렬 작업 충돌 방지)
-./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-0219
+./scripts/build.ps1 -Msi -ArtifactsPath ./artifacts/verification-0220
 
 # 커밋 후 ZIP + 커밋 소스 ZIP + MSI + 검증 JSON + SHA256SUMS 생성
 ./scripts/build.ps1 -Package -Msi
 
 # 커밋 전 수정과 새 파일까지 포함한 현재 작업 트리로 배포 패키지 생성
-./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-0219
+./scripts/build.ps1 -Package -Msi -SourceMode WorkingTree -ArtifactsPath ./artifacts/verification-0220
 
 # 이미 게시한 디렉터리에서 MSI만 생성
 ./scripts/build-msi.ps1 -PublishDirectory ./artifacts/publish/<게시폴더>
 
 # 설치 없이 관리 이미지 추출 및 모든 파일 해시 검증
-./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.2.19-win-x64.msi `
+./scripts/test-msi.ps1 -MsiPath ./artifacts/installer/WorkBookmark-0.2.20-win-x64.msi `
     -PublishDirectory ./artifacts/publish/<게시폴더> -Extract
 ```
 
@@ -89,11 +89,11 @@ Windows에서 저장소 SDK 및 Node를 사용합니다.
 
 ## 검증 범위
 
-**0.2.19 최종 후보의 아래 검사는 아직 완료하지 않았습니다.** 이 절은 검사 절차와 판정 범위를 설명하며, 해당 버전의 성공 기록이 아닙니다. 최종 결과는 [0.2.19 릴리스 안내](release-notes-v0.2.19.md)와 배포에 첨부할 검증 JSON에 기록합니다.
+0.2.20의 전체 자동검사 결과와 실행 환경은 [릴리스 본문](https://github.com/prozac0401/BookMark/releases/tag/v0.2.20)에서, MSI 구조·관리 추출·파일 대조 결과는 첨부 검증 JSON에서 확인합니다. `SourceSnapshot.json`은 소스 기준, `SHA256SUMS.txt`는 배포 파일 지문을 기록합니다. 기능 실기와 최종 패키지 검증은 구분하며, 실제 조작의 확인 범위는 [0.2.20 릴리스 안내](release-notes-v0.2.20.md)를 참고하세요.
 
 자동 검증은 MSI의 사용자 범위, 관리자 권한 요구 없음, x64 플랫폼, 제품 버전, 제어판 제거 등록, 설치/바로가기 경로, 자동 실행 선택 보존 조건, 업그레이드/종료 순서, 완료 화면의 실행 선택 조건, 데이터 삭제 동작 없음, 파일 목록을 검사합니다. 설치 화면의 전용 이미지와 앱 아이콘은 MSI 내부 바이너리의 SHA-256까지 대조합니다. `-Extract`는 `msiexec /a`로 관리 이미지만 만들고 게시 파일 전체의 SHA-256을 대조합니다. 실제 사용자에게 설치하거나 기존 앱을 제거하지 않습니다.
 
-실제 설치·제거·재부팅 동작은 별도 Windows 계정 또는 VM에서 다음 순서로 확인하세요.
+**0.2.20의 실제 MSI 설치·업데이트·제거·재로그인 전주기와 Office/탐색기 50회 실기 행렬은 아직 실행하지 않았습니다.** 기능 실기나 MSI 관리 추출의 성공으로 이 항목들을 대신 판정하지 않습니다. 실제 설치·제거·재부팅 동작은 별도 Windows 계정 또는 VM에서 다음 순서로 확인하세요.
 
 1. 일반 사용자로 MSI 설치 → 완료 화면의 **업무 책갈피 실행**이 기본 선택인지 확인 → 선택한 채 마치기 → 앱/시작 메뉴/트레이 확인 → 책갈피 저장.
 2. 로그아웃/로그인 또는 재부팅 → 앱 자동 실행 및 저장한 책갈피 복원 확인.

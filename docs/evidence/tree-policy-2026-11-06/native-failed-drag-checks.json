@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "beforeAtUtc": "2026-11-06T13:24:32.6300151+00:00",
+  "afterAtUtc": "2026-11-06T13:24:34.6364004+00:00",
+  "productAssemblySha256": "52fd110885db0d43bbda1333d4c8eeda273f6d83e549fdf36c43cd1922f76bbe",
+  "layoutsEqual": true,
+  "bookmarksEqual": true,
+  "attempts": [
+    {
+      "AtUtc": "2026-11-06T22:24:34.4488117+09:00",
+      "Operation": "folder-drop",
+      "Rejected": true
+    }
+  ],
+  "scope": "User performed a physical child drag with parent/folder storage failure injected. Compare last stable pre-drag state to first post-rejection state. Later intentional root moves are not treated as failure rollback changes.",
+  "appearance": "User confirmed rounded child cards but reported a square host background and excess child width; visual acceptance failed and follow-up changes are required."
+}

@@ -1,0 +1,31 @@
+PASS: TP11 tall content is capped by the available screen extent without shifting the root
+PASS: TP12 a root at the bottom opens above with unchanged coordinates
+PASS: TP13 a locked opening side cannot silently flip during content edits
+PASS: TP14 insufficient space on both sides produces no off-screen or alternative overlay
+PASS: TP15 the viewport shrinks to visible content instead of reserving hidden rows
+PASS: TP01 descendants share a clipped host and discard legacy independent row heights
+PASS: TP23 only rounded card faces belong to the native host region; corners and gaps are transparent
+PASS: TP26 child card edges align with the root's visible client area rather than its invisible resize frame
+PASS: TP02 inline editing reflows following siblings without moving the root anchor
+PASS: TP24 the rounded card clip grows with the editor instead of clipping its lower actions
+PASS: TP29 a hidden host cannot expose an expanded editor through its cached native region
+PASS: TP30 showing the tree rebuilds the expanded editor region before accepting native hits
+PASS: TP03 cancelling an embedded editor restores compact visible rows
+PASS: TP25 cancelling an editor restores the compact rounded clip without retaining its expanded region
+PASS: TP04 folding compacts visible rows while retaining the hidden child's nonactivating host
+PASS: TP27 folded rows do not leave an invisible native hit region behind
+PASS: TP05 deep indentation remains inside the common panel width
+PASS: TP06 managed root editing retains its complete anchor geometry
+PASS: TP07 a failed edit commit retains the root draft and reports failure to the caller
+PASS: TP08 concurrent edit commits wait for the in-flight save
+PASS: TP09 successful pending edit completion restores the unchanged root header
+PASS: TP16 a long tree scrolls the active input into its bounded viewport without moving the anchor
+PASS: TP28 the actual scrollbar stays inside the root card width and remains part of the native host region
+PASS: TP18 keyboard focus scrolls the editor cancel action into view as well as its input
+PASS: TP17 shrinking a scrolled tree clamps its scroll offset and removes empty content rows
+PASS: TP21 removing the last sibling restores full row width without stale scrollbars
+PASS: TP22 compacting an editor preserves common row width after native scrollbar recalculation
+PASS: TP19 selecting a managed background does not start a structural drag
+PASS: TP20 background dragging begins only after the system movement threshold
+PASS: TP10 disposing the viewport never disposes manager-owned bookmark views
+RESULT: 30 tree panel checks passed.

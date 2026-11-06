@@ -151,14 +151,14 @@ internal static class StickerPersistenceChecks
     private static void EditingWhilePlacementWriteCompletes(Action<bool, string> assert)
     {
         using var fixture = new Fixture();
-        var original = fixture.PlaceCompact(collapsed: true);
+        var original = fixture.PlaceCompact();
         Task first = fixture.Save();
         fixture.WaitForFirstWrite();
-        fixture.EnlargeTemporaryEditor();
+        bool retainedAnchor = fixture.OpenCompactEditor();
         fixture.ReleaseFirstWrite(first);
         fixture.DisposeManager();
-        assert(fixture.Saved == original && fixture.Saved is { IsCollapsed: true } && fixture.SaveAttempts == 1,
-            "SP16 shutdown during a temporarily resized editor persists the original collapsed placement after a pending layout write");
+        assert(retainedAnchor && fixture.Saved == original && fixture.Saved is { IsCollapsed: false } && fixture.SaveAttempts == 1,
+            "SP16 shutdown during compact root editing preserves the unchanged anchor after a pending layout write");
         fixture.Dispatch(first);
         assert(fixture.Saved == original && fixture.SaveAttempts == 1,
             "SP17 a delayed placement continuation cannot replace normal bounds with disposed editor geometry");
@@ -180,11 +180,11 @@ internal static class StickerPersistenceChecks
         fixture.WaitForFirstWrite();
         var latest = fixture.Place(480);
         Task busyAttempt = fixture.Save();
-        assert(busyAttempt.IsCompletedSuccessfully && fixture.SaveAttempts == 1,
-            "SP01 moving during a pending layout write does not start a competing storage write");
+        assert(!busyAttempt.IsCompleted && fixture.SaveAttempts == 1,
+            "SP01 a second save awaits the existing drain without starting a competing storage write");
         fixture.ReleaseFirstWrite(first);
         fixture.Dispatch(first);
-        fixture.Dispatch(fixture.Save());
+        fixture.Dispatch(busyAttempt);
         assert(fixture.FirstBatch.Single() == original && fixture.Saved == latest && fixture.SaveAttempts == 2,
             "SP02 a placement changed during the first batch is persisted by the next batch without reverting");
     }
@@ -199,9 +199,11 @@ internal static class StickerPersistenceChecks
         // Storage has failed, but its UI continuation has not yet requeued the
         // failed batch. The new placement must win against that stale batch.
         var latest = fixture.Place(500);
-        fixture.Dispatch(first);
-        assert(fixture.Notifications == 1 && fixture.Saved is null,
-            "SP03 failed layout persistence reports once and does not claim a successful save");
+        bool failed = false;
+        try { fixture.Dispatch(first); }
+        catch (BookmarkException exception) when (exception.Code == ResultCode.PersistenceFailed) { failed = true; }
+        assert(failed && fixture.Notifications == 1 && fixture.Saved is null,
+            "SP03 failed layout persistence reports once and faults its save gate instead of claiming success");
         fixture.Dispatch(fixture.Save());
         assert(fixture.Saved == latest && fixture.SaveAttempts == 2 && fixture.Notifications == 1,
             "SP04 movement after a failed write retries the newest placement rather than the failed snapshot");
@@ -254,6 +256,7 @@ internal static class StickerPersistenceChecks
             var target = new CapturedTarget(TargetKind.File, @"C:\synthetic\sticker-save-race.txt");
             var bookmark = new Bookmark(_id, target, target.Path, "합성 배치 검사", "", now, now, 1, null, null, null, null);
             _form = (Form)Activator.CreateInstance(AppAssembly.GetType("WorkBookmark.App.UI.StickerForm")!, bookmark)!;
+            _form.GetType().GetProperty("ManagedTreeInteractions", Private)!.SetValue(_form, true);
             _ = _form.Handle;
             _previousContext = SynchronizationContext.Current;
             SynchronizationContext.SetSynchronizationContext(_context);
@@ -267,28 +270,29 @@ internal static class StickerPersistenceChecks
         internal StickerLayout Place(int width)
         {
             float scale = _form.DeviceDpi / 96F;
-            _form.Bounds = new Rectangle(80, 80, (int)Math.Round(width * scale), (int)Math.Round(400 * scale));
-            Invoke("Remember", _form);
+            _form.Bounds = new Rectangle(80, 80, (int)Math.Round(width * scale), _form.Height);
+            Invoke("Remember", _form, false);
             // This suite covers ordering and durability; coordinate conversion is
             // verified separately in StickerIntegrationChecks.
             return Field<Dictionary<Guid, StickerLayout>>("_layouts")[_id];
         }
 
-        internal StickerLayout PlaceCompact(bool collapsed)
+        internal StickerLayout PlaceCompact()
         {
             float scale = _form.DeviceDpi / 96F;
             _form.ClientSize = new Size((int)Math.Round(260 * scale), (int)Math.Round(36 * scale));
             _form.Location = new Point(80, 80);
-            _form.GetType().GetMethod("ApplyPresentation")!.Invoke(_form, [collapsed, true]);
-            Invoke("Remember", _form);
+            _form.GetType().GetMethod("ApplyPresentation")!.Invoke(_form, [false, true]);
+            Invoke("Remember", _form, false);
             return Field<Dictionary<Guid, StickerLayout>>("_layouts")[_id];
         }
 
-        internal void EnlargeTemporaryEditor()
+        internal bool OpenCompactEditor()
         {
+            Rectangle before = _form.Bounds;
             _form.GetType().GetMethod("BeginNoteEdit")!.Invoke(_form, [(Func<string, Task>)(_ => Task.CompletedTask)]);
-            _form.Size += new Size(40, 30);
-            Invoke("Remember", _form);
+            Invoke("Remember", _form, false);
+            return _form.Bounds == before;
         }
 
         internal Task Save() => (Task)Invoke("SavePendingAsync")!;

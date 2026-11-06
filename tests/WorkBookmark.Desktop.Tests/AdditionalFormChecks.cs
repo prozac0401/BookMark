@@ -7,8 +7,7 @@ using WorkBookmark.Core;
 namespace WorkBookmark.Desktop.Tests;
 
 // Real WinForms command/control behavior. No user documents or persistent application DB.
-// Timer checks intentionally inject a past deadline and dispatch the real Tick handler;
-// they prove expiry/race handling without pretending to wait through a login or real IME session.
+// Session undo checks use repository acknowledgments without depending on wall-clock expiry.
 internal static class AdditionalFormChecks
 {
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -18,7 +17,7 @@ internal static class AdditionalFormChecks
     {
         NoteCancelAndLength(assert);
         RelinkPreviewDecisions(assert);
-        UndoDeadlineAndTimer(assert);
+        SessionUndoAndMenu(assert);
         WebBookmarkInput(assert);
         InstallerShutdown(assert);
     }
@@ -146,7 +145,7 @@ internal static class AdditionalFormChecks
         }
     }
 
-    private static void UndoDeadlineAndTimer(Action<bool, string> assert)
+    private static void SessionUndoAndMenu(Action<bool, string> assert)
     {
         string data = Path.Combine(Path.GetTempPath(), "WorkBookmark-AdditionalForms-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(data);
@@ -161,32 +160,22 @@ internal static class AdditionalFormChecks
         using var repository = new UndoRepository(Sample());
         using var worker = new WorkerClient();
         using var context = new BookmarkApplicationContext(repository, worker, data);
-        var timer = Field<System.Windows.Forms.Timer>(context, "_undoTimer");
         var menu = Field<ToolStripMenuItem>(context, "_undoMenu");
         try
         {
             Pump(InvokeTask(context, "DeleteAsync", repository.Value));
             assert(repository.DeleteCalls == 1 && repository.Value.DeletedAtUtc is not null &&
-                menu.Available && timer.Enabled && timer.Interval == 10000,
-                "UI03 deleting a bookmark arms the real 10-second undo timer and menu");
-            timer.Stop();
-            SetField(context, "_undoUntil", DateTimeOffset.UtcNow.AddSeconds(-1));
+                menu.Available && menu.Enabled && repository.CanUndo,
+                "UI03 deleting a bookmark enables the session undo menu without an expiry timer");
+            repository.FailUndo = true;
             Pump(InvokeTask(context, "UndoAsync"));
-            assert(repository.RestoreCalls == 0 && repository.Value.DeletedAtUtc is not null,
-                "UI03 expired undo is refused even when its timer callback has not fired");
-
-            typeof(System.Windows.Forms.Timer).GetMethod("OnTick", Instance)!.Invoke(timer, [EventArgs.Empty]);
-            assert(!timer.Enabled && !menu.Available && Field<object?>(context, "_undoId") is null,
-                "UI03 real expiry callback clears the undo identity and hides its menu");
-            Pump(InvokeTask(context, "UndoAsync"));
-            assert(repository.RestoreCalls == 0,
-                "UI03 a stale undo action after the expiry callback cannot restore a deleted bookmark");
-
-            Pump(InvokeTask(context, "DeleteAsync", repository.Value));
+            assert(repository.RestoreCalls == 0 && repository.Value.DeletedAtUtc is not null && repository.CanUndo,
+                "UI03 a failed session undo retains the current bookmark and retryable history");
+            repository.FailUndo = false;
             Pump(InvokeTask(context, "UndoAsync"));
             assert(repository.RestoreCalls == 1 && repository.Value.DeletedAtUtc is null &&
-                !timer.Enabled && !menu.Available && Field<object?>(context, "_undoId") is null,
-                "UI03 a fresh unexpired undo restores once and disarms both timer and menu");
+                menu.Available && !menu.Enabled && !repository.CanUndo,
+                "UI03 successful undo restores once and disables the empty-history menu");
             Pump(InvokeTask(context, "UndoAsync"));
             assert(repository.RestoreCalls == 1,
                 "UI03 repeated undo after successful restoration does not issue a second repository restore");
@@ -219,9 +208,20 @@ internal static class AdditionalFormChecks
     {
         internal Bookmark Value = initial;
         internal int DeleteCalls, RestoreCalls;
+        internal bool FailUndo;
+        private Bookmark? _beforeDelete;
+        public bool CanUndo => _beforeDelete is not null;
+        public BookmarkUndoResult Undo()
+        {
+            if (FailUndo) throw new IOException("Synthetic undo failure.");
+            if (_beforeDelete is null) return new([]);
+            Value = _beforeDelete; _beforeDelete = null; RestoreCalls++;
+            return new([Value.Id]);
+        }
         public void SoftDelete(Guid id)
         {
             if (id != Value.Id) throw new InvalidOperationException("Unexpected test bookmark.");
+            _beforeDelete = Value;
             DeleteCalls++; Value = Value with { DeletedAtUtc = DateTimeOffset.UtcNow };
         }
         public void Restore(Guid id)

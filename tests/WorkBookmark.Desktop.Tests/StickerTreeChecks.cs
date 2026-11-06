@@ -1,9 +1,8 @@
-using System.Diagnostics;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using WorkBookmark.App;
 using WorkBookmark.Core;
 
@@ -11,376 +10,176 @@ namespace WorkBookmark.Desktop.Tests;
 
 internal static class StickerTreeChecks
 {
-    private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Members = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
     private static readonly Type ManagerType = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.StickerManager")!;
 
     internal static void Run(Action<bool, string> assert)
     {
-        var parent = Sample("프로젝트 기획", 1);
-        var child = Sample("시장 조사", 2);
-        var grandchild = Sample("경쟁 서비스 비교", 3);
-        var separate = Sample("이번 주 회의", 4);
-        Bookmark[] items = [parent, child, grandchild, separate];
-        var manager = Create(() => items);
-        using var lifetime = (IDisposable)manager;
-        Point cursorBefore = Cursor.Position;
-        try
-        {
-            Pump((Task)Call(manager, "SetEnabledAsync", true, false)!);
-            var byId = Forms(manager).ToDictionary(form => BookmarkFor(form).Id);
-            Form a = byId[parent.Id], b = byId[child.Id], c = byId[grandchild.Id], d = byId[separate.Id];
-            Rectangle area = Screen.FromControl(a).WorkingArea;
-            a.Location = new Point(area.Left + 60, area.Top + 60);
-            b.Location = new Point(a.Left + a.Width + 70, a.Top + 100);
-            c.Location = new Point(a.Left, a.Top + 260);
-            d.Location = new Point(a.Left + a.Width + 70, a.Top + 350);
-            int requested = 0;
-            Guid? requestedChild = null, requestedParent = null;
-            ManagerType.GetEvent("ParentChangeRequested", Private)!.GetAddMethod(true)!.Invoke(manager,
-                [(Action<Bookmark, Guid?>)((value, newParent) =>
-                {
-                    requested++;
-                    requestedChild = value.Id;
-                    requestedParent = newParent;
-                })]);
-            assert(Forms(manager).All(form => !Field<Label>(form, "_treeMark").Visible),
-                "STR01 flat stickers retain the original one-row title and shortcut presentation");
+        var root = Folder("프로젝트 기획", 1);
+        var nested = Folder("시장 조사", 2);
+        var child = Item("비교표", 3);
+        var peer = Item("독립된 회의 자료", 4);
+        using var fixture = new Fixture(root, nested, child, peer);
+        Form r = fixture.View(root.Id), n = fixture.View(nested.Id), c = fixture.View(child.Id), p = fixture.View(peer.Id);
+        Rectangle area = Screen.FromControl(r).WorkingArea;
+        r.Location = area.Location + new Size(40, 40);
+        p.Location = new Point(area.Right - p.Width - 30, area.Top + 40);
+        Call(r, "OnResizeEnd", EventArgs.Empty); Call(p, "OnResizeEnd", EventArgs.Empty); fixture.Flush();
+        Rectangle rootBefore = r.Bounds, peerBefore = p.Bounds;
+        nested = nested with { ParentId = root.Id, SiblingOrder = 0 };
+        child = child with { ParentId = nested.Id, SiblingOrder = 0 };
+        fixture.Publish(nested, child);
+        assert(n.Visible && c.Visible && !n.TopLevel && !c.TopLevel && n.Parent == c.Parent && r.Bounds == rootBefore,
+            "STR01 committed hierarchy embeds descendants in one panel while retaining the root anchor");
+        assert(ScreenBounds(c).Top > ScreenBounds(n).Bottom && p.Bounds == peerBefore,
+            "STR02 depth-first rows remain ordered without moving unrelated stickers");
+        Call(n, "UpdateMenu");
+        assert(!Field<Control>(n, "_resizeGrip").Visible && !Field<ToolStripMenuItem>(n, "_moveMenu").Available && Field<ToolStripMenuItem>(n, "_detachMenu").Available,
+            "STR03 embedded cards allow explicit detach without independent resize or native movement");
 
-            Cursor.Position = Center(a);
-            SendMessage(b.Handle, 0x0231, 0, 0);
-            Rectangle drop = SendMoving(b, new Rectangle(a.Location + new Size(8, 4), b.Size), Keys.None);
-            assert(Field<bool>(a, "_dropTarget") && drop.Location == a.Location + new Size(8, 4),
-                "STR02 a valid parent highlights and accepts overlap ahead of magnetic snapping");
-            b.Bounds = drop;
-            Call(manager, "FinishMove", b, true, Cursor.Position, Keys.None);
-            SendMessage(b.Handle, 0x0232, 0, 0);
-            assert(requested == 1 && requestedChild == child.Id && requestedParent == parent.Id &&
-                BookmarkFor(b).ParentId is null && !Field<bool>(a, "_dropTarget"),
-                "STR03 a completed native drop requests persistence without applying an optimistic parent");
-            Size aSize = a.Size, bSize = b.Size;
-            child = child with { ParentId = parent.Id };
-            items = [parent, child, grandchild, separate];
-            Call(manager, "Upsert", child);
-            assert(BookmarkFor(b).ParentId == parent.Id && b.Left > a.Left && b.Top > a.Bottom &&
-                a.Size == aSize && b.Size == bSize && Field<Label>(a, "_treeMark").Visible &&
-                Field<Label>(b, "_treeMark").AccessibleName!.Contains(parent.Note, StringComparison.Ordinal),
-                "STR04 a committed parent displays hierarchy and arranges children in indented rows without resizing");
+        Rectangle childBefore = ScreenBounds(c);
+        Point destination = r.Location + new Size(70, 25);
+        object preview = fixture.Preview(r, destination, Keys.Alt);
+        assert(Property<bool>(preview, "Valid") && r.Bounds == rootBefore && ScreenBounds(c) == childBefore,
+            "STR04 a root movement preview leaves real root and child geometry unchanged");
+        bool moved = fixture.Commit(r, preview, destination, Keys.Alt);
+        Rectangle committed = Property<Rectangle>(preview, "Bounds");
+        Size delta = new(committed.X - rootBefore.X, committed.Y - rootBefore.Y);
+        assert(moved && r.Bounds == committed && ScreenBounds(c).Location == childBefore.Location + delta &&
+            fixture.Panel(root.Id).Bounds == Property<Rectangle?>(preview, "PanelBounds") && p.Bounds == peerBefore,
+            "STR05 a committed move exactly matches its root and panel preview without moving peers");
+        Rectangle stable = r.Bounds;
+        fixture.FailWrites = true;
+        destination += new Size(30, 20); preview = fixture.Preview(r, destination, Keys.Alt);
+        assert(!fixture.Commit(r, preview, destination, Keys.Alt) && r.Bounds == stable && p.Bounds == peerBefore,
+            "STR06 failed placement storage preserves displayed root and peer positions");
+        fixture.FailWrites = false;
 
-            grandchild = grandchild with { ParentId = child.Id };
-            items = [parent, child, grandchild, separate];
-            Call(manager, "Upsert", grandchild);
-            assert(c.Left > b.Left && c.Top > b.Bottom &&
-                Call(manager, "FindDropTarget", a, Center(c), Keys.Shift) is null &&
-                Call(manager, "FindDropTarget", b, Center(a), Keys.Shift) is null &&
-                Call(manager, "FindDropTarget", d, Center(a), Keys.Shift | Keys.Alt) is null,
-                "STR05 nested children indent and reject cycles, unchanged parents, and Alt grouping");
-            c.Hide();
-            assert(Call(manager, "FindDropTarget", d, Center(c), Keys.Shift) is null,
-                "STR06 hidden stickers cannot receive a drop");
-
-            Point oldA = a.Location, oldB = b.Location, oldC = c.Location;
-            var delta = new Size(37, 24);
-            Cursor.Position = new Point(area.Right - 2, area.Bottom - 2);
-            Move(manager, a, oldA + delta, alt: true);
-            assert(a.Location == oldA + delta && b.Location == oldB + delta && c.Location == oldC + delta &&
-                !c.Visible && requested == 1,
-                "STR07 moving a parent moves its complete subtree and preserves individually hidden descendants");
-            oldA = a.Location; oldB = b.Location; oldC = c.Location;
-            SendMessage(a.Handle, 0x0231, 0, 0);
-            a.Bounds = SendMoving(a, new Rectangle(a.Location + new Size(34, 16), a.Size));
-            a.Location = oldA; // The native modal move loop restores this rectangle on Esc.
-            SendMessage(a.Handle, 0x0232, 0, 0);
-            assert(a.Location == oldA && b.Location == oldB && c.Location == oldC && requested == 1,
-                "STR08 cancelling native movement restores descendant positions and does not change hierarchy");
-            SendMessage(a.Handle, 0x0231, 0, 0);
-            a.Width += 10;
-            SendMessage(a.Handle, 0x0232, 0, 0);
-            assert(requested == 1 && BookmarkFor(b).ParentId == parent.Id,
-                "STR09 native resize completion never requests a parent change");
-
-            c.Show();
-            Call(c, "BeginNoteEdit", (Func<string, Task>)(_ => Task.FromException(new IOException("Injected note failure"))));
-            Field<TextBox>(c, "_noteEditor").Text = "그룹 이동 중 보존할 초안";
-            Point resting = Property<Rectangle>(c, "PlacementBounds").Location;
-            Point origin = a.Location;
-            delta = new Size(23, 12);
-            Move(manager, a, origin + delta, alt: true);
-            assert(Property<bool>(c, "IsEditingNote") && Field<TextBox>(c, "_noteEditor").Text == "그룹 이동 중 보존할 초안" &&
-                Property<Rectangle>(c, "PlacementBounds").Location == resting + delta,
-                "STR10 moving a subtree preserves editing drafts and moves the normal note placement by the same amount");
-            Call(c, "CancelNoteEdit");
-            assert(c.Location == resting + delta,
-                "STR11 leaving note editing restores the correctly moved normal sticker location");
-
-            Call(b, "UpdateMenu");
-            Field<ToolStripMenuItem>(b, "_detachMenu").PerformClick();
-            assert(requested == 2 && requestedChild == child.Id && requestedParent is null && BookmarkFor(b).ParentId == parent.Id,
-                "STR12 the detach menu requests an authoritative root move without mutating the existing relationship");
-            child = child with { ParentId = null };
-            items = [parent, child, grandchild, separate];
-            Call(manager, "Upsert", child);
-            assert(!Field<Label>(a, "_treeMark").Visible && Field<Label>(b, "_treeMark").Visible &&
-                BookmarkFor(c).ParentId == child.Id && c.Left > b.Left,
-                "STR13 detaching a parent keeps its subtree together and removes the former parent's hierarchy cue");
-
-            var arrangement = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.StickerArrangementMode")!;
-            Pump((Task)Call(manager, "ArrangeAsync", Enum.Parse(arrangement, "Grid"))!);
-            assert(requested == 2 && BookmarkFor(c).ParentId == child.Id && c.Left > b.Left && c.Top > b.Bottom,
-                "STR14 explicit arrangement keeps groups in parent-first indented rows without hierarchy writes");
-
-            // No saved positions exist for a tree created entirely in list mode.
-            var fresh = Create(() => items);
-            using var freshLifetime = (IDisposable)fresh;
-            Pump((Task)Call(fresh, "SetEnabledAsync", true, false)!);
-            var freshForms = Forms(fresh).ToDictionary(form => BookmarkFor(form).Id);
-            assert(freshForms[grandchild.Id].Left > freshForms[child.Id].Left &&
-                freshForms[grandchild.Id].Top > freshForms[child.Id].Bottom,
-                "STR15 the first sticker reveal lays out a tree created in list mode");
-
-            LayoutChecks(assert);
-            PersistenceChecks(assert);
-            DropIntentChecks(assert);
-        }
-        finally { Cursor.Position = cursorBefore; }
+        Point desktop = new(area.Right - 12, area.Bottom - 12);
+        preview = fixture.Preview(n, desktop, Keys.None);
+        var detach = Property<BookmarkDropRequest?>(preview, "Request");
+        assert(detach is { Kind: BookmarkDropKind.Detach, RootLayout: not null } && BookmarkFor(n).ParentId == root.Id,
+            "STR07 a subtree desktop drop previews a concrete root placement without changing its parent");
+        nested = nested with { ParentId = null }; fixture.Publish(nested);
+        Call(fixture.Manager, "ApplySavedLayouts", (object)new[] { detach!.RootLayout! });
+        assert(n.TopLevel && n.Bounds == Property<Rectangle>(preview, "Bounds") && !c.TopLevel && BookmarkFor(c).ParentId == nested.Id &&
+            area.Contains(fixture.Panel(nested.Id).Bounds) && fixture.Panel(nested.Id).Bottom == n.Top,
+            "STR08 committed detach retains descendants and opens above the unchanged bottom-edge root");
+        var arrangement = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.StickerArrangementMode")!;
+        Pump((Task)Call(fixture.Manager, "ArrangeAsync", Enum.Parse(arrangement, "Grid"))!);
+        assert(BookmarkFor(c).ParentId == nested.Id && !c.TopLevel && area.Contains(fixture.Panel(nested.Id).Bounds),
+            "STR09 explicit root arrangement retains hierarchy and screen-bounded child panels");
+        PersistenceChecks(assert);
+        DropIntentChecks(assert);
     }
 
     private static void DropIntentChecks(Action<bool, string> assert)
     {
-        var items = new[] { Sample("놓을 위치", 1), Sample("이동할 항목", 2), Sample("다른 위치", 3) };
-        object manager = Create(() => items);
-        using var lifetime = (IDisposable)manager;
-        Pump((Task)Call(manager, "SetEnabledAsync", true, false)!);
-        var forms = Forms(manager).ToDictionary(form => BookmarkFor(form).Id);
-        Form target = forms[items[0].Id], moving = forms[items[1].Id], other = forms[items[2].Id];
-        Rectangle area = Screen.FromControl(target).WorkingArea;
-        target.Location = area.Location + new Size(60, 60);
-        other.Location = target.Location + new Size(0, target.Height + 100);
-        Point origin = target.Location + new Size(target.Width + 100, 0);
-        int requested = 0;
-        Guid? requestedTarget = null;
-        ManagerType.GetEvent("ParentChangeRequested", Private)!.GetAddMethod(true)!.Invoke(manager,
-            [(Action<Bookmark, Guid?>)((_, parent) => { requested++; requestedTarget = parent; })]);
-
-        bool Gesture(Keys preview, Keys release, Point? releaseAt = null)
-        {
-            moving.Location = origin;
-            Cursor.Position = Center(target);
-            SendMessage(moving.Handle, 0x0231, 0, 0);
-            moving.Bounds = SendMoving(moving, new Rectangle(target.Location + new Size(7, 3), moving.Size), preview);
-            bool highlighted = Field<bool>(target, "_dropTarget");
-            Call(manager, "FinishMove", moving, true, releaseAt ?? Cursor.Position, release);
-            SendMessage(moving.Handle, 0x0232, 0, 0);
-            return highlighted;
-        }
-
+        var target = Item("묶기 대상", 1); var source = Item("이동할 항목", 2); var other = Item("다른 대상", 3);
+        using var fixture = new Fixture(target, source, other);
+        Form t = fixture.View(target.Id), s = fixture.View(source.Id), o = fixture.View(other.Id);
+        Rectangle area = Screen.FromControl(t).WorkingArea;
+        t.Location = area.Location + new Size(60, 60); s.Location = t.Location + new Size(t.Width + 100, 0); o.Location = t.Location + new Size(0, t.Height + 100);
+        int requests = 0; BookmarkDropRequest? requested = null;
+        On(fixture.Manager, "DropRequested", (Action<BookmarkDropRequest>)(value => { requests++; requested = value; }));
         foreach (bool snap in new[] { false, true })
         {
-            ManagerType.GetProperty("SnapEnabled", Private)!.SetValue(manager, snap);
-            int before = requested;
-            assert(Gesture(Keys.None, Keys.None) && requested == before + 1 && requestedTarget == items[0].Id && BookmarkFor(moving).ParentId is null &&
-                moving.Location == target.Location + new Size(7, 3),
-                $"STR22 snap={snap}: an ordinary overlapping drag previews and requests grouping without a modifier");
-            assert(Gesture(Keys.Shift, Keys.Shift) && requested == before + 2 && requestedTarget == items[0].Id &&
-                !Field<bool>(target, "_dropTarget") && BookmarkFor(moving).ParentId is null,
-                $"STR23 snap={snap}: holding Shift groups only the previewed target and waits for the authoritative update");
-            before = requested;
-            assert(!Gesture(Keys.Shift | Keys.Alt, Keys.Shift | Keys.Alt) && requested == before &&
-                moving.Location == target.Location + new Size(7, 3),
-                $"STR24 snap={snap}: Alt vetoes grouping even when Shift is also held");
-            assert(!Gesture(Keys.Alt, Keys.None) && requested == before,
-                $"STR25 snap={snap}: releasing Alt only at release cannot create an unpreviewed group");
-            assert(Gesture(Keys.None, Keys.Alt) && requested == before && !Field<bool>(target, "_dropTarget"),
-                $"STR26 snap={snap}: pressing Alt before the drop cancels its preview and grouping");
-            assert(Gesture(Keys.None, Keys.None, Center(other)) && requested == before,
-                $"STR27 snap={snap}: a release over a different unpreviewed target cannot group either card");
+            ManagerType.GetProperty("SnapEnabled", Members)!.SetValue(fixture.Manager, snap);
+            Point center = Center(t); Rectangle before = s.Bounds;
+            object group = fixture.Preview(s, center, Keys.None); int count = requests;
+            assert(Property<BookmarkDropRequest?>(group, "Request") is { Kind: BookmarkDropKind.Group } && fixture.Commit(s, group, center, Keys.None) &&
+                requests == count + 1 && requested!.TargetId == target.Id && s.Bounds == before && BookmarkFor(s).ParentId is null,
+                $"STR10 snap={snap}: a central grouping preview emits one atomic request without mutating real cards");
+            object alt = fixture.Preview(s, center, Keys.Alt);
+            assert(Property<BookmarkDropRequest?>(alt, "Request") is null && !fixture.Commit(s, alt, center, Keys.None) && requests == count + 1 && s.Bounds == before,
+                $"STR11 snap={snap}: changing Alt at release cannot commit an unpreviewed grouping");
+            assert(!fixture.Commit(s, group, Center(o), Keys.None) && requests == count + 1,
+                $"STR12 snap={snap}: release over a different target rejects the stale grouping preview");
+            object edge = fixture.Preview(s, new Point(t.Left + 2, t.Top + t.Height / 2), Keys.None);
+            assert(Property<BookmarkDropRequest?>(edge, "Request") is null,
+                $"STR13 snap={snap}: an ordinary card's outer edge does not silently create a folder");
         }
+    }
+
+    private static void PersistenceChecks(Action<bool, string> assert)
+    {
+        var root = Folder("재시작할 프로젝트", 1); var child = Item("기존 좌표가 남은 자식", 2) with { ParentId = root.Id }; var peer = Item("다른 스티커", 3);
+        using var fixture = new Fixture(root, child, peer);
+        Form r = fixture.View(root.Id), c = fixture.View(child.Id), p = fixture.View(peer.Id);
+        Rectangle area = Screen.FromControl(r).WorkingArea;
+        r.Location = new Point(area.Left + 80, area.Bottom - r.Height); p.Location = area.Location + new Size(400, 80);
+        Call(r, "OnResizeEnd", EventArgs.Empty); Call(p, "OnResizeEnd", EventArgs.Empty); fixture.Flush();
+        Rectangle savedRoot = r.Bounds, savedPeer = p.Bounds;
+        var legacy = new StickerLayout(child.Id, Screen.FromControl(r).DeviceName, 460, 220, 420, 180, false, true, root.Id); fixture.Saved[child.Id] = legacy;
+        root = root with { FolderExpanded = false }; fixture.Publish(root); fixture.Restart();
+        r = fixture.View(root.Id); c = fixture.View(child.Id); p = fixture.View(peer.Id);
+        assert(r.Bounds == savedRoot && p.Bounds == savedPeer && !c.Visible && !BookmarkFor(r).FolderExpanded,
+            "STR14 restart preserves root anchors and fold state without revealing descendants");
+        root = root with { FolderExpanded = true }; fixture.Publish(root);
+        assert(!c.TopLevel && c.Visible && c.Height < legacy.Height && fixture.Panel(root.Id).Bottom == r.Top && r.Bounds == savedRoot &&
+            p.Bounds == savedPeer && fixture.Saved[child.Id] == legacy,
+            $"STR15 reopening derives child geometry while ignoring retained legacy coordinates and preserving root anchors (embedded={!c.TopLevel}, visible={c.Visible}, height={c.Height}, panelBottom={fixture.Panel(root.Id).Bottom}, rootTop={r.Top}, rootSame={r.Bounds == savedRoot}, peerSame={p.Bounds == savedPeer}, legacySame={fixture.Saved[child.Id] == legacy})");
+        Pump((Task)Call(fixture.Manager, "HideTreeAsync", child.Id)!);
+        root = root with { FolderExpanded = false }; fixture.Publish(root); root = root with { FolderExpanded = true }; fixture.Publish(root);
+        assert(!r.Visible && !c.Visible && p.Visible, "STR16 folding a hidden tree cannot override its visibility policy");
+        fixture.Restart();
+        assert(fixture.View(root.Id).Visible && fixture.View(child.Id).Visible && !fixture.View(child.Id).TopLevel && fixture.View(root.Id).Bounds == savedRoot,
+            "STR17 temporary hiding does not erase saved expansion or anchor geometry across restart");
     }
 
     internal static void Render(string directory)
     {
         Directory.CreateDirectory(directory);
-        var parent = Sample("신규 서비스 기획", 1);
-        var first = Sample("시장 조사 자료", 4) with { ParentId = parent.Id };
-        var nested = Sample("경쟁 서비스 비교표", 3) with { ParentId = first.Id };
-        var second = Sample("화면 설계 · 다음 회의에서 검토", 2) with { ParentId = parent.Id };
-        var separate = Sample("이번 주 할 일", 5);
-        var manager = Create(() => [parent, first, nested, second, separate]);
-        using var lifetime = (IDisposable)manager;
-        Pump((Task)Call(manager, "SetEnabledAsync", true, false)!);
-        var forms = Forms(manager).ToDictionary(form => BookmarkFor(form).Id);
-        Form root = forms[parent.Id];
-        Rectangle area = Screen.FromControl(root).WorkingArea;
-        root.Location = area.Location + new Size(40, 40);
-        Call(manager, "LayoutGroup", parent.Id);
-        forms[separate.Id].Location = new Point(root.Left, forms[second.Id].Bottom + 35);
-        Draw("sticker-tree.png");
-        Call(root, "SetDropTarget", true);
-        Draw("sticker-tree-drop.png");
-
+        var root = Folder("신규 서비스 기획", 1); var first = Item("시장 조사 자료", 4) with { ParentId = root.Id, SiblingOrder = 0 };
+        var nested = Folder("경쟁 서비스 비교", 3) with { ParentId = root.Id, SiblingOrder = 1 }; var deep = Item("기능 비교표", 2) with { ParentId = nested.Id };
+        using var fixture = new Fixture(root, first, nested, deep); Form r = fixture.View(root.Id);
+        r.Location = Screen.FromControl(r).WorkingArea.Location + new Size(40, 40);
+        Draw("sticker-tree.png"); Call(r, "SetDropTarget", true); Draw("sticker-tree-drop.png");
         void Draw(string name)
         {
-            var all = forms.Values.ToArray();
-            Rectangle union = all.Select(form => form.Bounds).Aggregate(Rectangle.Union);
-            using var image = new Bitmap(union.Width + 40, union.Height + 40);
-            using Graphics graphics = Graphics.FromImage(image);
-            graphics.Clear(Color.FromArgb(238, 241, 242));
-            foreach (var form in all)
-            {
-                using var card = new Bitmap(form.Width, form.Height);
-                form.DrawToBitmap(card, new Rectangle(Point.Empty, card.Size));
-                graphics.DrawImageUnscaled(card, form.Left - union.Left + 20, form.Top - union.Top + 20);
-            }
-            image.Save(Path.Combine(directory, name), ImageFormat.Png);
+            var surfaces = fixture.Surfaces(); Rectangle envelope = surfaces.Select(form => form.Bounds).Aggregate(Rectangle.Union);
+            using var bitmap = new Bitmap(envelope.Width + 40, envelope.Height + 40);
+            using (Graphics graphics = Graphics.FromImage(bitmap)) graphics.Clear(Color.FromArgb(238, 241, 242));
+            foreach (Form form in surfaces) form.DrawToBitmap(bitmap, new Rectangle(form.Left - envelope.Left + 20, form.Top - envelope.Top + 20, form.Width, form.Height));
+            bitmap.Save(Path.Combine(directory, name), ImageFormat.Png);
         }
     }
 
-    private static void LayoutChecks(Action<bool, string> assert)
+    private sealed class Fixture : IDisposable
     {
-        var type = typeof(BookmarkApplicationContext).Assembly.GetType("WorkBookmark.App.StickerTreeLayout")!;
-        var arrange = type.GetMethod("Arrange", BindingFlags.Static | BindingFlags.NonPublic)!;
-        (Size, int)[] rows = [(new Size(270, 50), 0), (new Size(310, 55), 1), (new Size(280, 45), 2)];
-        var area = new Rectangle(-1200, 0, 1000, 800);
-        var bounds = (IReadOnlyList<Rectangle>)arrange.Invoke(null, [rows, new Point(-230, 760), area, 144])!;
-        assert(bounds.All(area.Contains) && bounds[1].Left - bounds[0].Left == 30 &&
-            bounds[2].Left - bounds[1].Left == 30 && bounds[1].Top - bounds[0].Bottom == 12 &&
-            bounds.Select(value => value.Size).SequenceEqual(rows.Select(row => row.Item1)),
-            "STR16 group layout respects scaled indentation, negative monitor coordinates, screen edges and existing sizes");
-        rows = Enumerable.Range(0, 50).Select(index => (new Size(270, 50), index % 3)).ToArray();
-        bounds = (IReadOnlyList<Rectangle>)arrange.Invoke(null, [rows, area.Location, area, 96])!;
-        assert(bounds.All(area.Contains) && bounds.Select(value => value.Location).Distinct().Count() > 20,
-            "STR17 tall groups continue in reachable columns instead of piling every overflow child on the bottom edge");
+        private readonly Dictionary<Guid, Bookmark> _items;
+        internal object Manager { get; private set; }
+        internal ConcurrentDictionary<Guid, StickerLayout> Saved { get; } = new();
+        internal bool FailWrites { get; set; }
+        internal Fixture(params Bookmark[] items) { _items = items.ToDictionary(item => item.Id); Manager = Create(); Pump((Task)Call(Manager, "SetEnabledAsync", true, false)!); }
+        private object Create()
+        {
+            Func<Task<(IReadOnlyList<Bookmark>, IReadOnlyList<StickerLayout>)>> load = () => Task.FromResult(((IReadOnlyList<Bookmark>)_items.Values.ToArray(), (IReadOnlyList<StickerLayout>)Saved.Values.ToArray()));
+            Action<IReadOnlyList<StickerLayout>> save = layouts => { if (FailWrites) throw new IOException("Synthetic placement failure."); foreach (var layout in layouts) Saved[layout.BookmarkId] = layout; };
+            return ManagerType.GetConstructors(Members).Single().Invoke([load, save, (Action<string>)(_ => { })]);
+        }
+        private Form[] Forms => ((System.Collections.IEnumerable)ManagerType.GetProperty("Forms", Members)!.GetValue(Manager)!).Cast<Form>().ToArray();
+        private Form[] Panels => ((System.Collections.IEnumerable)ManagerType.GetProperty("Panels", Members)!.GetValue(Manager)!).Cast<Form>().ToArray();
+        internal Form View(Guid id) => Forms.Single(form => BookmarkFor(form).Id == id);
+        internal Form Panel(Guid id) => Panels.Single(panel => BookmarkFor(Property<Form>(panel, "Root")).Id == id);
+        internal Form[] Surfaces() => Forms.Where(form => form.TopLevel && form.Visible).Concat(Panels.Where(form => form.Visible)).ToArray();
+        internal void Publish(params Bookmark[] changes) { foreach (var item in changes) _items[item.Id] = item; Call(Manager, "ApplyFolderChanges", changes, null); }
+        internal object Preview(Form form, Point cursor, Keys keys) => Call(Manager, "EvaluateDrop", form, cursor, Size.Empty, keys)!;
+        internal bool Commit(Form form, object preview, Point cursor, Keys keys) => Pump((Task<bool>)Call(Manager, "CommitDropPreviewAsync", form, preview, cursor, Size.Empty, keys)!);
+        internal void Flush() => Pump((Task)Call(Manager, "SavePendingAsync")!);
+        internal void Restart() { ((IDisposable)Manager).Dispose(); Manager = Create(); Pump((Task)Call(Manager, "SetEnabledAsync", true, false)!); }
+        public void Dispose() => ((IDisposable)Manager).Dispose();
     }
 
-    private static void PersistenceChecks(Action<bool, string> assert)
-    {
-        var parent = Sample("목록에서 만든 프로젝트", 1);
-        var child = Sample("저장된 스티커 위치가 있는 자료", 2);
-        Bookmark[] items = [parent, child];
-        var layouts = new ConcurrentDictionary<Guid, StickerLayout>();
-        void Save(IReadOnlyList<StickerLayout> batch)
-        {
-            foreach (var layout in batch) layouts[layout.BookmarkId] = layout;
-        }
-        object NewManager() => Create(() => items, () => layouts.Values.ToArray(), Save);
-        Rectangle parentBounds, childCustom;
-        var first = NewManager();
-        using ((IDisposable)first)
-        {
-            Pump((Task)Call(first, "SetEnabledAsync", true, false)!);
-            var forms = Forms(first).ToDictionary(form => BookmarkFor(form).Id);
-            Form a = forms[parent.Id], b = forms[child.Id];
-            var area = Screen.FromControl(a).WorkingArea;
-            a.Size += new Size(35, 12);
-            a.Location = area.Location + new Size(80, 70);
-            b.Size += new Size(19, 6);
-            b.Location = area.Location + new Size(470, 250);
-            Call(a, "OnResizeEnd", EventArgs.Empty);
-            Call(b, "OnResizeEnd", EventArgs.Empty);
-            parentBounds = a.Bounds;
-            childCustom = b.Bounds;
-        }
-        // A parent edit occurs entirely in list mode after the first manager exits.
-        child = child with { ParentId = parent.Id };
-        items = [parent, child];
-        var second = NewManager();
-        using ((IDisposable)second)
-        {
-            Pump((Task)Call(second, "SetEnabledAsync", true, false)!);
-            var forms = Forms(second).ToDictionary(form => BookmarkFor(form).Id);
-            Form a = forms[parent.Id], b = forms[child.Id];
-            assert(a.Bounds == parentBounds && b.Size == childCustom.Size && b.Left > a.Left && b.Top > a.Bottom &&
-                b.Location != childCustom.Location,
-                "STR18 saved flat layouts regroup after a list-only parent edit and restart, preserving custom sizes and the root position");
-            b.Location = new Point(a.Left + 130, a.Bottom + 120);
-            Call(b, "OnResizeEnd", EventArgs.Empty);
-            childCustom = b.Bounds;
-        }
-        assert(layouts[child.Id].ParentId == parent.Id && layouts[parent.Id].ParentId is null,
-            "STR19 sticker persistence records the topology used to arrange each saved position");
-        var third = NewManager();
-        using ((IDisposable)third)
-        {
-            Pump((Task)Call(third, "SetEnabledAsync", true, false)!);
-            var forms = Forms(third).ToDictionary(form => BookmarkFor(form).Id);
-            assert(forms[parent.Id].Bounds == parentBounds && forms[child.Id].Bounds == childCustom &&
-                BookmarkFor(forms[child.Id]).ParentId == parent.Id,
-                "STR20 unchanged topology preserves custom group placements across restart");
-        }
-        StickerLayout savedParent = layouts[parent.Id], savedChild = layouts[child.Id];
-        bool listEditsRetainPlacement;
-        var fourth = NewManager();
-        using ((IDisposable)fourth)
-        {
-            // A new process starts in list mode, so neither sticker exists when
-            // committed color/note updates are published to the disabled manager.
-            Pump((Task)Call(fourth, "SetEnabledAsync", false, false)!);
-            child = child with { Color = BookmarkColor.Blue };
-            items = [parent, child];
-            Call(fourth, "Upsert", child);
-            child = child with { Note = "목록 모드에서 편집한 메모" };
-            items = [parent, child];
-            Call(fourth, "Upsert", child);
-            Pump((Task)Call(fourth, "SetEnabledAsync", true, false)!);
-            var forms = Forms(fourth).ToDictionary(form => BookmarkFor(form).Id);
-            listEditsRetainPlacement = forms[parent.Id].Bounds == parentBounds && forms[child.Id].Bounds == childCustom &&
-                BookmarkFor(forms[child.Id]).Color == BookmarkColor.Blue && BookmarkFor(forms[child.Id]).Note == child.Note;
-        }
-        assert(listEditsRetainPlacement && layouts[parent.Id] == savedParent && layouts[child.Id] == savedChild,
-            "STR21 color and note edits before the first sticker reveal in list mode preserve custom tree positions on screen and in storage");
-    }
-
-    private static object Create(Func<IReadOnlyList<Bookmark>> items, Func<IReadOnlyList<StickerLayout>>? layouts = null,
-        Action<IReadOnlyList<StickerLayout>>? save = null)
-    {
-        Func<Task<(IReadOnlyList<Bookmark> Items, IReadOnlyList<StickerLayout> Layouts)>> load = () =>
-            Task.FromResult((items(), layouts?.Invoke() ?? Array.Empty<StickerLayout>()));
-        return ManagerType.GetConstructors(Private).Single().Invoke([load, save ?? (Action<IReadOnlyList<StickerLayout>>)(_ => { }),
-            (Action<string>)(message => throw new InvalidOperationException(message))]);
-    }
-    private static Bookmark Sample(string note, long sequence) => new(Guid.NewGuid(), new CapturedTarget(TargetKind.File, @"C:\tree\sample.txt"),
-        "sample.txt", note, note, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, sequence, null, null, null, null);
-    private static Form[] Forms(object manager) => ((System.Collections.IEnumerable)ManagerType.GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
+    private static Bookmark Item(string title, long sequence) => new(Guid.NewGuid(), new(TargetKind.File, @"C:\tree-check\sample.txt"), "sample.txt", title, title, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow, sequence, null, null, null, null);
+    private static Bookmark Folder(string title, long sequence) => Item(title, sequence) with { Target = new(TargetKind.BookmarkFolder, ""), FolderExpanded = true };
     private static Bookmark BookmarkFor(Form form) => Property<Bookmark>(form, "Bookmark");
-    private static T Property<T>(object value, string name) => (T)value.GetType().GetProperty(name, Private | BindingFlags.Public)!.GetValue(value)!;
-    private static T Field<T>(object value, string name) => (T)value.GetType().GetField(name, Private)!.GetValue(value)!;
-    private static object? Call(object value, string name, params object[] arguments) => value.GetType().GetMethod(name, Private | BindingFlags.Public)!.Invoke(value, arguments);
+    private static Rectangle ScreenBounds(Form form) => Property<Rectangle>(form, "ScreenBounds");
     private static Point Center(Form form) => new(form.Left + form.Width / 2, form.Top + form.Height / 2);
-    private static void Move(object manager, Form form, Point destination, bool alt)
-    {
-        var property = form.GetType().GetProperty("AdjustMoveBounds", Private)!;
-        var adjust = (Func<Rectangle, Keys, Rectangle>)property.GetValue(form)!;
-        property.SetValue(form, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, alt ? Keys.Alt : Keys.None)));
-        try
-        {
-            SendMessage(form.Handle, 0x0231, 0, 0);
-            form.Bounds = SendMoving(form, new Rectangle(destination, form.Size));
-            SendMessage(form.Handle, 0x0232, 0, 0);
-        }
-        finally { property.SetValue(form, adjust); }
-    }
-    private static Rectangle SendMoving(Form form, Rectangle proposed, Keys? modifiers = null)
-    {
-        var property = form.GetType().GetProperty("AdjustMoveBounds", Private)!;
-        var adjust = (Func<Rectangle, Keys, Rectangle>)property.GetValue(form)!;
-        if (modifiers is Keys keys)
-            property.SetValue(form, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, keys)));
-        nint pointer = Marshal.AllocHGlobal(Marshal.SizeOf<NativeRectangle>());
-        try
-        {
-            Marshal.StructureToPtr(new NativeRectangle { Left = proposed.Left, Top = proposed.Top, Right = proposed.Right, Bottom = proposed.Bottom }, pointer, false);
-            SendMessage(form.Handle, 0x0216, 0, pointer);
-            var result = Marshal.PtrToStructure<NativeRectangle>(pointer);
-            return Rectangle.FromLTRB(result.Left, result.Top, result.Right, result.Bottom);
-        }
-        finally { Marshal.FreeHGlobal(pointer); property.SetValue(form, adjust); }
-    }
-    private static void Pump(Task task)
-    {
-        var timer = Stopwatch.StartNew();
-        while (!task.IsCompleted && timer.Elapsed < TimeSpan.FromSeconds(10)) { Application.DoEvents(); Thread.Yield(); }
-        if (!task.IsCompleted) throw new TimeoutException("Sticker tree check timed out.");
-        task.GetAwaiter().GetResult();
-    }
-    [StructLayout(LayoutKind.Sequential)] private struct NativeRectangle { public int Left, Top, Right, Bottom; }
-    [DllImport("user32.dll")] private static extern nint SendMessage(nint window, uint message, nint wParam, nint lParam);
+    private static T Property<T>(object value, string name) => (T)value.GetType().GetProperty(name, Members)!.GetValue(value)!;
+    private static T Field<T>(object value, string name) => (T)value.GetType().GetField(name, Members)!.GetValue(value)!;
+    private static object? Call(object value, string name, params object?[] args) => value.GetType().GetMethod(name, Members)!.Invoke(value, args);
+    private static void On(object value, string name, Delegate handler) => value.GetType().GetEvent(name, Members)!.GetAddMethod(true)!.Invoke(value, [handler]);
+    private static void Pump(Task task) { var timeout = Stopwatch.StartNew(); while (!task.IsCompleted && timeout.Elapsed < TimeSpan.FromSeconds(15)) { Application.DoEvents(); Thread.Yield(); } if (!task.IsCompleted) throw new TimeoutException("Tree policy check timed out."); task.GetAwaiter().GetResult(); }
+    private static T Pump<T>(Task<T> task) { Pump((Task)task); return task.GetAwaiter().GetResult(); }
 }

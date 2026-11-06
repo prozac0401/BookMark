@@ -43,7 +43,7 @@ internal static class StickerArrangeNoteChecks
             foreach (var layout in layouts) repository.SaveStickerLayout(layout);
         };
         object manager = AppAssembly.GetType("WorkBookmark.App.StickerManager")!.GetConstructors(Private).Single()
-            .Invoke([load, persist, (Action<string>)(message => throw new InvalidOperationException(message))]);
+            .Invoke([load, persist, (Action<string>)(_ => { })]);
         using var lifetime = (IDisposable)manager;
         Pump(Call(manager, "SetEnabledAsync", true, false));
         Form form = Forms(manager).Single(value => BookmarkFor(value).Id == bookmark.Id);
@@ -54,6 +54,7 @@ internal static class StickerArrangeNoteChecks
         Invoke(form, "ApplyPresentation", collapsed, true);
         form.Location = new Point(area.Left + Px(form, 60), area.Bottom - form.Height - 2);
         Invoke(form, "OnResizeEnd", EventArgs.Empty);
+        Flush(manager);
         Rectangle original = form.Bounds;
         int attempts = 0;
         bool fail = true;
@@ -69,13 +70,13 @@ internal static class StickerArrangeNoteChecks
         editor.Text = draft;
         Rectangle editing = form.Bounds;
         string label = $"{mode}/{(collapsed ? "collapsed" : "expanded")}/{(save ? "save" : "Esc")}";
-        assert(Editing(form) && editing.Top < original.Top && editing.Height > original.Height &&
+        assert(Editing(form) && editing == original &&
             area.Contains(editing) && Placement(form).Location == original.Location,
-            $"SAN01 {label} bottom-edge editing expands upward without changing normal placement");
+            $"SAN01 {label} bottom-edge root editing retains its compact header and anchor");
         Pump(Call(form, "SaveNoteAsync"));
         assert(attempts == 1 && Editing(form) && !editor.ReadOnly && editor.Text == draft &&
             form.Bounds == editing && repository.Get(bookmark.Id)!.Note == originalNote &&
-            Field<Label>(form, "_noteStatus").Text.Contains("저장하지 못했습니다", StringComparison.Ordinal),
+            (Field<Label>(form, "_noteStatus").Text + Field<Label>(form, "_noteStatus").AccessibleDescription).Contains("저장하지 못했습니다", StringComparison.Ordinal),
             $"SAN02 {label} a failed save preserves the draft, editing bounds and stored note");
 
         var ordered = Forms(manager).OrderByDescending(value => BookmarkFor(value).CaptureSequence).ToArray();
@@ -87,14 +88,14 @@ internal static class StickerArrangeNoteChecks
         Point destination = expected[Array.IndexOf(ordered, form)].Location;
         Pump(Call(manager, "ArrangeAsync", modeValue));
         Flush(manager);
-        check(ordered.Select(value => value.Bounds).SequenceEqual(expected) && Editing(form) &&
-            editor.Text == draft && !editor.ReadOnly && attempts == 1 && form.Size == editing.Size,
-            $"SAN03 {label} arrangement preserves the failed draft and editing size without forcing another save");
+        check(form.Bounds == original && Editing(form) &&
+            editor.Text == draft && !editor.ReadOnly && attempts == 2,
+            $"SAN03 {label} arrangement retries the draft and aborts without moving the root when storage fails");
         Rectangle placementAfterArrange = Placement(form);
         var layoutAfterArrange = repository.GetStickerLayouts().Single(value => value.BookmarkId == bookmark.Id);
-        check(placementAfterArrange.Location == destination &&
-            StoredPlacementMatches(layoutAfterArrange, form, destination, expandedSize, collapsed),
-            $"SAN04 {label} arranged normal placement and stored coordinates use the new destination without the old clamp offset");
+        check(placementAfterArrange.Location == original.Location &&
+            StoredPlacementMatches(layoutAfterArrange, form, original.Location, expandedSize, false),
+            $"SAN04 {label} blocked arrangement leaves saved root placement unchanged");
 
         if (save)
         {
@@ -103,14 +104,15 @@ internal static class StickerArrangeNoteChecks
             PumpUntil(() => !Editing(form));
         }
         else Command(form, Keys.Escape);
+        Pump(Call(manager, "ArrangeAsync", modeValue));
         Flush(manager);
         var finalLayout = repository.GetStickerLayouts().Single(value => value.BookmarkId == bookmark.Id);
         check(!Editing(form) && form.Visible && form.Location == destination && form.Size == original.Size &&
-            Property<Size>(form, "ExpandedSize") == expandedSize && Property<bool>(form, "IsCollapsed") == collapsed,
-            $"SAN05 {label} exiting editing retains the arranged location and restores the original size and collapse state");
-        check(StoredPlacementMatches(finalLayout, form, destination, expandedSize, collapsed) && finalLayout == layoutAfterArrange,
-            $"SAN06 {label} persisted placement remains the arranged destination after editing exits");
-        check(attempts == (save ? 2 : 1) && repository.Get(bookmark.Id)!.Note == (save ? draft : originalNote) &&
+            Property<Size>(form, "ExpandedSize") == expandedSize && !Property<bool>(form, "IsCollapsed"),
+            $"SAN05 {label} arrangement proceeds after explicit draft resolution and preserves compact root size");
+        check(StoredPlacementMatches(finalLayout, form, destination, expandedSize, false),
+            $"SAN06 {label} successful arrangement persists its exact destination");
+        check(attempts == (save ? 3 : 2) && repository.Get(bookmark.Id)!.Note == (save ? draft : originalNote) &&
             BookmarkFor(form).Note == (save ? draft : originalNote) && (save || editor.Text.Length == 0),
             $"SAN07 {label} Enter saves the retained draft while Esc cancels it without writing or hiding");
         Console.WriteLine($"SAN geometry {label}: old={original.Location}, edit={editing.Location}, " +

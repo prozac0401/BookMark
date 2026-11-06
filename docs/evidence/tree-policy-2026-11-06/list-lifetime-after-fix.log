@@ -1,0 +1,6 @@
+PASS: RL01 the live bookmark list retains its native accessible children and selection provider
+PASS: RL02 native list destruction starts after logical and accessible children have been cleared, so queries cannot repopulate the provider cache
+PASS: RL03 a read completion and committed update reentering native destruction cannot refill the closing list
+PASS: RL04 a native Clear callback disposing the form prevents the already-running projection from refilling it
+PASS: RL05 a native Clear callback disposing the form prevents OpenAsync from recreating or showing it
+RESULT: 5 list lifetime checks passed.

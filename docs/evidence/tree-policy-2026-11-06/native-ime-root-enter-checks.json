@@ -1,0 +1,18 @@
+{
+  "result": "PASS",
+  "scope": "User physically typed Korean into top-level sticker C; first Enter committed IME only, second Enter saved.",
+  "evidence": {
+    "composing": "2026-11-06T12:24:48.5917323+00:00",
+    "compositionEndedEditorStillOpenDbOld": "2026-11-06T12:24:52.6411823+00:00",
+    "dbSavedExactText": "2026-11-06T12:24:58.7760765+00:00",
+    "editorClosed": "2026-11-06T12:24:59.2606241+00:00"
+  },
+  "savedText": "한글 입력 확인",
+  "oldText": "C · 경쟁 서비스 비교",
+  "userConfirmed": true,
+  "notCovered": [
+    "Esc during composition",
+    "focus-loss commit",
+    "embedded child editor"
+  ]
+}

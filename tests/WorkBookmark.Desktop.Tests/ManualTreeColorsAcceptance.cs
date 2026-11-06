@@ -19,6 +19,8 @@ namespace WorkBookmark.Desktop.Tests;
 internal static class ManualTreeColorsAcceptance
 {
     private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
+    private static readonly MethodInfo MonitorDpiMethod = typeof(BookmarkApplicationContext).Assembly
+        .GetType("WorkBookmark.App.StickerManager")!.GetMethod("MonitorDpi", BindingFlags.Static | BindingFlags.NonPublic)!;
     private static readonly JsonSerializerOptions Json = new()
     {
         WriteIndented = true,
@@ -35,7 +37,16 @@ internal static class ManualTreeColorsAcceptance
 
     private static void RunCore(string directory, string workerExecutable, bool listStress)
     {
+        // This test executable has no product manifest. Match the product's
+        // PerMonitorV2 awareness before initialization or any native window exists.
+        if (!Application.SetHighDpiMode(HighDpiMode.PerMonitorV2) && Application.HighDpiMode != HighDpiMode.PerMonitorV2)
+            throw new InvalidOperationException($"Manual fixture requires PerMonitorV2 before UI initialization; " +
+                $"the process is already {Application.HighDpiMode}. Start a fresh manual fixture process.");
         ApplicationConfiguration.Initialize();
+        if (Application.HighDpiMode != HighDpiMode.PerMonitorV2)
+            throw new InvalidOperationException($"Manual fixture DPI initialization did not preserve PerMonitorV2 " +
+                $"(actual: {Application.HighDpiMode}). Mixed-DPI acceptance cannot run in this host.");
+        var installedInputLanguages = InputLanguage.InstalledInputLanguages.Cast<InputLanguage>().Select(DescribeInputLanguage).ToArray();
         string allowed = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "artifacts", "manual-ui"));
         string root = Path.GetFullPath(directory);
         if (!root.StartsWith(allowed + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
@@ -63,8 +74,8 @@ internal static class ManualTreeColorsAcceptance
             var attempts = new ConcurrentQueue<CommitAttempt>();
             using var repository = new SqliteBookmarkRepository(Path.Combine(data, "bookmarks.db"), operation =>
             {
-                if (operation is not ("parent" or "color")) return;
-                bool rejected = operation == "parent" ? Volatile.Read(ref rejectParents) != 0 : Volatile.Read(ref rejectColors) != 0;
+                if (operation is not ("parent" or "folder-drop" or "color")) return;
+                bool rejected = operation == "color" ? Volatile.Read(ref rejectColors) != 0 : Volatile.Read(ref rejectParents) != 0;
                 attempts.Enqueue(new(DateTimeOffset.UtcNow, operation, rejected));
                 if (rejected) throw new IOException("Owned manual fixture: injected " + operation + " commit failure.");
             });
@@ -171,23 +182,75 @@ internal static class ManualTreeColorsAcceptance
                     var bookmarks = repository.ListActive();
                     var deletedBookmarks = repository.ListDeleted();
                     var layouts = repository.GetStickerLayouts();
-                    var windows = Application.OpenForms.Cast<Form>().Select(form => new
+                    var monitors = Screen.AllScreens.Select(screen => new
                     {
-                        type = form.GetType().Name, form.Text, form.Visible, form.Bounds, form.DeviceDpi,
+                        screen.DeviceName, screen.Primary, screen.Bounds, screen.WorkingArea,
+                        // Zero records an unavailable native DPI query rather than
+                        // presenting the fallback as an observed monitor value.
+                        effectiveDpi = (int)MonitorDpiMethod.Invoke(null, [screen, 0])!
+                    }).ToArray();
+                    var inputLanguages = new
+                    {
+                        current = DescribeInputLanguage(InputLanguage.CurrentInputLanguage),
+                        installed = installedInputLanguages
+                    };
+                    object? manager = context is null ? null : Field<object>(context, "_stickers");
+                    Form[] stickerViews = manager is null ? [] : ((System.Collections.IEnumerable)Property<object>(manager, "Forms")).Cast<Form>().ToArray();
+                    Form[] panelViews = manager is null ? [] : ((System.Collections.IEnumerable)Property<object>(manager, "Panels")).Cast<Form>().ToArray();
+                    var windows = Application.OpenForms.Cast<Form>().Concat(stickerViews).Concat(panelViews).Distinct().Select(form => new
+                    {
+                        type = form.GetType().Name, form.Text, form.Visible, form.Bounds, form.DeviceDpi, form.ClientSize,
+                        form.TopLevel,
+                        monitorDevice = form.IsHandleCreated ? Screen.FromHandle(form.Handle).DeviceName : null,
+                        clientScreenBounds = form.IsHandleCreated ? form.RectangleToScreen(form.ClientRectangle) : (Rectangle?)null,
+                        screenBounds = form.GetType().Name == "StickerForm" ? Property<Rectangle>(form, "ScreenBounds") : form.Bounds,
+                        parentHandle = form.Parent is { IsHandleCreated: true } parent ? parent.Handle.ToInt64() : 0,
+                        ownerHandle = form.Owner is { IsHandleCreated: true } owner ? owner.Handle.ToInt64() : 0,
                         form.ShowInTaskbar, borderStyle = form.FormBorderStyle.ToString(), form.TopMost,
                         handle = form.IsHandleCreated ? form.Handle.ToInt64() : 0,
                         bookmark = form.GetType().Name == "StickerForm" ? Property<Bookmark>(form, "Bookmark") : null,
                         editingNote = form.GetType().Name == "StickerForm" && Property<bool>(form, "IsEditingNote"),
                         noteDraft = form.GetType().Name == "StickerForm" ? Field<TextBox>(form, "_noteEditor").Text : null,
                         noteStatus = form.GetType().Name == "StickerForm" ? Field<Label>(form, "_noteStatus").Text : null,
+                        noteStatusDetails = form.GetType().Name == "StickerForm" ? Field<Label>(form, "_noteStatus").AccessibleDescription : null,
                         noteHasFocus = form.GetType().Name == "StickerForm" && Field<TextBox>(form, "_noteEditor").Focused,
                         noteComposing = form.GetType().Name == "StickerForm" && Property<bool>(Field<TextBox>(form, "_noteEditor"), "IsComposing"),
-                        background = form.BackColor.ToArgb()
+                        noteEditor = ReadEditorGeometry(form),
+                        background = form.BackColor.ToArgb(),
+                        region = form.Region is { } clip ? new
+                        {
+                            topLeftCovered = clip.IsVisible(Point.Empty),
+                            centerCovered = clip.IsVisible(new Point(form.ClientSize.Width / 2, form.ClientSize.Height / 2))
+                        } : null
                     }).ToArray();
+                    var panels = panelViews.Select(view => new
+                    {
+                        rootId = Property<Form?>(view, "Root") is { } rootView ? Property<Bookmark>(rootView, "Bookmark").Id : (Guid?)null,
+                        view.Visible, view.Bounds, view.DeviceDpi,
+                        openingSide = Property<object?>(view, "OpeningSide")?.ToString(),
+                        contentHeight = Property<int>(view, "ContentHeight"),
+                        coverage = ReadPanelCoverage(view),
+                        rows = PanelRows(view).Select((row, index) => new
+                        {
+                            index, row.Depth, bookmarkId = Property<Bookmark>(row.Form, "Bookmark").Id,
+                            row.Form.Visible, row.Form.TopLevel, row.Form.DeviceDpi,
+                            screenBounds = Property<Rectangle>(row.Form, "ScreenBounds")
+                        }).ToArray()
+                    }).ToArray();
+                    object? activeDrag = manager is null ? null : Field<object?>(manager, "_drag");
+                    object? preview = activeDrag is null ? null : Property<object?>(activeDrag, "Preview");
+                    var dragPreview = preview is null ? null : new
+                    {
+                        sourceId = Property<Bookmark>(Property<Form>(activeDrag!, "Source"), "Bookmark").Id,
+                        valid = Property<bool>(preview, "Valid"), label = Property<string>(preview, "Label"),
+                        bounds = Property<Rectangle>(preview, "Bounds"), panelBounds = Property<Rectangle?>(preview, "PanelBounds"),
+                        dpi = Property<int>(preview, "Dpi"), isRootMove = Property<bool>(preview, "IsRootMove"),
+                        request = Property<BookmarkDropRequest?>(preview, "Request")
+                    };
                     var rows = BookmarkTree.Flatten(bookmarks).Select(row => new
                     {
                         row.Bookmark.Id, row.Bookmark.DisplayName, row.Bookmark.IsFolder, row.Bookmark.Note,
-                        row.Bookmark.ParentId, row.Bookmark.Color, row.Bookmark.FolderExpanded,
+                        row.Bookmark.ParentId, row.Bookmark.Color, row.Bookmark.FolderExpanded, row.Bookmark.SiblingOrder,
                         row.Bookmark.LastResumeResult, row.Depth, row.HasChildren
                     }).ToArray();
                     var recent = Application.OpenForms.Cast<Form>().FirstOrDefault(form => form.GetType().Name == "RecentForm");
@@ -199,13 +262,13 @@ internal static class ManualTreeColorsAcceptance
                         topIndex = Field<ListBox>(recent, "_items").TopIndex,
                         dragging = Field<bool>(recent, "_dragging")
                     };
-                    string state = JsonSerializer.Serialize(new { bookmarks, deletedBookmarks, layouts, windows, list, attempts = attempts.ToArray() }, CompactJson);
+                    string state = JsonSerializer.Serialize(new { monitors, inputLanguages, bookmarks, deletedBookmarks, layouts, windows, panels, dragPreview, list, attempts = attempts.ToArray() }, CompactJson);
                     if (state != previousState)
                     {
                         previousState = state;
                         File.AppendAllText(Path.Combine(root, "state-changes.jsonl"), JsonSerializer.Serialize(new
                         {
-                            atUtc = DateTimeOffset.UtcNow, session, stage, bookmarks, deletedBookmarks, layouts, windows, list, attempts = attempts.ToArray()
+                            atUtc = DateTimeOffset.UtcNow, session, stage, monitors, inputLanguages, bookmarks, deletedBookmarks, layouts, windows, panels, dragPreview, list, attempts = attempts.ToArray()
                         }, CompactJson) + Environment.NewLine);
                     }
                     string Describe(BookmarkTreeRow row)
@@ -226,10 +289,11 @@ internal static class ManualTreeColorsAcceptance
                     {
                         stage, atUtc = DateTimeOffset.UtcNow, pid = Environment.ProcessId, session,
                         fixtureMode = listStress ? "list-stress" : "tree-colors",
+                        highDpiMode = Application.HighDpiMode.ToString(), monitors, inputLanguages,
                         productAssemblySha256 = productHash, workerExecutable = workerPath,
                         sourceUnchanged = true, failureParentInjected = Volatile.Read(ref rejectParents) != 0,
                         failureColorInjected = Volatile.Read(ref rejectColors) != 0,
-                        bookmarks, deletedBookmarks, rows, layouts, windows, list, attempts = attempts.ToArray(),
+                        bookmarks, deletedBookmarks, rows, layouts, windows, panels, dragPreview, list, attempts = attempts.ToArray(),
                         acceptanceScope = "Actual product forms and SQLite; host only shows/restarts product views and observes. Automated native input must target a window returned by the automation provider; human operator input is recorded separately. Installed Program.Main remains a separate gate."
                     };
                 }
@@ -273,7 +337,9 @@ internal static class ManualTreeColorsAcceptance
                 Observe("after-restart", true);
             };
             snapshot.Click += (_, _) => Observe("operator", true);
-            exit.Click += (_, _) => panel.Close();
+            // Keep the host loop alive while the product saves drafts/layouts and
+            // releases its windows. Its ThreadExit handler closes this panel.
+            exit.Click += (_, _) => context?.ExitThread();
             using var timer = new System.Windows.Forms.Timer { Interval = 500 };
             timer.Tick += (_, _) =>
             {
@@ -293,11 +359,47 @@ internal static class ManualTreeColorsAcceptance
         finally { mutex.ReleaseMutex(); }
     }
 
+    private static object ReadPanelCoverage(Form panel)
+    {
+        var bounds = PanelRows(panel).Where(row => row.Form.Visible)
+            .Select(row => Property<Rectangle>(row.Form, "ScreenBounds")).ToArray();
+        bool Covered(Point screenPoint) => panel.Region?.IsVisible(panel.PointToClient(screenPoint))
+            ?? panel.RectangleToScreen(panel.ClientRectangle).Contains(screenPoint);
+        return new
+        {
+            hasRegion = panel.Region is not null,
+            cardCentersCovered = bounds.Select(row => Covered(new Point(row.Left + row.Width / 2, row.Top + row.Height / 2))).ToArray(),
+            cardTopLeftCovered = bounds.Select(row => Covered(row.Location)).ToArray(),
+            gapsCovered = bounds.Zip(bounds.Skip(1), (first, second) =>
+                Covered(new Point(first.Left + first.Width / 2, first.Bottom + (second.Top - first.Bottom) / 2))).ToArray()
+        };
+    }
+
     private static Button Button(string text, int left, int top, int width) => new()
     {
         Text = text, Bounds = new Rectangle(left, top, width, 35), AccessibleName = text
     };
     private static string Hash(string path) => Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(path)));
+    private static object DescribeInputLanguage(InputLanguage language) => new
+    {
+        culture = language.Culture.Name, language.Culture.LCID, language.Culture.EnglishName,
+        language.Culture.NativeName, language.LayoutName, handle = language.Handle.ToInt64()
+    };
+    private static object? ReadEditorGeometry(Form form)
+    {
+        if (form.GetType().Name != "StickerForm") return null;
+        var editor = Field<TextBox>(form, "_noteEditor");
+        return new
+        {
+            editor.Visible, editor.Focused, editor.Bounds, editor.ClientSize, editor.DeviceDpi,
+            screenBounds = editor.IsHandleCreated ? editor.RectangleToScreen(editor.ClientRectangle) : (Rectangle?)null,
+            editor.SelectionStart, editor.SelectionLength, editor.Multiline,
+            imeMode = editor.ImeMode.ToString(), fontSizeInPoints = editor.Font.SizeInPoints
+        };
+    }
+    private static (Form Form, int Depth)[] PanelRows(Form panel) =>
+        ((System.Collections.IEnumerable)Property<object>(panel, "Rows")).Cast<object>()
+        .Select(row => ((Form)row.GetType().GetField("Item1")!.GetValue(row)!, (int)row.GetType().GetField("Item2")!.GetValue(row)!)).ToArray();
     private static T Field<T>(object value, string field) => (T)value.GetType().GetField(field, Private)!.GetValue(value)!;
     private static T Property<T>(object value, string property) => (T)value.GetType().GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!.GetValue(value)!;
     private sealed record Seed(Guid Id, string Label, string Path, string Sha256);

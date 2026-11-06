@@ -166,18 +166,18 @@ internal static class StickerStorageChecks
             else
             {
                 using var migrated = new SqliteBookmarkRepository(database);
-                Check(expected.All(row => migrated.Get(row.Id) == row), "Every version 4 field, including the full snapshot, survives migration.");
+                Check(expected.All(row => migrated.Get(row.Id) == row with { SiblingOrder = -row.CaptureSequence }), "Every version 4 field, including the full snapshot, survives migration.");
             }
             string backup = Directory.GetFiles(root, Path.GetFileName(database) + ".pre-migration-*.bak").Single();
             CheckVersionFour(backup, beforeRows, beforeSchema);
             using var repo = new SqliteBookmarkRepository(database);
-            Check(expected.All(row => repo.Get(row.Id) == row) && repo.GetStickerLayouts().Count == 0, "Migration starts with no invented placements or modified bookmarks.");
-            Check(Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT IN ('bookmarks','sticker_layouts','sqlite_autoindex_sticker_layouts_1','bookmark_deleted','bookmark_parent') ORDER BY type,name") == unchangedSchema
-                && Rows(database, "SELECT * FROM pragma_table_info('bookmarks') WHERE name NOT IN ('parent_id','color','folder_expanded')") == beforeColumns,
+            Check(expected.All(row => repo.Get(row.Id) == row with { SiblingOrder = -row.CaptureSequence }) && repo.GetStickerLayouts().Count == 0, "Migration starts with no invented placements or modified bookmarks.");
+            Check(Rows(database, "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE name NOT IN ('bookmarks','sticker_layouts','sqlite_autoindex_sticker_layouts_1','bookmark_deleted','bookmark_parent','bookmark_sibling_order') ORDER BY type,name") == unchangedSchema
+                && Rows(database, "SELECT * FROM pragma_table_info('bookmarks') WHERE name NOT IN ('parent_id','color','folder_expanded','sibling_order')") == beforeColumns,
                 "Existing version 4 bookmark columns, indexes and unrelated schema remain unchanged.");
             using (var db = Open(database))
             {
-                Check(Scalar(db, "PRAGMA user_version") == 8 && Scalar(db, "SELECT value FROM metadata WHERE name='capture_sequence'") == 23,
+                Check(Scalar(db, "PRAGMA user_version") == 9 && Scalar(db, "SELECT value FROM metadata WHERE name='capture_sequence'") == 23,
                     "Version and sequence update independently.");
                 Check(Scalar(db, "SELECT count(*) FROM unrelated_content WHERE value='preserve me'") == 1, "Unrelated user data is preserved.");
             }

@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using WorkBookmark.App;
 using WorkBookmark.Core;
 using WorkBookmark.Storage;
@@ -41,13 +40,15 @@ internal static class FolderIntegrationChecks
 
         bool groupPreview = DragOnto(b.Id, a.Id);
         var folder = repository.ListActive().Single(item => item.IsFolder);
-        assert(groupPreview && folder.ParentId is null && folder.Target.Path == "" && !folder.FolderExpanded &&
-            repository.Get(a.Id) == a with { ParentId = folder.Id } && repository.Get(b.Id) == b with { ParentId = folder.Id },
-            "FI01 an unmodified synthetic sticker drag previews and creates one closed SQLite folder through application events, preserving both bookmarks");
-        assert(Listed(folder.Id) is not null && Listed(a.Id) is null && Listed(b.Id) is null &&
-            Sticker(folder.Id).Visible && !Sticker(a.Id).Visible && !Sticker(b.Id).Visible && Sticker(c.Id).Visible,
-            "FI02 atomic grouping reaches both views without exposing children of a closed folder");
+        assert(groupPreview && folder.ParentId is null && folder.Target.Path == "" && folder.FolderExpanded &&
+            repository.Get(a.Id) is { } groupedA && groupedA.ParentId == folder.Id && groupedA with { ParentId = a.ParentId, SiblingOrder = a.SiblingOrder } == a &&
+            repository.Get(b.Id) is { } groupedB && groupedB.ParentId == folder.Id && groupedB with { ParentId = b.ParentId, SiblingOrder = b.SiblingOrder } == b,
+            "FI01 a managed sticker drop previews and creates one open SQLite folder through application events, preserving both bookmarks");
+        assert(Listed(folder.Id) is not null && Listed(a.Id) is not null && Listed(b.Id) is not null &&
+            Sticker(folder.Id).Visible && Sticker(a.Id).Visible && Sticker(b.Id).Visible && Sticker(c.Id).Visible,
+            "FI02 atomic grouping publishes the open folder and its original members to both views");
 
+        Pump((Task)Invoke(context, "ToggleFolderAsync", repository.Get(folder.Id)!)!);
         Field<Action<Bookmark>>(recent, "FolderToggleRequested")(folder);
         PumpUntil(() => repository.Get(folder.Id)!.FolderExpanded && Listed(a.Id) is not null && Sticker(a.Id).Visible);
         assert(Listed(b.Id)!.Color == BookmarkColor.Blue && Current(Sticker(b.Id)).Color == BookmarkColor.Blue,
@@ -156,7 +157,7 @@ internal static class FolderIntegrationChecks
         finally { fail = false; }
         assert(Editing(folderSticker) && !nameEditor.ReadOnly && nameEditor.Text == "실패 후 재시도할 이름" &&
             repository.Get(folder.Id) == renamedFolder && Current(folderSticker) == renamedFolder && Listed(folder.Id) == renamedFolder &&
-            Field<Label>(folderSticker, "_noteStatus").Text.Contains("저장", StringComparison.Ordinal),
+            string.Concat(Field<Label>(folderSticker, "_noteStatus").Text, Field<Label>(folderSticker, "_noteStatus").AccessibleDescription).Contains("저장", StringComparison.Ordinal),
             "FI17 failed inline folder rename retains the editable draft and reports failure without publishing uncommitted names to either view");
         Pump((Task)Invoke(folderSticker, "SaveNoteAsync")!);
         var retriedFolder = renamedFolder with { DisplayName = "실패 후 재시도할 이름" };
@@ -234,44 +235,19 @@ internal static class FolderIntegrationChecks
         bool DragOnto(Guid sourceId, Guid targetId)
         {
             Form source = Sticker(sourceId), target = Sticker(targetId);
-            Point cursor = Cursor.Position;
-            var adjustProperty = source.GetType().GetProperty("AdjustMoveBounds", Private)!;
-            var adjust = (Func<Rectangle, Keys, Rectangle>)adjustProperty.GetValue(source)!;
-            nint pointer = Marshal.AllocHGlobal(Marshal.SizeOf<NativeRectangle>());
-            try
-            {
-                Rectangle area = Screen.FromControl(target).WorkingArea;
-                target.Location = area.Location + new Size(80, 80);
-                source.Location = target.Location + new Size(target.Width + 60, 0);
-                target.BringToFront();
-                Cursor.Position = new Point(target.Left + target.Width / 2, target.Top + target.Height / 2);
-                // Exercise the native movement handler and manager preview with
-                // deterministic modifier state. This is a synthetic UI test;
-                // physical pointer drag remains a separate acceptance check.
-                adjustProperty.SetValue(source, (Func<Rectangle, Keys, Rectangle>)((bounds, _) => adjust(bounds, Keys.None)));
-                SendMessage(source.Handle, 0x0231, 0, 0);
-                Rectangle proposed = new(target.Location + new Size(4, 2), source.Size);
-                Marshal.StructureToPtr(new NativeRectangle
-                {
-                    Left = proposed.Left, Top = proposed.Top, Right = proposed.Right, Bottom = proposed.Bottom
-                }, pointer, false);
-                SendMessage(source.Handle, 0x0216, 0, pointer);
-                var moved = Marshal.PtrToStructure<NativeRectangle>(pointer);
-                source.Bounds = Rectangle.FromLTRB(moved.Left, moved.Top, moved.Right, moved.Bottom);
-                bool preview = Field<bool>(target, "_dropTarget");
-                // FinishMove raises the manager's real ParentChangeRequested
-                // event; this helper never calls ChangeParentAsync directly.
-                Invoke(manager, "FinishMove", source, true, Cursor.Position, Keys.None);
-                SendMessage(source.Handle, 0x0232, 0, 0);
-                PumpUntil(() => !Field<HashSet<Guid>>(context, "_mutatingBookmarks").Contains(sourceId));
-                return preview;
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pointer);
-                adjustProperty.SetValue(source, adjust);
-                Cursor.Position = cursor;
-            }
+            Invoke(manager, "ShowItem", targetId);
+            Rectangle bounds = (Rectangle)target.GetType().GetProperty("ScreenBounds", Private)!.GetValue(target)!;
+            Point cursor = new(bounds.Left + bounds.Width / 2, bounds.Top + bounds.Height / 2);
+            Size grabOffset = new(source.Width / 2, source.Height / 2);
+            // Use the same final-preview validation and DropRequested route as a
+            // managed pointer drag, without moving a real desktop pointer.
+            object preview = Invoke(manager, "EvaluateDrop", source, cursor, grabOffset, Keys.None)!;
+            bool valid = (bool)preview.GetType().GetProperty("Valid")!.GetValue(preview)! &&
+                preview.GetType().GetProperty("Request")!.GetValue(preview) is not null;
+            if (!valid) return false;
+            Pump((Task)Invoke(manager, "CommitDropPreviewAsync", source, preview, cursor, grabOffset, Keys.None)!);
+            PumpUntil(() => !Field<bool>(context, "_structureCommandPending"));
+            return true;
         }
         Bookmark? Listed(Guid id) => list.Items.Cast<Bookmark>().FirstOrDefault(item => item.Id == id);
         Form[] Forms() => ((System.Collections.IEnumerable)manager.GetType().GetProperty("Forms", Private)!.GetValue(manager)!).Cast<Form>().ToArray();
@@ -296,9 +272,4 @@ internal static class FolderIntegrationChecks
         if (!done()) throw new TimeoutException("Folder integration did not complete.");
     }
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NativeRectangle { public int Left, Top, Right, Bottom; }
-
-    [DllImport("user32.dll")]
-    private static extern nint SendMessage(nint window, uint message, nint wParam, nint lParam);
 }

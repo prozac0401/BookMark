@@ -1,0 +1,35 @@
+{
+  "userObserved": "User reported normal roundtrip.",
+  "overall": "FAIL: panel bounds do not match preview or rows after crossing monitors.",
+  "rootAndRowsDpi": "96 -> 120 -> 96",
+  "rootLogicalWidth": [
+    274,
+    274,
+    274
+  ],
+  "expectedPanelSizes": [
+    [
+      342,
+      102
+    ],
+    [
+      274,
+      82
+    ]
+  ],
+  "actualPanelSizes": [
+    [
+      428,
+      128
+    ],
+    [
+      219,
+      66
+    ]
+  ],
+  "peerCUnchanged": true,
+  "hierarchyUnchanged": true,
+  "returnRootMatchesLastSampledPreview": true,
+  "outboundRootFinalPreviewEquality": "NOT ESTABLISHED: pointer moved after last 500ms sample.",
+  "sourceTrace": "native-dpi-roundtrip-observed.json"
+}
