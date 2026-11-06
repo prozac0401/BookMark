@@ -32,3 +32,12 @@
 
 
 
+
+## 공개 배포 결과
+
+[0.2.20](https://github.com/prozac0401/BookMark/releases/tag/v0.2.20)을 공개하고 최신 릴리스로 확인했습니다. 소스 기준은 `9baa74ff2abffb2bcbacad47ecf7214f6cecc66a`이며 깨끗한 커밋에서 패키징했습니다. 전체 자동검사 1,164개(Core/Storage 97, IPC 17, Desktop 724, 기타 326), MSI 검사 54개와 관리 추출·전체 파일 해시, ZIP의 1,381개 파일 대조가 통과했습니다. 집중검사 수는 전체에 더하지 않았습니다.
+
+최종 게시 worker의 지원하지 않는 합성 요청 6/6이 통과했습니다. 별도 시험 호스트에 최종 게시 DLL 네 개를 그대로 사용하여 한글 메모·폴더 관계·배치의 재시작 보존과 정상 종료를 확인했습니다. 전체 검사 빌드 DLL과 게시 DLL의 지문은 구분합니다. 일반 설치 앱의 UI 진입점이나 실제 Office 작업 검증으로 확대하지 않습니다.
+
+GitHub 자산 6종의 서버 SHA-256·크기를 로컬 파일과 대조했고, 공개된 `SHA256SUMS.txt`와 `SourceSnapshot.json`을 비인증 다운로드해 다시 대조했습니다. 릴리스 태그는 빌드 커밋과 일치합니다. 세부 결과·파일 지문·미실행 범위는 [최종 배포 검증](release-verification.json)에 기록합니다. 이 단락과 최종 검증 파일은 패키징 이후의 문서 기록이며 릴리스 태그·Source.zip의 기준 커밋을 바꾸지 않습니다.
+전체 실행 출력은 [빌드·검사·패키징 로그](release-build-package.log), 최종 worker 출력은 [worker 로그](production-worker.log)에 보존합니다.
