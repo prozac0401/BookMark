@@ -678,10 +678,11 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         var locked = new List<Guid>();
         try
         {
-            if (!await CommitAffectedEditsAsync(request.BookmarkId)) return;
+            foreach (Guid id in request.SourceIds)
+                if (!await CommitAffectedEditsAsync(id)) return;
             if (request.TargetId is Guid target && !await CommitAffectedEditsAsync(target)) return;
             if (_exiting) return;
-            foreach (Guid id in new Guid?[] { request.BookmarkId, request.TargetId, request.BeforeId }.OfType<Guid>().Distinct())
+            foreach (Guid id in request.SourceIds.Concat(new Guid?[] { request.TargetId, request.BeforeId }.OfType<Guid>()).Distinct())
             {
                 if (!_mutatingBookmarks.Add(id)) return;
                 locked.Add(id);
@@ -689,7 +690,10 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             await _stickers.SavePendingAsync();
             var commit = await ReadAsync(() => _repository.ApplyDrop(request));
             if (_exiting) return;
-            await RefreshFolderChangesAsync(commit.ChangedItems.Select(item => item.Id), request.Kind == BookmarkDropKind.Group ? request.TargetId : null);
+            var changedIds = commit.ChangedItems.Select(item => item.Id)
+                .Concat(request.RootLayouts?.Select(layout => layout.BookmarkId) ?? [])
+                .Concat(request.Kind == BookmarkDropKind.Detach && request.RootLayout is not null ? [request.BookmarkId] : []);
+            await RefreshFolderChangesAsync(changedIds, request.Kind == BookmarkDropKind.Group ? request.TargetId : null);
             if (commit.ChangedItems.Count == 0) return;
             if (request.Kind is BookmarkDropKind.Group or BookmarkDropKind.Detach)
                 _stickers.RaiseTree(commit.CreatedFolder?.Id ?? request.BookmarkId);

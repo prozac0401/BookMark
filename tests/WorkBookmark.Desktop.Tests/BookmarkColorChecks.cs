@@ -92,7 +92,11 @@ internal static class BookmarkColorChecks
             list.Items.Cast<Bookmark>().Single(item => item.Id == parent.Id).Color == BookmarkColor.Yellow,
             "BC11 list refresh retains tree nesting and selection while changing only the committed bookmark color");
         int index = list.SelectedIndex;
+        // Rendering now follows the persistent selection set, since several
+        // rows can be selected while the native list focuses only one row.
+        list.SelectedIndex = -1;
         using var ordinary = DrawRow(recent, index, DrawItemState.None);
+        list.SelectedIndex = index;
         using var selected = DrawRow(recent, index, DrawItemState.Selected);
         RecentType.GetField("_dropTargetId", Private)!.SetValue(recent, (Guid?)child.Id);
         using var target = DrawRow(recent, index, DrawItemState.None);

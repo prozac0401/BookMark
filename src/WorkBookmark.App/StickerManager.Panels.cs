@@ -84,6 +84,7 @@ internal sealed partial class StickerManager : IMessageFilter
         _showPending = false;
         ++_loadVersion;
         CancelManagedDrag();
+        ClearSelection();
         foreach (var id in _forms.Keys.Select(RootId).Distinct()) _hiddenRoots.Add(id);
         RebuildPanels();
         return true;
@@ -204,6 +205,8 @@ internal sealed partial class StickerManager : IMessageFilter
             _hiddenRoots.RemoveWhere(id => _forms.ContainsKey(id) && !roots.Contains(id));
         }
         finally { _applying = false; _rebuildingPanels = false; }
+        PruneSelection();
+        if (_drag is { } activeDrag && !IsDragSelectionCurrent(activeDrag)) CancelManagedDrag();
     }
 
     private void ReportUnavailableSpace(Guid rootId)
@@ -221,6 +224,7 @@ internal sealed partial class StickerManager : IMessageFilter
     private void ConfigureManagedForm(StickerForm form)
     {
         form.ManagedTreeInteractions = true;
+        ConfigureSelection(form);
         form.TreeDragRequested += BeginManagedDrag;
         form.HideRequested += value => _ = HideTreeAsync(value.Bookmark.Id);
         form.RequestGroupActivation += value => BringTreeToFront(RootId(value.Bookmark.Id));
@@ -306,15 +310,21 @@ internal sealed partial class StickerManager : IMessageFilter
     private async void BeginManagedDrag(StickerForm source, Point pointerDown)
     {
         if (_drag is not null || _layoutCommitting || _disposed || !_enabled || source.IsEditingNote) return;
+        if (!SelectedBookmarkIds.Contains(source.Bookmark.Id)) SelectBookmark(source, Keys.None, preserveSelection: true);
+        var selectedIds = MoveSelection(source);
+        source = SelectionAnchor(source, selectedIds);
         int startVersion = ++_dragStartVersion;
-        if (!await CommitPendingEditsAsync(source.Bookmark.Id) || (Control.MouseButtons & MouseButtons.Left) == 0) return;
+        foreach (Guid id in selectedIds)
+            if (!await CommitPendingEditsAsync(id)) return;
+        if ((Control.MouseButtons & MouseButtons.Left) == 0) return;
         try { await SavePendingAsync(); } catch { return; }
         // A storage wait can outlive the physical gesture or a hide/mode change.
         if (startVersion != _dragStartVersion || _disposed || !_enabled || _drag is not null ||
-            _layoutCommitting || source.IsDisposed || !source.Visible || (Control.MouseButtons & MouseButtons.Left) == 0) return;
+            _layoutCommitting || source.IsDisposed || !source.Visible || (Control.MouseButtons & MouseButtons.Left) == 0 ||
+            !selectedIds.SequenceEqual(MoveSelection(source))) return;
         Rectangle bounds = source.ScreenBounds;
         var ghost = new StickerDragPreview();
-        _drag = new DragSession(source, bounds, new Size(pointerDown.X - bounds.X, pointerDown.Y - bounds.Y), ghost);
+        _drag = new DragSession(source, bounds, new Size(pointerDown.X - bounds.X, pointerDown.Y - bounds.Y), ghost, selectedIds.ToArray());
         source.Capture = true;
         Application.AddMessageFilter(this);
         _dragTimer.Tick -= DragTick;
@@ -339,16 +349,27 @@ internal sealed partial class StickerManager : IMessageFilter
     private void UpdateManagedDrag()
     {
         if (_drag is not { } drag) return;
-        if (drag.Source.IsDisposed || !_forms.ContainsKey(drag.Source.Bookmark.Id)) { CancelManagedDrag(); return; }
+        if (!IsDragSelectionCurrent(drag)) { CancelManagedDrag(); return; }
         var decision = EvaluateDrop(drag.Source, Cursor.Position, drag.GrabOffset, Control.ModifierKeys);
         drag.Preview = decision;
         drag.Ghost.SetPreview(decision.PanelBounds is Rectangle panel ? Rectangle.Union(decision.Bounds, panel) : decision.Bounds,
             decision.Label, decision.Valid);
+        UpdateSelectionGhosts(drag, decision);
     }
 
     internal DropPreview EvaluateDrop(StickerForm source, Point cursor, Size grabOffset, Keys modifiers)
     {
-        if (_disposed || source.IsDisposed || !_forms.ContainsKey(source.Bookmark.Id) || !_forms.ContainsKey(RootId(source.Bookmark.Id)))
+        var selectedIds = MoveSelection(source);
+        var anchor = SelectionAnchor(source, selectedIds);
+        if (anchor != source)
+            grabOffset += new Size(source.ScreenBounds.Left - anchor.ScreenBounds.Left, source.ScreenBounds.Top - anchor.ScreenBounds.Top);
+        return selectedIds.Count > 1 ? EvaluateSelectionDrop(anchor, selectedIds, cursor, grabOffset, modifiers)
+            : EvaluateSingleDrop(anchor, cursor, grabOffset, modifiers);
+    }
+
+    private DropPreview EvaluateSingleDrop(StickerForm source, Point cursor, Size grabOffset, Keys modifiers, IReadOnlySet<Guid>? movingIds = null)
+    {
+        if (_disposed || source.IsDisposed || !source.Visible || !_forms.ContainsKey(source.Bookmark.Id) || !_forms.ContainsKey(RootId(source.Bookmark.Id)))
             return new(false, null, Rectangle.Empty, "이동할 항목이 없습니다", false);
         bool root = RootId(source.Bookmark.Id) == source.Bookmark.Id;
         var screen = Screen.FromPoint(cursor);
@@ -363,8 +384,9 @@ internal sealed partial class StickerManager : IMessageFilter
         if ((modifiers & Keys.Alt) != 0)
             return root ? RootMovePreview(source, proposed, screen, dpi, "트리 이동 · 자석/묶기 끔", false)
                 : new(false, null, proposed, "이동 취소 · Alt", false);
-        var excluded = Subtree(source.Bookmark.Id).Select(row => row.Bookmark.Id).ToHashSet();
-        var hit = HitSurface(cursor, root ? source.Bookmark.Id : null);
+        var excluded = (movingIds ?? new HashSet<Guid> { source.Bookmark.Id })
+            .SelectMany(id => Subtree(id)).Select(row => row.Bookmark.Id).ToHashSet();
+        var hit = HitSurface(cursor, root ? source.Bookmark.Id : null, movingIds);
         StickerForm? target = null;
         if (hit is StickerForm card && !excluded.Contains(card.Bookmark.Id)) target = card;
         if (hit is StickerTreePanel treePanel)
@@ -379,7 +401,7 @@ internal sealed partial class StickerManager : IMessageFilter
             // Root cards have no positional sibling list on the desktop.
             if ((before || after) && target.Bookmark.ParentId is Guid parent && BookmarkTree.CanReparent(_forms.Values.Select(form => form.Bookmark), source.Bookmark.Id, parent))
             {
-                var siblings = Tree().Where(row => row.Bookmark.ParentId == parent && row.Bookmark.Id != source.Bookmark.Id).Select(row => row.Bookmark).ToArray();
+                var siblings = Tree().Where(row => row.Bookmark.ParentId == parent && !excluded.Contains(row.Bookmark.Id)).Select(row => row.Bookmark).ToArray();
                 int index = Array.FindIndex(siblings, item => item.Id == target.Bookmark.Id);
                 Guid? beforeId = before ? target.Bookmark.Id : index + 1 < siblings.Length ? siblings[index + 1].Id : null;
                 return new(true, new(source.Bookmark.Id, BookmarkDropKind.InsertBefore, parent, beforeId),
@@ -406,7 +428,7 @@ internal sealed partial class StickerManager : IMessageFilter
             return new(true, new(source.Bookmark.Id, BookmarkDropKind.Detach, RootLayout: layout),
                 proposed, "최상위로 꺼내기", false, plan?.Bounds, dpi);
         }
-        return RootMovePreview(source, proposed, screen, dpi, "트리 이동", SnapEnabled);
+        return RootMovePreview(source, proposed, screen, dpi, "트리 이동", SnapEnabled && movingIds is null);
     }
 
     private int VisibleSubtreeContentHeight(Guid id, int dpi)
@@ -447,13 +469,13 @@ internal sealed partial class StickerManager : IMessageFilter
         return fallback;
     }
 
-    private Form? HitSurface(Point cursor, Guid? excludedRoot)
+    private Form? HitSurface(Point cursor, Guid? excludedRoot, IReadOnlySet<Guid>? excludedRoots = null)
     {
         var surfaces = new Dictionary<nint, Form>();
-        foreach (var form in _forms.Values.Where(form => !form.IsTreeEmbedded && form.Visible && form.Bookmark.Id != excludedRoot))
+        foreach (var form in _forms.Values.Where(form => !form.IsTreeEmbedded && form.Visible && form.Bookmark.Id != excludedRoot && excludedRoots?.Contains(form.Bookmark.Id) != true))
             if (ContainsCardPoint(form, cursor)) surfaces[form.Handle] = form;
         foreach (var (id, panel) in _panels)
-            if (id != excludedRoot && panel.ContainsVisiblePoint(cursor)) surfaces[panel.Handle] = panel;
+            if (id != excludedRoot && excludedRoots?.Contains(id) != true && panel.ContainsVisiblePoint(cursor)) surfaces[panel.Handle] = panel;
         // The panel's rectangle still measures its layout, but transparent gaps
         // and clipped corners must not cover a lower card during drop targeting.
         for (nint window = GetTopWindow(nint.Zero); window != nint.Zero; window = GetWindow(window, 2))
@@ -469,6 +491,7 @@ internal sealed partial class StickerManager : IMessageFilter
     private async Task CompleteManagedDragAsync()
     {
         if (_drag is not { } drag) return;
+        if (!IsDragSelectionCurrent(drag)) { CancelManagedDrag(); return; }
         DropPreview? preview = drag.Preview;
         Point cursor = Cursor.Position;
         Keys modifiers = Control.ModifierKeys;
@@ -479,7 +502,7 @@ internal sealed partial class StickerManager : IMessageFilter
     internal async Task<bool> CommitDropPreviewAsync(StickerForm source, DropPreview preview, Point cursor, Size grabOffset, Keys modifiers)
     {
         var final = EvaluateDrop(source, cursor, grabOffset, modifiers);
-        if (!preview.Valid || preview != final) return false;
+        if (!preview.Valid || !SameDropPreview(preview, final)) return false;
         if (preview.Request is { } request)
         {
             DropRequested?.Invoke(request);
@@ -487,6 +510,13 @@ internal sealed partial class StickerManager : IMessageFilter
         }
         if (preview.IsRootMove)
         {
+            if (preview.Moves is { Count: > 0 } moves)
+            {
+                bool committed = await CommitLayoutsAsync(moves.Select(move => move.Layout).ToArray());
+                foreach (var move in moves) BringTreeToFront(move.BookmarkId);
+                return committed;
+            }
+            source = SelectionAnchor(source, MoveSelection(source));
             Screen screen = Screen.FromRectangle(preview.Bounds);
             var layout = LayoutAt(source.Bookmark.Id, preview.Bounds, screen, preview.Dpi);
             bool saved = await CommitLayoutsAsync([layout]);
@@ -505,6 +535,7 @@ internal sealed partial class StickerManager : IMessageFilter
         Application.RemoveMessageFilter(this);
         if (!drag.Source.IsDisposed) drag.Source.Capture = false;
         drag.Ghost.Dispose();
+        foreach (var ghost in drag.SelectionGhosts) ghost.Dispose();
     }
 
     private async Task PersistPlacedRootAsync(StickerForm form)
@@ -546,16 +577,22 @@ internal sealed partial class StickerManager : IMessageFilter
     }
 
     internal sealed record DropPreview(bool Valid, BookmarkDropRequest? Request, Rectangle Bounds, string Label, bool IsRootMove,
-        Rectangle? PanelBounds = null, int Dpi = 96);
+        Rectangle? PanelBounds = null, int Dpi = 96, IReadOnlyList<SelectionMovePreview>? Moves = null);
     [StructLayout(LayoutKind.Sequential)] private struct NativePoint { internal int X, Y; }
     [DllImport("user32.dll")] private static extern nint MonitorFromPoint(NativePoint point, uint flags);
     [DllImport("shcore.dll")] private static extern int GetDpiForMonitor(nint monitor, int type, out uint x, out uint y);
-    private sealed class DragSession(StickerForm source, Rectangle origin, Size grabOffset, StickerDragPreview ghost)
+    private bool IsDragSelectionCurrent(DragSession drag) => !drag.Source.IsDisposed && drag.Source.Visible &&
+        drag.SelectionIds.All(id => _forms.TryGetValue(id, out var form) && !form.IsDisposed && form.Visible) &&
+        drag.SelectionIds.SequenceEqual(MoveSelection(drag.Source));
+
+    private sealed class DragSession(StickerForm source, Rectangle origin, Size grabOffset, StickerDragPreview ghost, Guid[] selectionIds)
     {
         internal StickerForm Source { get; } = source;
         internal Rectangle Origin { get; } = origin;
         internal Size GrabOffset { get; } = grabOffset;
         internal StickerDragPreview Ghost { get; } = ghost;
+        internal Guid[] SelectionIds { get; } = selectionIds;
+        internal List<StickerDragPreview> SelectionGhosts { get; } = [];
         internal DropPreview? Preview { get; set; }
     }
 }

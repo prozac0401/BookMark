@@ -8,7 +8,7 @@ internal sealed class RecentForm : Form
 {
     private readonly ImeTextBox _search = new() { PlaceholderText = "이름 · 경로/URL · 시트 · 메모 검색" };
     private readonly Button _newFolder = new() { Text = "새 폴더", AccessibleName = "최상위 책갈피 폴더 만들기" };
-    private readonly ListBox _items = new() { DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 92, IntegralHeight = false, BorderStyle = BorderStyle.None };
+    private readonly SelectionListBox _items = new() { DrawMode = DrawMode.OwnerDrawFixed, ItemHeight = 92, IntegralHeight = false, BorderStyle = BorderStyle.None };
     private readonly Label _status = new() { ForeColor = UiStyle.Muted };
     private readonly LinkLabel _cancel = new() { Text = "요청 중단", AutoSize = true, Visible = false };
     private readonly ContextMenuStrip _menu = new();
@@ -23,6 +23,7 @@ internal sealed class RecentForm : Form
     private readonly List<Bookmark> _bookmarks = [];
     private readonly Dictionary<Guid, long> _displaySequence = [];
     private readonly HashSet<Guid> _collapsed = [];
+    private readonly HashSet<Guid> _selectedIds = [];
     private Dictionary<Guid, BookmarkTreeRow> _rows = [];
     private readonly Dictionary<Guid, (long Revision, Bookmark? Value)> _changes = [];
     private long _changeRevision;
@@ -33,6 +34,9 @@ internal sealed class RecentForm : Form
     private bool _deactivationHideQueued;
     private Point? _dragOrigin;
     private Guid? _dragId;
+    private Guid[] _dropSourceIds = [];
+    private bool _collapseSelectionOnRelease;
+    private bool _selectionUpdating;
     private Guid? _dropTargetId;
     private BookmarkDropRequest? _dropRequest;
     private bool _dropInsertion, _dropAfter;
@@ -46,6 +50,7 @@ internal sealed class RecentForm : Form
     private Guid? _projectionSelection;
     private string _normalStatus = "";
     private const string DragFormat = "WorkBookmark.BookmarkId";
+    private const string MultiDragFormat = "WorkBookmark.BookmarkIds";
     public event Action<Bookmark>? ResumeRequested;
     public event Action<Bookmark>? NoteRequested;
     public event Action<Bookmark>? DeleteRequested;
@@ -61,6 +66,7 @@ internal sealed class RecentForm : Form
     public event Action<Bookmark>? ShowStickerRequested;
     public event Action? CancelRequested;
     public Bookmark? Selected => _items.SelectedItem as Bookmark;
+    internal IReadOnlyCollection<Guid> SelectedIds => _selectedIds;
     internal Bookmark? FindBookmark(Guid id) => _bookmarks.FirstOrDefault(item => item.Id == id);
     public RecentForm(Func<string, Task<SearchResults>> load)
     {
@@ -84,6 +90,15 @@ internal sealed class RecentForm : Form
         _items.SelectedIndexChanged += (_, _) =>
         {
             if (_isDisposing) return;
+            // Native mouse selection only tracks the focused row. Keyboard and
+            // accessibility selection still replace the selected set normally.
+            if (!_selectionUpdating && !_dragging && !_items.PointerDispatch && Control.MouseButtons == MouseButtons.None)
+            {
+                _selectedIds.Clear();
+                if (Selected is { } focused) _selectedIds.Add(focused.Id);
+                UpdateSelectionStatus();
+                _items.Invalidate();
+            }
             _tooltip.SetToolTip(_items, Selected is { } selected ? selected.IsFolder
                 ? $"{selected.DisplayName}\n책갈피 폴더 · 클릭하여 열기/닫기\n항목을 끌어 놓으면 이 폴더에 넣습니다."
                 : $"{selected.Target.Path}\n저장: {selected.CapturedAtUtc.ToLocalTime():yyyy.MM.dd HH:mm:ss}\n행 사이: 순서 변경 · 폴더 가운데: 넣기 · 일반 항목 가운데: 묶기" : "");
@@ -176,6 +191,7 @@ internal sealed class RecentForm : Form
             _search.Text = "";
             _searchTimer.Stop();
             _items.Items.Clear();
+            _selectedIds.Clear();
             if (_isDisposing || IsDisposed) return;
             _status.Text = "기록을 불러오는 중…";
             UiStyle.Position(this); Show(); Activate(); _search.Focus();
@@ -189,6 +205,7 @@ internal sealed class RecentForm : Form
         int version = ++_loadVersion;
         long revision = _changeRevision;
         Guid? selected = preserveSelection ? Selected?.Id : null;
+        if (!preserveSelection) _selectedIds.Clear();
         try
         {
             // A complete snapshot keeps old parents and descendants available when
@@ -268,6 +285,11 @@ internal sealed class RecentForm : Form
                 if (value.IsFolder) createdFolder ??= value.Id;
             }
         }
+        if (createdFolder is Guid created)
+        {
+            _selectedIds.Clear();
+            _selectedIds.Add(created);
+        }
         ProjectItems(createdFolder ?? selected);
     }
     public void Remove(Guid id)
@@ -328,7 +350,9 @@ internal sealed class RecentForm : Form
             .Select(item => item with { CaptureSequence = _displaySequence.GetValueOrDefault(item.Id, item.CaptureSequence) }), searching ? null : _collapsed)
             .Select(row => row with { Bookmark = byId[row.Bookmark.Id] }).ToArray();
         _rows = projected.ToDictionary(row => row.Bookmark.Id);
+        _selectedIds.IntersectWith(_rows.Keys);
         _items.BeginUpdate();
+        _selectionUpdating = true;
         try
         {
             _items.Items.Clear();
@@ -340,6 +364,8 @@ internal sealed class RecentForm : Form
             }
             if (_isDisposing || IsDisposed) return;
             int index = selected.HasValue ? Array.FindIndex(projected, row => row.Bookmark.Id == selected.Value) : -1;
+            if (index < 0 && _selectedIds.Count > 0)
+                index = Array.FindIndex(projected, row => _selectedIds.Contains(row.Bookmark.Id));
             var visited = new HashSet<Guid>();
             while (index < 0 && selected is { } hidden && visited.Add(hidden) && byId.TryGetValue(hidden, out var current) && current.ParentId is { } parent)
             {
@@ -347,14 +373,15 @@ internal sealed class RecentForm : Form
                 index = Array.FindIndex(projected, row => row.Bookmark.Id == parent);
             }
             _items.SelectedIndex = index >= 0 ? index : (_items.Items.Count > 0 ? 0 : -1);
+            if (_selectedIds.Count == 0 && Selected is { } focused) _selectedIds.Add(focused.Id);
         }
-        finally { if (!_items.IsDisposed) _items.EndUpdate(); }
+        finally { _selectionUpdating = false; if (!_items.IsDisposed) _items.EndUpdate(); }
         if (_isDisposing || IsDisposed) return;
         BookmarkColors.UpdateMenu(_colorMenu, Selected);
         _normalStatus = _bookmarks.Count == 0 ? "새 폴더를 만들거나 작업 창에서 책갈피를 저장해 주세요."
             : searching ? $"검색 결과 {matches}개 · 상위 폴더 함께 표시"
-            : $"전체 {_bookmarks.Count}개 · 행 사이: 순서 변경 · 가운데: 폴더에 넣기/묶기";
-        _status.Text = _normalStatus;
+            : $"전체 {_bookmarks.Count}개 · Ctrl+클릭: 여러 개 선택 · 드래그: 이동";
+        UpdateSelectionStatus();
         _items.Invalidate();
     }
     private static bool Matches(Bookmark item, string query) =>
@@ -390,24 +417,80 @@ internal sealed class RecentForm : Form
         if (bookmark.IsFolder) ToggleBranch(bookmark);
         else ResumeRequested?.Invoke(bookmark);
     }
-    private void ItemsMouseDown(object? sender, MouseEventArgs e)
+    private void ItemsMouseDown(object? sender, MouseEventArgs e) => HandleItemsMouseDown(e, ModifierKeys);
+    internal void HandleItemsMouseDown(MouseEventArgs e, Keys modifiers)
     {
         int index = _items.IndexFromPoint(e.Location);
-        if (index >= 0) _items.SelectedIndex = index;
-        if (e.Button == MouseButtons.Right) { if (index < 0) _items.ClearSelected(); _keepOpen = true; return; }
+        if (e.Button == MouseButtons.Right)
+        {
+            SelectOnly(index);
+            _keepOpen = true;
+            return;
+        }
         if (e.Button != MouseButtons.Left) return;
         _suppressClick = false;
+        _collapseSelectionOnRelease = false;
         _dragOrigin = null;
         _dragId = null;
-        if (index < 0 || Selected is not { } item) return;
-        if (_rows.TryGetValue(item.Id, out var row) && (item.IsFolder || row.HasChildren) && ExpanderBounds(index, row.Depth).Contains(e.Location))
+        if (index < 0) { SelectOnly(-1); return; }
+        var item = (Bookmark)_items.Items[index];
+        FocusIndex(index);
+        bool toggle = (modifiers & Keys.Control) != 0;
+        if (toggle)
         {
+            _suppressClick = true;
+            if (!_selectedIds.Add(item.Id))
+            {
+                _selectedIds.Remove(item.Id);
+                FocusIndex(Enumerable.Range(0, _items.Items.Count)
+                    .FirstOrDefault(candidate => _selectedIds.Contains(((Bookmark)_items.Items[candidate]).Id), -1));
+                UpdateSelectionStatus();
+                _items.Invalidate();
+                return;
+            }
+        }
+        else if (!_selectedIds.Contains(item.Id)) SelectOnly(index);
+        else _collapseSelectionOnRelease = _selectedIds.Count > 1;
+        UpdateSelectionStatus();
+        _items.Invalidate();
+        // Ctrl selects folders too; it must never expand them or launch a target.
+        if (!toggle && _rows.TryGetValue(item.Id, out var row) && (item.IsFolder || row.HasChildren) && ExpanderBounds(index, row.Depth).Contains(e.Location))
+        {
+            SelectOnly(index);
             _suppressClick = true;
             ToggleBranch(item);
             return;
         }
         _dragOrigin = e.Location;
         _dragId = item.Id;
+    }
+    private void SelectOnly(int index)
+    {
+        _selectedIds.Clear();
+        FocusIndex(index);
+        if (index >= 0) _selectedIds.Add(((Bookmark)_items.Items[index]).Id);
+        UpdateSelectionStatus();
+        _items.Invalidate();
+    }
+    private void FocusIndex(int index)
+    {
+        bool changing = _selectionUpdating;
+        _selectionUpdating = true;
+        try { _items.SelectedIndex = index; }
+        finally { _selectionUpdating = changing; }
+    }
+    private void UpdateSelectionStatus()
+    {
+        if (!_dropHint) _status.Text = _selectedIds.Count > 1
+            ? $"{_selectedIds.Count}개 선택 · 선택한 항목을 드래그하여 함께 이동 · Ctrl+클릭: 선택 해제"
+            : _normalStatus;
+    }
+    internal DataObject CreateDragData(Guid id)
+    {
+        Guid[] ids = _selectedIds.Contains(id) ? _items.Items.Cast<Bookmark>().Where(item => _selectedIds.Contains(item.Id)).Select(item => item.Id).ToArray() : [id];
+        var data = new DataObject(DragFormat, id.ToString());
+        data.SetData(MultiDragFormat, string.Join("\n", ids));
+        return data;
     }
     private void ItemsMouseMove(object? sender, MouseEventArgs e)
     {
@@ -420,7 +503,7 @@ internal sealed class RecentForm : Form
         _keepOpen = true;
         _dropHint = true;
         _status.Text = "폴더 위: 넣기 · 일반 항목 위: 새 폴더 · 빈 곳: 꺼내기";
-        try { _items.DoDragDrop(new DataObject(DragFormat, id.ToString()), DragDropEffects.Move); }
+        try { _items.DoDragDrop(CreateDragData(id), DragDropEffects.Move); }
         finally { FinishDrag(); }
     }
     private void FinishDrag()
@@ -429,6 +512,8 @@ internal sealed class RecentForm : Form
         _keepOpen = false;
         _dragOrigin = null;
         _dragId = null;
+        _dropSourceIds = [];
+        _collapseSelectionOnRelease = false;
         ClearDropTarget();
         if (_projectionPending)
         {
@@ -443,16 +528,47 @@ internal sealed class RecentForm : Form
         int index = _items.IndexFromPoint(e.Location);
         if (e.Button == MouseButtons.Left && !_suppressClick && !_dragging && index >= 0 &&
             _items.Items[index] is Bookmark item && _dragId == item.Id)
-            ActivateBookmark(item);
+        {
+            if (_collapseSelectionOnRelease) SelectOnly(index);
+            else ActivateBookmark(item);
+        }
+        _collapseSelectionOnRelease = false;
         _dragOrigin = null;
         _dragId = null;
     }
     private static Guid? DragId(DragEventArgs e) => e.Data?.GetData(DragFormat) is string text && Guid.TryParse(text, out var id) ? id : null;
+    private Guid? ReadDragSources(DragEventArgs e)
+    {
+        Guid? id = DragId(e);
+        _dropSourceIds = id is Guid single ? [single] : [];
+        if (id is null || e.Data?.GetData(MultiDragFormat) is not string text) return id;
+        var ids = new List<Guid>();
+        foreach (string value in text.Split('\n'))
+        {
+            if (!Guid.TryParse(value, out Guid parsed) || parsed == Guid.Empty) { _dropSourceIds = []; return null; }
+            ids.Add(parsed);
+        }
+        if (!ids.Contains(id.Value)) { _dropSourceIds = []; return null; }
+        _dropSourceIds = ids.Distinct().ToArray();
+        return id;
+    }
+    private IReadOnlyList<Guid> DropSources(Guid id) => _dropSourceIds.Contains(id) ? _dropSourceIds : [id];
+    private IReadOnlyList<Guid> DropRoots(Guid id)
+    {
+        var sources = DropSources(id);
+        return sources.All(source => FindBookmark(source) is { DeletedAtUtc: null })
+            ? BookmarkTree.SelectionRoots(_bookmarks, sources) : [];
+    }
+    private BookmarkDropRequest IncludeSelection(BookmarkDropRequest request) => request with
+    {
+        BookmarkIds = DropSources(request.BookmarkId).Count > 1 ? DropSources(request.BookmarkId).ToArray() : null
+    };
     private void ItemsDragOver(object? sender, DragEventArgs e)
     {
         Point point = _items.PointToClient(new Point(e.X, e.Y));
-        UpdateDragScroll(DragId(e), point);
-        e.Effect = UpdateDropAt(DragId(e), point) ? DragDropEffects.Move : DragDropEffects.None;
+        Guid? id = ReadDragSources(e);
+        UpdateDragScroll(id, point);
+        e.Effect = UpdateDropAt(id, point) ? DragDropEffects.Move : DragDropEffects.None;
     }
     private void UpdateDragScroll(Guid? id, Point point)
     {
@@ -497,7 +613,7 @@ internal sealed class RecentForm : Form
         SetDropTarget(e, null);
     }
     private void SetDropTarget(DragEventArgs e, Guid? parentId)
-        => e.Effect = UpdateDropTarget(DragId(e), parentId) ? DragDropEffects.Move : DragDropEffects.None;
+        => e.Effect = UpdateDropTarget(ReadDragSources(e), parentId) ? DragDropEffects.Move : DragDropEffects.None;
     private bool UpdateDropAt(Guid? sourceId, Point point)
     {
         int index = _items.IndexFromPoint(point);
@@ -509,17 +625,19 @@ internal sealed class RecentForm : Form
         bool after = point.Y >= bounds.Bottom - edge;
         if (!before && !after) return UpdateDropTarget(sourceId, target.Id);
         BookmarkDropRequest? request = null;
-        if (sourceId is Guid id && id != target.Id && BookmarkTree.CanReparent(_bookmarks, id, target.ParentId))
+        var roots = sourceId is Guid source ? DropRoots(source) : [];
+        if (sourceId is Guid id && roots.Count > 0 && roots.All(root => BookmarkTree.CanDropOnto(_bookmarks, root, target.Id) &&
+            BookmarkTree.CanReparent(_bookmarks, root, target.ParentId)))
         {
             Guid? beforeId = target.Id;
             if (after)
             {
                 var siblings = BookmarkTree.Flatten(_bookmarks).Select(row => row.Bookmark)
-                    .Where(item => item.ParentId == target.ParentId && item.Id != id).ToArray();
+                    .Where(item => item.ParentId == target.ParentId && !roots.Contains(item.Id)).ToArray();
                 int targetIndex = Array.FindIndex(siblings, item => item.Id == target.Id);
                 beforeId = targetIndex + 1 < siblings.Length ? siblings[targetIndex + 1].Id : null;
             }
-            request = new(id, BookmarkDropKind.InsertBefore, target.ParentId, beforeId);
+            request = IncludeSelection(new(id, BookmarkDropKind.InsertBefore, target.ParentId, beforeId));
         }
         return SetDropPreview(request, target.Id, insertion: true, after);
     }
@@ -527,9 +645,9 @@ internal sealed class RecentForm : Form
     {
         bool allowed = sourceId is { } id && CanRequestParentChange(id, parentId);
         Bookmark? target = parentId is Guid targetId ? FindBookmark(targetId) : null;
-        BookmarkDropRequest? request = allowed ? new(sourceId!.Value,
+        BookmarkDropRequest? request = allowed ? IncludeSelection(new(sourceId!.Value,
             parentId is null ? BookmarkDropKind.Detach : target?.IsFolder == true ? BookmarkDropKind.MoveInto : BookmarkDropKind.Group,
-            parentId) : null;
+            parentId)) : null;
         return SetDropPreview(request, parentId, insertion: false, after: false);
     }
     private bool SetDropPreview(BookmarkDropRequest? request, Guid? targetId, bool insertion, bool after)
@@ -549,6 +667,7 @@ internal sealed class RecentForm : Form
             : destination?.IsFolder == true ? $"‘{destination.DisplayName}’ 폴더에 넣습니다."
             : $"‘{destination?.DisplayName}’ 항목과 새 폴더로 묶습니다."
             : "현재 위치이거나 자기 자신/하위 항목이라 이동할 수 없습니다.";
+        if (allowed && request!.SourceIds.Count > 1) _status.Text = $"{request.SourceIds.Count}개 함께 이동 · " + _status.Text;
         if (previous != _dropTargetId || previousInsertion != _dropInsertion || previousAfter != _dropAfter)
         {
             InvalidateDropRow(previous);
@@ -570,21 +689,29 @@ internal sealed class RecentForm : Form
     private void ItemsDragDrop(object? sender, DragEventArgs e)
     {
         Point point = _items.PointToClient(new Point(e.X, e.Y));
-        UpdateDropAt(DragId(e), point);
+        UpdateDropAt(ReadDragSources(e), point);
         var request = _dropRequest;
         ClearDropTarget();
         if (request is not null) RequestDrop(request);
     }
     private void RootDragDrop(object? sender, DragEventArgs e)
     {
+        Guid? id = ReadDragSources(e);
+        UpdateDropTarget(id, null);
+        var request = _dropRequest;
         ClearDropTarget();
-        if (DragId(e) is { } id) RequestParentChange(id, null);
+        if (request is not null) RequestDrop(request);
     }
-    private bool CanRequestParentChange(Guid id, Guid? parentId) => parentId is { } target
-        ? BookmarkTree.CanDropOnto(_bookmarks, id, target)
-        : _bookmarks.FirstOrDefault(item => item.Id == id) is { ParentId: not null } && BookmarkTree.CanReparent(_bookmarks, id, null);
+    private bool CanRequestParentChange(Guid id, Guid? parentId)
+    {
+        var roots = DropRoots(id);
+        return roots.Count > 0 && (parentId is { } target
+            ? roots.All(root => BookmarkTree.CanDropOnto(_bookmarks, root, target))
+            : roots.Any(root => FindBookmark(root)?.ParentId is not null) && roots.All(root => BookmarkTree.CanReparent(_bookmarks, root, null)));
+    }
     private void RequestParentChange(Guid id, Guid? parentId)
     {
+        _dropSourceIds = [id];
         if (!CanRequestParentChange(id, parentId)) return;
         var item = _bookmarks.First(value => value.Id == id);
         var target = parentId is Guid targetId ? FindBookmark(targetId) : null;
@@ -595,7 +722,7 @@ internal sealed class RecentForm : Form
     {
         _status.Text = "구조 변경을 저장하는 중…";
         if (DropRequested is not null) DropRequested.Invoke(request);
-        else if (request.Kind != BookmarkDropKind.InsertBefore && FindBookmark(request.BookmarkId) is { } item)
+        else if (request.SourceIds.Count == 1 && request.Kind != BookmarkDropKind.InsertBefore && FindBookmark(request.BookmarkId) is { } item)
             ParentChangeRequested?.Invoke(item, request.TargetId);
     }
     private void ClearDropTarget()
@@ -604,10 +731,12 @@ internal sealed class RecentForm : Form
         Guid? previous = _dropTargetId;
         _dropTargetId = null;
         _dropRequest = null;
+        _dropSourceIds = [];
         _dropInsertion = _dropAfter = false;
         _status.BackColor = BackColor;
-        if (_dropHint) _status.Text = _normalStatus;
+        bool restoreStatus = _dropHint;
         _dropHint = false;
+        if (restoreStatus) UpdateSelectionStatus();
         InvalidateDropRow(previous);
     }
     protected override bool ProcessCmdKey(ref Message message, Keys keyData)
@@ -627,7 +756,7 @@ internal sealed class RecentForm : Form
         }
         if (keyData is Keys.Up or Keys.Down && !_search.IsComposing)
         {
-            if (_items.Items.Count > 0) _items.SelectedIndex = Math.Clamp(_items.SelectedIndex + (keyData == Keys.Down ? 1 : -1), 0, _items.Items.Count - 1);
+            if (_items.Items.Count > 0) SelectOnly(Math.Clamp(_items.SelectedIndex + (keyData == Keys.Down ? 1 : -1), 0, _items.Items.Count - 1));
             return true;
         }
         if (_items.Focused && keyData is Keys.Left or Keys.Right && Selected is { } selected)
@@ -639,10 +768,10 @@ internal sealed class RecentForm : Form
                 else if (keyData == Keys.Left && selected.ParentId is { } parent)
                 {
                     for (int index = 0; index < _items.Items.Count; index++)
-                        if (((Bookmark)_items.Items[index]).Id == parent) { _items.SelectedIndex = index; break; }
+                        if (((Bookmark)_items.Items[index]).Id == parent) { SelectOnly(index); break; }
                 }
                 else if (keyData == Keys.Right && row.HasChildren && _items.SelectedIndex + 1 < _items.Items.Count)
-                    _items.SelectedIndex++;
+                    SelectOnly(_items.SelectedIndex + 1);
             }
             return true;
         }
@@ -652,7 +781,7 @@ internal sealed class RecentForm : Form
     {
         if (e.Index < 0) return;
         Bookmark bookmark = (Bookmark)_items.Items[e.Index];
-        bool selected = (e.State & DrawItemState.Selected) != 0;
+        bool selected = _selectedIds.Contains(bookmark.Id);
         bool insertionTarget = _dropInsertion && _dropTargetId == bookmark.Id;
         bool dropTarget = !_dropInsertion && _dropTargetId == bookmark.Id;
         using var background = new SolidBrush(dropTarget ? Color.FromArgb(199, 231, 217) : selected ? Color.FromArgb(220, 238, 232) : BookmarkColors.ListPaper(bookmark.Color));
@@ -739,5 +868,19 @@ internal sealed class RecentForm : Form
             _tooltip.Dispose();
         }
         base.Dispose(disposing);
+    }
+
+    private sealed class SelectionListBox : ListBox
+    {
+        internal bool PointerDispatch { get; private set; }
+        protected override void WndProc(ref Message message)
+        {
+            bool wasPointer = PointerDispatch;
+            // Selection notifications can occur on either press or release.
+            // Keep native focus changes from replacing our Ctrl selection set.
+            if (message.Msg is 0x0200 or 0x0201 or 0x0202 or 0x0203) PointerDispatch = true;
+            try { base.WndProc(ref message); }
+            finally { PointerDispatch = wasPointer; }
+        }
     }
 }

@@ -43,7 +43,8 @@ CREATE INDEX bookmark_sibling_order ON bookmarks(parent_id,sibling_order);")) or
     public FolderDropCommit ApplyDrop(BookmarkDropRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        return Write("folder-drop", (db, tx) => ApplyDrop(db, tx, request));
+        return Write("folder-drop", (db, tx) => request.SourceIds.Count > 1 || request.RootLayouts is not null
+            ? ApplySelectionDrop(db, tx, request) : ApplyDrop(db, tx, request));
     }
 
     public FolderDropCommit SortChildren(Guid parentId, BookmarkSortMode mode)

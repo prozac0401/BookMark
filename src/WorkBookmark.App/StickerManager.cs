@@ -315,12 +315,13 @@ internal sealed partial class StickerManager : IDisposable
     internal void Remove(Guid id)
     {
         ++_revision;
-        if (_drag is { } drag && (drag.Source.Bookmark.Id == id || Subtree(id).Any(row => row.Bookmark.Id == drag.Source.Bookmark.Id))) CancelManagedDrag();
+        if (_drag is { } drag && Subtree(id).Any(row => row.Bookmark.Id == drag.Source.Bookmark.Id || SelectedBookmarkIds.Contains(row.Bookmark.Id))) CancelManagedDrag();
         if (!_forms.Remove(id, out var form)) return;
         _pending.Remove(id);
         _unsaved.Remove(id);
         foreach (var panel in _panels.Values) panel.DetachRow(form);
         form.Dispose();
+        PruneSelection();
         if (!_refreshingHierarchy) { UpdateHierarchy(); ApplyFolderVisibility(); }
     }
 

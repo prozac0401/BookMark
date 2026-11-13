@@ -84,8 +84,11 @@ internal sealed class StickerForm : Form
     private Region? _embeddedCardRegion;
     private Size _embeddedCardRegionSize;
     private int _embeddedCardRegionDpi;
+    private bool _selectedForMove;
+    private bool _selectionPointerActive, _selectionPointerDragged;
 
     internal bool IsTreeEmbedded => _treeEmbedded;
+    internal bool SelectedForMove => _selectedForMove;
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     internal bool ManagedTreeInteractions
     {
@@ -145,6 +148,9 @@ internal sealed class StickerForm : Form
     internal event Action<StickerForm>? RequestGroupActivation;
     internal event Action<StickerForm, Point>? TreeDragRequested;
     internal event Action<StickerForm, Point>? EmbeddedDragRequested;
+    internal event Action<StickerForm, Keys>? SelectionPointerDownRequested;
+    internal event Action<StickerForm, bool>? SelectionPointerUpRequested;
+    internal event Func<bool>? SelectionClearRequested;
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
     internal Func<Rectangle, Keys, Rectangle>? AdjustMoveBounds { get; set; }
 
@@ -413,6 +419,8 @@ internal sealed class StickerForm : Form
         _title.Click += (_, _) => RequestNoteEdit();
         _title.DoubleClick += (_, _) => RequestNoteEdit();
         _title.DragRequested += (_, _) => BeginPointerMove(_title.DragOrigin);
+        _title.MouseDown += SelectionPointerDown;
+        _title.MouseUp += SelectionPointerUp;
         _resumeStatus.Font = _smallFont;
         _resumeStatus.UseCompatibleTextRendering = false; // Match the GDI line height used by OnLayout.
         _resumeStatus.ForeColor = Color.FromArgb(138, 80, 43);
@@ -503,6 +511,8 @@ internal sealed class StickerForm : Form
         MouseDown += DragHeader;
         foreach (Control dragSurface in new Control[] { this, _treeMark, _header, _typeIcon, _kind })
         {
+            dragSurface.MouseDown += SelectionPointerDown;
+            dragSurface.MouseUp += SelectionPointerUp;
             dragSurface.MouseMove += ContinueHeaderDrag;
             dragSurface.MouseUp += (_, _) => EndHeaderDrag();
             dragSurface.MouseCaptureChanged += (_, _) =>
@@ -510,7 +520,7 @@ internal sealed class StickerForm : Form
                 if (ReferenceEquals(_managedPointerSource, dragSurface) && !dragSurface.Capture) EndHeaderDrag();
             };
         }
-        _tooltip.SetToolTip(this, "클릭하여 선택 · 드래그하여 이동 · 다른 스티커 위에 놓아 폴더로 묶기/넣기 · Alt: 묶지 않고 자유 이동");
+        _tooltip.SetToolTip(this, "클릭하여 선택 · Ctrl+클릭으로 여러 항목 선택 · 선택한 항목을 드래그하여 함께 이동 · Esc: 선택 해제");
         _treeMark.ContextMenuStrip = _menu;
         _header.ContextMenuStrip = _menu;
         _typeIcon.ContextMenuStrip = _menu;
@@ -584,11 +594,12 @@ internal sealed class StickerForm : Form
                 ? "드래그: 순서·폴더 변경 · 바탕화면에 놓기: 최상위로 꺼내기 · Alt: 이동 취소"
                 : "드래그: 트리 이동 · 대상 중앙에 놓기: 폴더로 묶기/넣기 · Alt: 위치만 이동"
             : "다른 스티커 위에 놓아 폴더로 묶기/넣기 · Alt: 묶지 않고 자유 이동";
-        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 선택 · 더블클릭/F2로 이름 변경\n왼쪽 버튼: 폴더 열기/닫기" : "\n클릭하여 선택 · 더블클릭/F2로 메모 편집") + "\n" + dragHint);
-        _tooltip.SetToolTip(this, "클릭하여 선택 · " + dragHint);
+        const string selectionHint = "Ctrl+클릭: 선택 추가/해제 · 선택한 항목을 드래그하여 함께 이동 · Esc: 선택 해제";
+        _tooltip.SetToolTip(_title, details + (value.IsFolder ? "\n클릭하여 선택 · 더블클릭/F2로 이름 변경\n왼쪽 버튼: 폴더 열기/닫기" : "\n클릭하여 선택 · 더블클릭/F2로 메모 편집") + "\n" + selectionHint + "\n" + dragHint);
+        _tooltip.SetToolTip(this, "클릭하여 선택 · " + selectionHint + "\n" + dragHint);
         _tooltip.SetToolTip(_kind, details + "\n드래그하여 이동");
         _tooltip.SetToolTip(_resumeStatus, issue is null ? "" : issue + "\n" + details);
-        _title.AccessibleDescription = details + "\n한 번 클릭하여 선택하고 드래그하여 이동합니다. 더블클릭 또는 F2, Ctrl+E로 " +
+        _title.AccessibleDescription = details + "\n한 번 클릭하여 선택하고 Ctrl+클릭으로 여러 항목을 선택하여 함께 이동합니다. 더블클릭 또는 F2, Ctrl+E로 " +
             (value.IsFolder ? "이름을 변경합니다. 왼쪽 버튼으로 폴더를 열고 닫습니다." : empty ? "메모를 추가합니다." : "메모를 편집합니다.") +
             " " + dragHint;
         _resumeStatus.AccessibleDescription = issue;
@@ -619,8 +630,41 @@ internal sealed class StickerForm : Form
         if (_dropTarget == value) return;
         _dropTarget = value;
         ApplyBookmarkColor();
-        AccessibleDescription = value ? Bookmark.IsFolder ? "여기에 놓으면 이 폴더 안으로 이동합니다." : "여기에 놓으면 두 항목을 새 폴더로 묶습니다." : null;
+        UpdateSelectionDescription();
         Invalidate(true);
+    }
+
+    internal void SetSelection(bool value)
+    {
+        if (_selectedForMove == value) return;
+        _selectedForMove = value;
+        UpdateSelectionDescription();
+        Invalidate();
+    }
+
+    private void UpdateSelectionDescription() => AccessibleDescription = _dropTarget
+        ? Bookmark.IsFolder ? "여기에 놓으면 이 폴더 안으로 이동합니다." : "여기에 놓으면 선택한 항목을 새 폴더로 묶습니다."
+        : _selectedForMove ? "함께 이동할 책갈피로 선택됨. Ctrl+클릭으로 선택을 해제합니다." : null;
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        base.OnPaint(e);
+        if (!_selectedForMove || ClientSize.Width < 8 || ClientSize.Height < 8) return;
+        float width = Math.Max(2F, DeviceDpi / 48F);
+        float inset = width / 2;
+        var bounds = new RectangleF(inset, inset, ClientSize.Width - width, ClientSize.Height - width);
+        float diameter = Math.Min(Px(14), Math.Min(bounds.Width, bounds.Height));
+        using var path = new GraphicsPath();
+        path.AddArc(bounds.Left, bounds.Top, diameter, diameter, 180, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Top, diameter, diameter, 270, 90);
+        path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
+        path.AddArc(bounds.Left, bounds.Bottom - diameter, diameter, diameter, 90, 90);
+        path.CloseFigure();
+        var previous = e.Graphics.SmoothingMode;
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        using var pen = new Pen(UiStyle.Accent, width);
+        e.Graphics.DrawPath(pen, path);
+        e.Graphics.SmoothingMode = previous;
     }
 
     private void ApplyBookmarkColor()
@@ -1245,7 +1289,11 @@ internal sealed class StickerForm : Form
             return base.ProcessCmdKey(ref message, keyData);
         }
         if (_title.Focused && (keyData == Keys.Enter || keyData == Keys.Space)) { RequestNoteEdit(); return true; }
-        if (keyData == Keys.Escape) { RequestHide(); return true; }
+        if (keyData == Keys.Escape)
+        {
+            if (SelectionClearRequested?.Invoke() != true) RequestHide();
+            return true;
+        }
         if (keyData == (Keys.Control | Keys.Space)) { ToggleCollapsed(); return true; }
         if (keyData == (Keys.Control | Keys.Z)) { UndoRequested?.Invoke(); return true; }
         if (keyData == (Keys.Control | Keys.E)) { RequestNoteEdit(); return true; }
@@ -1359,6 +1407,33 @@ internal sealed class StickerForm : Form
         BeginPointerMove();
     }
 
+    private void SelectionPointerDown(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left || IsEditingNote) return;
+        BeginSelectionPointer(ModifierKeys);
+    }
+
+    // Keep the modifier snapshot from mouse-down: releasing Ctrl before the
+    // button must not turn an additive click into a single selection.
+    internal void BeginSelectionPointer(Keys modifiers)
+    {
+        _selectionPointerActive = true;
+        _selectionPointerDragged = false;
+        SelectionPointerDownRequested?.Invoke(this, modifiers);
+    }
+
+    private void SelectionPointerUp(object? sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left) EndSelectionPointer();
+    }
+
+    internal void EndSelectionPointer()
+    {
+        if (!_selectionPointerActive) return;
+        _selectionPointerActive = false;
+        SelectionPointerUpRequested?.Invoke(this, _selectionPointerDragged);
+    }
+
     private void ContinueHeaderDrag(object? sender, MouseEventArgs e)
     {
         if (e.Button != MouseButtons.Left || _managedPointerDown is not { } origin || sender is not Control surface) return;
@@ -1380,6 +1455,7 @@ internal sealed class StickerForm : Form
     private void BeginPointerMove(Point? pointerDown = null)
     {
         if (IsDisposed) return;
+        _selectionPointerDragged = true;
         if (ManagedTreeInteractions || _treeEmbedded)
         {
             Point dragOrigin = pointerDown ?? Cursor.Position;
@@ -1506,22 +1582,35 @@ internal sealed class StickerForm : Form
         private bool _suppressPointerClick;
         private bool _pointerClick;
         private bool _processingPointer;
+        private bool _previousPointerControl;
         internal event EventHandler? DragRequested;
         internal Point DragOrigin { get; private set; }
 
         protected override void WndProc(ref Message message)
         {
+            bool controlPointer = (ModifierKeys & Keys.Control) != 0 ||
+                message.Msg is 0x0201 or 0x0203 && (message.WParam.ToInt64() & 0x0008) != 0;
             if (message.Msg == 0x0203) // A Button does not normally expose native double clicks.
             {
-                _pointerDown = null;
-                // Opening the editor hides this button, so the second release
-                // can go to the editor. Never leave pointer-only state latched.
-                _pointerClick = false;
-                _suppressPointerClick = true;
-                if (!_dragging) OnDoubleClick(EventArgs.Empty);
-                message.Result = nint.Zero;
-                return;
+                if (controlPointer || _previousPointerControl)
+                {
+                    // A quick drag after releasing Ctrl still follows the Ctrl
+                    // selection click. Use normal button capture instead of editing.
+                    message.Msg = 0x0201;
+                }
+                else
+                {
+                    _pointerDown = null;
+                    // Opening the editor hides this button, so the second release
+                    // can go to the editor. Never leave pointer-only state latched.
+                    _pointerClick = false;
+                    _suppressPointerClick = true;
+                    if (!_dragging) OnDoubleClick(EventArgs.Empty);
+                    message.Result = nint.Zero;
+                    return;
+                }
             }
+            if (message.Msg == 0x0201) _previousPointerControl = controlPointer;
             // WinForms may dispatch Click before OnMouseUp. Guard the complete
             // mouse message so a late release after move/cancel cannot edit.
             if (message.Msg == 0x0202 && _suppressPointerClick)

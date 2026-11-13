@@ -26,7 +26,7 @@ internal static class Program
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         // Keep a real message loop alive across fixtures. DoEvents alone uninstalls
         // the WinForms synchronization context when the final fixture form closes.
-        bool stickerChecks = args.Length == 1 && args[0] is "--stickers-only" or "--sticker-interaction-only" or "--inline-note-only" or "--sticker-layout-feedback-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component" or "--context-policy-only" or "--tree-panel-only" or "--tree-panel-dpi-only" or "--panel-policy-only" or "--list-policy-only" or "--list-lifetime-only" or "--tree-regression-only" or "--sticker-persistence-only";
+        bool stickerChecks = args.Length == 1 && args[0] is "--multi-selection-only" or "--stickers-only" or "--sticker-interaction-only" or "--inline-note-only" or "--sticker-layout-feedback-only" or "--note-read-visibility-only" or "--arrange-note-only" or "--hierarchy-only" or "--folders-only" or "--list-settings-only" or "--show-focus-only" or "--show-focus-component" or "--context-policy-only" or "--tree-panel-only" or "--tree-panel-dpi-only" or "--panel-policy-only" or "--list-policy-only" or "--list-lifetime-only" or "--tree-regression-only" or "--sticker-persistence-only";
         if (args.Length > 0 && !stickerChecks) { RunSafely(args); return; }
         using var dispatcher = new Control();
         _ = dispatcher.Handle;
@@ -53,6 +53,14 @@ internal static class Program
         if (args.Length == 3 && args[0] == "--manual-list-settings") { ManualListSettingsAcceptance.Run(args[1], args[2]); return; }
         if (args.Length == 3 && args[0] == "--sticker-worker" && args[2] == "--worker") { StickerOperationChecks.RunWorker(args[1]); return; }
         Console.OutputEncoding = Encoding.UTF8;
+        if (args.Length == 1 && args[0] == "--multi-selection-only")
+        {
+            RecentMultiSelectionChecks.Run(Assert);
+            StickerSelectionChecks.Run(Assert);
+            StickerMultiDragChecks.Run(Assert);
+            Console.WriteLine($"RESULT: {Checks.Count} multi-selection checks passed.");
+            return;
+        }
         if (args.Length == 1 && args[0] == "--list-lifetime-only")
         {
             RecentLifetimeChecks.Run(Assert);
@@ -176,6 +184,7 @@ internal static class Program
         }
         if (args.Length == 2 && args[0] == "--browser-sqlite") { Environment.ExitCode = BrowserSqliteChecks.Run(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-branding") { BrandingRenderChecks.Run(args[1]); return; }
+        if (args.Length == 2 && args[0] == "--render-multi-selection") { StickerSelectionChecks.Render(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-stickers") { StickerFormChecks.Render(args[1]); StickerInlineNoteChecks.Render(args[1]); return; }
         if (args.Length == 2 && args[0] == "--render-folders")
         {
@@ -210,6 +219,9 @@ internal static class Program
         StickerIntegrationChecks.Run(Path.Combine(data, "sticker-integration"), Assert);
         BookmarkRefreshChecks.Run(Path.Combine(data, "bookmark-refresh"), Assert);
         RecentTreeChecks.Run(Assert);
+        RecentMultiSelectionChecks.Run(Assert);
+        StickerSelectionChecks.Run(Assert);
+        StickerMultiDragChecks.Run(Assert);
         StickerTreeChecks.Run(Assert);
         StickerTreePanelChecks.Run(Assert);
         StickerPanelPolicyChecks.Run(Assert);

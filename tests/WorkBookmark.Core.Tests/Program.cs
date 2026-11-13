@@ -14,8 +14,9 @@ int hierarchyResult = BookmarkHierarchyChecks.Run();
 int colorResult = BookmarkColorChecks.Run();
 int folderResult = BookmarkFolderChecks.Run();
 int commandResult = BookmarkCommandChecks.Run();
+int selectionResult = BookmarkSelectionChecks.Run();
 int frameProtocolResult = FrameProtocolChecks.Run();
-return baselineResult == 0 && extendedResult == 0 && snapshotResult == 0 && officeUrlResult == 0 && stickerResult == 0 && hierarchyResult == 0 && colorResult == 0 && folderResult == 0 && commandResult == 0 && frameProtocolResult == 0 ? 0 : 1;
+return baselineResult == 0 && extendedResult == 0 && snapshotResult == 0 && officeUrlResult == 0 && stickerResult == 0 && hierarchyResult == 0 && colorResult == 0 && folderResult == 0 && commandResult == 0 && selectionResult == 0 && frameProtocolResult == 0 ? 0 : 1;
 
 internal sealed class PolicyStorageSuite
 {

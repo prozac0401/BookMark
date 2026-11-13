@@ -5,6 +5,25 @@ public sealed record BookmarkTreeRow(Bookmark Bookmark, int Depth, bool HasChild
 /// <summary>Projects bookmark relationships without changing capture order or persisted parent links.</summary>
 public static class BookmarkTree
 {
+    /// <summary>Selected subtree roots in displayed order; a selected descendant travels with its selected ancestor.</summary>
+    public static IReadOnlyList<Guid> SelectionRoots(IEnumerable<Bookmark> items, IEnumerable<Guid> selectedIds)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        ArgumentNullException.ThrowIfNull(selectedIds);
+        var selected = selectedIds.ToHashSet();
+        var result = new List<Guid>();
+        int? selectedDepth = null;
+        foreach (var row in Flatten(items))
+        {
+            if (selectedDepth is int depth && row.Depth > depth) continue;
+            selectedDepth = null;
+            if (!selected.Contains(row.Bookmark.Id)) continue;
+            result.Add(row.Bookmark.Id);
+            selectedDepth = row.Depth;
+        }
+        return result;
+    }
+
     /// <summary>Parent-first rows in saved sibling order; legacy rows fall back to capture order. Unavailable parents become roots.</summary>
     public static IReadOnlyList<BookmarkTreeRow> Flatten(IEnumerable<Bookmark> items, ISet<Guid>? collapsed = null)
     {

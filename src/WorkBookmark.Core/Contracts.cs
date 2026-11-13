@@ -16,7 +16,11 @@ public sealed record Bookmark(Guid Id, CapturedTarget Target, string NormalizedP
 public sealed record FolderDropCommit(Bookmark? CreatedFolder, IReadOnlyList<Bookmark> ChangedItems);
 public enum BookmarkDropKind { MoveInto, InsertBefore, Group, Detach }
 public enum BookmarkSortMode { Name, Recent }
-public sealed record BookmarkDropRequest(Guid BookmarkId, BookmarkDropKind Kind, Guid? TargetId = null, Guid? BeforeId = null, StickerLayout? RootLayout = null);
+public sealed record BookmarkDropRequest(Guid BookmarkId, BookmarkDropKind Kind, Guid? TargetId = null, Guid? BeforeId = null,
+ StickerLayout? RootLayout = null, IReadOnlyList<Guid>? BookmarkIds = null, IReadOnlyList<StickerLayout>? RootLayouts = null)
+{
+ public IReadOnlyList<Guid> SourceIds => BookmarkIds is null ? [BookmarkId] : new[] { BookmarkId }.Concat(BookmarkIds).Distinct().ToArray();
+}
 public sealed record BookmarkUndoResult(IReadOnlyList<Guid> ChangedIds);
 public sealed record CaptureCommit(Bookmark Bookmark, bool ExistingNotePreserved, bool RestoredDeleted);
 public sealed record SearchResults(IReadOnlyList<Bookmark> Items, bool HasMore);
