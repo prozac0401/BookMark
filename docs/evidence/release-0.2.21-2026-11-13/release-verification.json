@@ -1,0 +1,242 @@
+{
+  "result": "PUBLISHED_AND_VERIFIED",
+  "version": "0.2.21",
+  "releaseUrl": "https://github.com/prozac0401/BookMark/releases/tag/v0.2.21",
+  "sourceCommit": "45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+  "sourceMode": "Commit",
+  "workingTreeHadChangesAtPackaging": false,
+  "fullSuiteTestCommit": "dcaa765a7bea4a024d0d025500c88e807b2f9d62",
+  "postTestSourceChanges": [
+    "README.md: corrected Core count from 116 to 106",
+    "docs/release-notes-v0.2.21.md: corrected Core total from 116 to 106 and combined total from 885 to 875"
+  ],
+  "productAndTestCodeIdentical": true,
+  "buildStartedAtUtc": "2026-11-13T07:28:29.0491517Z",
+  "buildCompletedAtUtc": "2026-11-13T07:35:52.3117098Z",
+  "buildExitCode": 0,
+  "warnings": 0,
+  "errors": 0,
+  "automatedSuites": {
+    "coreStorage": 106,
+    "ipc": 17,
+    "desktop": 769,
+    "windowsAdapter": 10,
+    "excelEvidence": 13,
+    "captureSession": 14,
+    "word": 24,
+    "officeUrlResume": 103,
+    "browserAdapter": 34,
+    "notepad": 28,
+    "pdf": 28,
+    "browserHost": 27,
+    "browserSqlite": 15,
+    "nodeExtension": 23,
+    "browserRegistrationOwnership": 7
+  },
+  "automatedTotal": 1218,
+  "focusedChecksExcludedFromTotal": true,
+  "publishedSelectionChecks": 45,
+  "publishedAssemblies": [
+    {
+      "assembly": "WorkBookmark.dll",
+      "sha256": "3534c95c6f25fc18c4163873b1eae6b42352657e89aa869ff7aaf06798cf3d92"
+    },
+    {
+      "assembly": "WorkBookmark.Core.dll",
+      "sha256": "c96666f66f47063e081709e704916fc2d0d47fc56621f57247c7db75f8bc4f6d"
+    },
+    {
+      "assembly": "WorkBookmark.Storage.dll",
+      "sha256": "64ed42999cd2d71286dbbd45fefada71d2d1fd62cea6ed312007060c3a6cf824"
+    },
+    {
+      "assembly": "WorkBookmark.Windows.dll",
+      "sha256": "787187d6ba7083bf8adbe7ace099f3144c5f7cd7550ec653b75533ff8dbeb10c"
+    }
+  ],
+  "publishedBinaryRevisions": [
+    {
+      "name": "WorkBookmark.exe",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "208443f9424e33944e20655101392afa8c1c87f96a49c308ea875ee84cddad14"
+    },
+    {
+      "name": "WorkBookmark.dll",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "3534c95c6f25fc18c4163873b1eae6b42352657e89aa869ff7aaf06798cf3d92"
+    },
+    {
+      "name": "browser-host/WorkBookmark.BrowserHost.exe",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "bbba882359477fc7149e00a93ecbc16c1fb57948440d4ce1fe340eb48b515179"
+    },
+    {
+      "name": "browser-host/WorkBookmark.BrowserHost.dll",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "12eb968dbdce6894323215bf46c8fe8f5c52557b4ae4783c1c6a76ad787c593d"
+    }
+  ],
+  "productionWorker": {
+    "passed": 6,
+    "total": 6,
+    "executableSha256": "208443F9424E33944E20655101392AFA8C1C87F96A49C308EA875EE84CDDAD14",
+    "coreSha256": "C96666F66F47063E081709E704916FC2D0D47FC56621F57247C7DB75F8BC4F6D",
+    "externalUserAppsAccessed": false,
+    "scope": "Synthetic unsupported Capture/ValidateRelink requests; not installed UI acceptance.",
+    "checks": [
+      {
+        "iteration": 1,
+        "operation": "Capture",
+        "startedUtc": "2026-11-13T16:32:42.0571662+09:00",
+        "milliseconds": 2383,
+        "deadlineUtc": "2026-11-13T16:32:45.05659+09:00",
+        "code": "UnsupportedTarget",
+        "success": true,
+        "ExternalActionStarted": false
+      },
+      {
+        "iteration": 1,
+        "operation": "ValidateRelink",
+        "startedUtc": "2026-11-13T16:32:44.4622291+09:00",
+        "milliseconds": 701,
+        "deadlineUtc": "2026-11-13T16:32:47.4620915+09:00",
+        "code": "UnsupportedTarget",
+        "success": true,
+        "ExternalActionStarted": false
+      },
+      {
+        "iteration": 2,
+        "operation": "Capture",
+        "startedUtc": "2026-11-13T16:32:45.164126+09:00",
+        "milliseconds": 515,
+        "deadlineUtc": "2026-11-13T16:32:48.1641236+09:00",
+        "code": "UnsupportedTarget",
+        "success": true,
+        "ExternalActionStarted": false
+      },
+      {
+        "iteration": 2,
+        "operation": "ValidateRelink",
+        "startedUtc": "2026-11-13T16:32:45.6793346+09:00",
+        "milliseconds": 830,
+        "deadlineUtc": "2026-11-13T16:32:48.6793316+09:00",
+        "code": "UnsupportedTarget",
+        "success": true,
+        "ExternalActionStarted": false
+      },
+      {
+        "iteration": 3,
+        "operation": "Capture",
+        "startedUtc": "2026-11-13T16:32:46.5102243+09:00",
+        "milliseconds": 826,
+        "deadlineUtc": "2026-11-13T16:32:49.510222+09:00",
+        "code": "UnsupportedTarget",
+        "success": true,
+        "ExternalActionStarted": false
+      },
+      {
+        "iteration": 3,
+        "operation": "ValidateRelink",
+        "startedUtc": "2026-11-13T16:32:47.3364431+09:00",
+        "milliseconds": 744,
+        "deadlineUtc": "2026-11-13T16:32:50.3364393+09:00",
+        "code": "UnsupportedTarget",
+        "success": true,
+        "ExternalActionStarted": false
+      }
+    ]
+  },
+  "msi": {
+    "automaticChecks": 54,
+    "passed": 54,
+    "administrativeExtraction": true,
+    "allExtractedFileHashesMatch": true,
+    "sha256": "941fa89dc5b7f58d1fb2094be746af52ace397379f3a3b6ae09438981c11a360"
+  },
+  "zipPayloadFilesMatched": 1385,
+  "sourceFilesMatched": 936,
+  "sourceZipSha256": "1d7abb86fcc2bc52ce39b5e71a9cf69da4425e8318b58e06fbe05d62742cf276",
+  "uploadedAssets": [
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 558,
+      "sha256": "3fdaf8cba603dbf466034f13f5eefd9033457173bdbf1fcdda2e525e6eb155c0",
+      "serverDigest": "sha256:3fdaf8cba603dbf466034f13f5eefd9033457173bdbf1fcdda2e525e6eb155c0",
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/untagged-ae877886e978f67c7a79/SHA256SUMS.txt"
+    },
+    {
+      "name": "Source.zip",
+      "size": 3270132,
+      "sha256": "1d7abb86fcc2bc52ce39b5e71a9cf69da4425e8318b58e06fbe05d62742cf276",
+      "serverDigest": "sha256:1d7abb86fcc2bc52ce39b5e71a9cf69da4425e8318b58e06fbe05d62742cf276",
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/untagged-ae877886e978f67c7a79/Source.zip"
+    },
+    {
+      "name": "SourceSnapshot.json",
+      "size": 297,
+      "sha256": "86d22deeb66e8100d6c95ebb78305c05d8183f00417af4de8e4ebf9542434953",
+      "serverDigest": "sha256:86d22deeb66e8100d6c95ebb78305c05d8183f00417af4de8e4ebf9542434953",
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/untagged-ae877886e978f67c7a79/SourceSnapshot.json"
+    },
+    {
+      "name": "WorkBookmark-0.2.21-win-x64.msi",
+      "size": 76760917,
+      "sha256": "941fa89dc5b7f58d1fb2094be746af52ace397379f3a3b6ae09438981c11a360",
+      "serverDigest": "sha256:941fa89dc5b7f58d1fb2094be746af52ace397379f3a3b6ae09438981c11a360",
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/untagged-ae877886e978f67c7a79/WorkBookmark-0.2.21-win-x64.msi"
+    },
+    {
+      "name": "WorkBookmark-0.2.21-win-x64.validation.json",
+      "size": 6429,
+      "sha256": "6814a5ada90c062daaa2a5d7f1360b054ecc1408b9ebf34750fb9e366de9762b",
+      "serverDigest": "sha256:6814a5ada90c062daaa2a5d7f1360b054ecc1408b9ebf34750fb9e366de9762b",
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/untagged-ae877886e978f67c7a79/WorkBookmark-0.2.21-win-x64.validation.json"
+    },
+    {
+      "name": "WorkBookmark-0.2.21-win-x64.zip",
+      "size": 117051716,
+      "sha256": "1c13f214ef6f133971617963ee99072b3588b78ecb57d85c30692b415206a452",
+      "serverDigest": "sha256:1c13f214ef6f133971617963ee99072b3588b78ecb57d85c30692b415206a452",
+      "downloadUrl": "https://github.com/prozac0401/BookMark/releases/download/untagged-ae877886e978f67c7a79/WorkBookmark-0.2.21-win-x64.zip"
+    }
+  ],
+  "allUploadedDigestsMatch": true,
+  "publicVerification": {
+    "result": "PASS",
+    "releaseId": 443941815,
+    "releaseUrl": "https://github.com/prozac0401/BookMark/releases/tag/v0.2.21",
+    "publishedAtUtc": "2026-11-13T07:38:31Z",
+    "isLatest": true,
+    "isDraft": false,
+    "isPrerelease": false,
+    "publicDownloads": [
+      {
+        "name": "SHA256SUMS.txt",
+        "unauthenticated": true,
+        "sha256": "3fdaf8cba603dbf466034f13f5eefd9033457173bdbf1fcdda2e525e6eb155c0",
+        "url": "https://github.com/prozac0401/BookMark/releases/download/v0.2.21/SHA256SUMS.txt"
+      },
+      {
+        "name": "SourceSnapshot.json",
+        "unauthenticated": true,
+        "sha256": "86d22deeb66e8100d6c95ebb78305c05d8183f00417af4de8e4ebf9542434953",
+        "url": "https://github.com/prozac0401/BookMark/releases/download/v0.2.21/SourceSnapshot.json"
+      },
+      {
+        "name": "WorkBookmark-0.2.21-win-x64.msi",
+        "unauthenticated": true,
+        "sha256": "941fa89dc5b7f58d1fb2094be746af52ace397379f3a3b6ae09438981c11a360",
+        "url": "https://github.com/prozac0401/BookMark/releases/download/v0.2.21/WorkBookmark-0.2.21-win-x64.msi"
+      }
+    ],
+    "checkedAtUtc": "2026-11-13T07:39:03.4208495Z",
+    "tagCommit": "45502523a0f06ee6565b7e4d0778343a6ef85a6c"
+  },
+  "notRun": [
+    "Human Ctrl multi-selection and drag acceptance",
+    "Actual Korean IME and mixed-DPI pointer acceptance for this version",
+    "Actual MSI install/upgrade/uninstall/relogin lifecycle",
+    "Normal installed Program.Main UI entrypoint"
+  ],
+  "evidenceLogSha256": "8ce16b47e9a1db2eb7d3ccc549da298a51fd6dada7cc61cc27f87f6ecb79f911"
+}

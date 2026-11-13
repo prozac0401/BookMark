@@ -1,0 +1,196 @@
+{
+  "result": "PASS",
+  "version": "0.2.21",
+  "sourceCommit": "45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+  "checkedAtUtc": "2026-11-13T07:36:30.1179825Z",
+  "sourceMode": "Commit",
+  "sourceZipSha256": "1d7abb86fcc2bc52ce39b5e71a9cf69da4425e8318b58e06fbe05d62742cf276",
+  "expectedGitArchiveSha256": "1d7abb86fcc2bc52ce39b5e71a9cf69da4425e8318b58e06fbe05d62742cf276",
+  "sourceEntriesMatched": 1022,
+  "sourceFilesMatched": 936,
+  "zipPayloadFilesMatched": 1385,
+  "msiSha256": "941fa89dc5b7f58d1fb2094be746af52ace397379f3a3b6ae09438981c11a360",
+  "msiAutomaticChecks": 54,
+  "msiAdministrativeExtraction": true,
+  "checks": [
+    {
+      "name": "Publish and release directories are inside this repository",
+      "passed": true
+    },
+    {
+      "name": "Expected source commit is an exact lowercase Git SHA",
+      "passed": true
+    },
+    {
+      "name": "Expected source object is the exact commit",
+      "passed": true
+    },
+    {
+      "name": "All six expected release assets exist",
+      "passed": true
+    },
+    {
+      "name": "Published executable is version 0.2.21",
+      "passed": true
+    },
+    {
+      "name": "Published binary exists: WorkBookmark.exe",
+      "passed": true
+    },
+    {
+      "name": "Published informational version matches the exact source commit: WorkBookmark.exe",
+      "passed": true
+    },
+    {
+      "name": "Published binary exists: WorkBookmark.dll",
+      "passed": true
+    },
+    {
+      "name": "Published informational version matches the exact source commit: WorkBookmark.dll",
+      "passed": true
+    },
+    {
+      "name": "Published binary exists: browser-host/WorkBookmark.BrowserHost.exe",
+      "passed": true
+    },
+    {
+      "name": "Published informational version matches the exact source commit: browser-host/WorkBookmark.BrowserHost.exe",
+      "passed": true
+    },
+    {
+      "name": "Published binary exists: browser-host/WorkBookmark.BrowserHost.dll",
+      "passed": true
+    },
+    {
+      "name": "Published informational version matches the exact source commit: browser-host/WorkBookmark.BrowserHost.dll",
+      "passed": true
+    },
+    {
+      "name": "Source snapshot identifies the clean expected release commit",
+      "passed": true
+    },
+    {
+      "name": "Source snapshot hash matches Source.zip",
+      "passed": true
+    },
+    {
+      "name": "Checksum matches: WorkBookmark-0.2.21-win-x64.zip",
+      "passed": true
+    },
+    {
+      "name": "Checksum matches: Source.zip",
+      "passed": true
+    },
+    {
+      "name": "Checksum matches: SourceSnapshot.json",
+      "passed": true
+    },
+    {
+      "name": "Checksum matches: WorkBookmark.exe",
+      "passed": true
+    },
+    {
+      "name": "Checksum matches: WorkBookmark-0.2.21-win-x64.msi",
+      "passed": true
+    },
+    {
+      "name": "Checksum matches: WorkBookmark-0.2.21-win-x64.validation.json",
+      "passed": true
+    },
+    {
+      "name": "Checksum manifest contains exactly the expected six entries",
+      "passed": true
+    },
+    {
+      "name": "Portable ZIP has exactly the published file names and count",
+      "passed": true
+    },
+    {
+      "name": "Every portable ZIP payload length and SHA-256 matches the publish directory",
+      "passed": true
+    },
+    {
+      "name": "Source.zip contains exactly every entry from git archive of the expected commit",
+      "passed": true
+    },
+    {
+      "name": "Every Source.zip entry length and SHA-256 matches the expected commit archive",
+      "passed": true
+    },
+    {
+      "name": "Source archive includes the new multi-selection implementation, tests and release notes",
+      "passed": true
+    },
+    {
+      "name": "Archived source declares version 0.2.21",
+      "passed": true
+    },
+    {
+      "name": "MSI report confirms all 54 automatic checks passed for version 0.2.21",
+      "passed": true
+    },
+    {
+      "name": "MSI report confirms administrative extraction and complete payload hash matching",
+      "passed": true
+    },
+    {
+      "name": "MSI validation report identifies the exact packaged MSI hash",
+      "passed": true
+    }
+  ],
+  "assetHashes": [
+    {
+      "name": "WorkBookmark-0.2.21-win-x64.zip",
+      "size": 117051716,
+      "sha256": "1c13f214ef6f133971617963ee99072b3588b78ecb57d85c30692b415206a452"
+    },
+    {
+      "name": "Source.zip",
+      "size": 3270132,
+      "sha256": "1d7abb86fcc2bc52ce39b5e71a9cf69da4425e8318b58e06fbe05d62742cf276"
+    },
+    {
+      "name": "SourceSnapshot.json",
+      "size": 297,
+      "sha256": "86d22deeb66e8100d6c95ebb78305c05d8183f00417af4de8e4ebf9542434953"
+    },
+    {
+      "name": "WorkBookmark.exe",
+      "size": 187392,
+      "sha256": "208443f9424e33944e20655101392afa8c1c87f96a49c308ea875ee84cddad14"
+    },
+    {
+      "name": "WorkBookmark-0.2.21-win-x64.msi",
+      "size": 76760917,
+      "sha256": "941fa89dc5b7f58d1fb2094be746af52ace397379f3a3b6ae09438981c11a360"
+    },
+    {
+      "name": "WorkBookmark-0.2.21-win-x64.validation.json",
+      "size": 6429,
+      "sha256": "6814a5ada90c062daaa2a5d7f1360b054ecc1408b9ebf34750fb9e366de9762b"
+    }
+  ],
+  "binaryIdentities": [
+    {
+      "name": "WorkBookmark.exe",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "208443f9424e33944e20655101392afa8c1c87f96a49c308ea875ee84cddad14"
+    },
+    {
+      "name": "WorkBookmark.dll",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "3534c95c6f25fc18c4163873b1eae6b42352657e89aa869ff7aaf06798cf3d92"
+    },
+    {
+      "name": "browser-host/WorkBookmark.BrowserHost.exe",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "bbba882359477fc7149e00a93ecbc16c1fb57948440d4ce1fe340eb48b515179"
+    },
+    {
+      "name": "browser-host/WorkBookmark.BrowserHost.dll",
+      "informationalVersion": "0.2.21+45502523a0f06ee6565b7e4d0778343a6ef85a6c",
+      "sha256": "12eb968dbdce6894323215bf46c8fe8f5c52557b4ae4783c1c6a76ad787c593d"
+    }
+  ],
+  "failure": null
+}

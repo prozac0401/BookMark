@@ -1,0 +1,46 @@
+PASS: RMS01 Ctrl click adds another list bookmark without launching it
+PASS: RMS02 Ctrl click toggles an already selected bookmark off
+PASS: RMS03 Ctrl click on a folder expander selects it without changing expansion
+PASS: RMS04 pressing an already selected row preserves the group until drag or release
+PASS: RMS05 releasing a plain selection click reduces the group without launching the row
+PASS: RMS06 the drag payload snapshots every selected identity in visible tree order
+PASS: RMS07 multi-drop feedback states how many bookmarks will move
+PASS: RMS08 one bulk drop request carries both identities and leaves rows unchanged before commit
+PASS: RMS09 dropping multiple selections on an ordinary bookmark requests one shared folder
+PASS: RMS10 insertion after a sibling excludes all moving siblings when finding the destination slot
+PASS: RMS11 every selected ancestor participates in descendant target rejection
+PASS: RMS12 an insertion target inside a selected subtree cannot split that subtree
+PASS: RMS13 the root footer detaches the entire selected group in one request
+PASS: RMS14 ordinary row updates preserve all visible selected identities
+PASS: RMS15 filtering removes hidden selections so future drags cannot move unseen rows
+PASS: RMS16 clearing a filter does not resurrect discarded selections
+PASS: RMS17 deleting one source during a drag rejects the entire stale payload without a partial move
+PASS: RMS18 a malformed multi-selection payload cannot silently become a single-item move
+PASS: SM01 a title mouse click selects one sticker without opening the editor
+PASS: SM02 Ctrl-click adds another root and keeps both selected after mouse-up
+PASS: SM03 the selected border remains visible when another sticker receives focus
+PASS: SM04 Ctrl-click toggles a previously selected sticker off
+PASS: SM05 pressing a selected sticker preserves the group while a drag may begin
+PASS: SM06 a drag gesture does not collapse the group on mouse-up
+PASS: SM07 an ordinary click without dragging returns to a single selected sticker
+PASS: SM14 a quick press after releasing Ctrl keeps native capture and does not open the editor
+PASS: SM15 the quick post-Ctrl gesture can drag the complete selection
+PASS: SM08 roots and embedded child cards share one Ctrl selection across trees
+PASS: SM09 Ctrl state is captured at pointer-down and release does not replace the selection
+PASS: SM10 Escape clears the selection without hiding the tree
+PASS: SM11 collapsing a folder removes hidden children from the move selection
+PASS: SM12 removing a bookmark cannot leave a stale selected identity
+PASS: SM13 hiding all stickers clears the previous move selection
+PASS: MD01 multiple roots preview their individual placements
+PASS: MD02 one group drag saves all root positions in one batch
+PASS: MD03 group movement preserves relative spacing and leaves unselected roots unchanged
+PASS: MD04 failed batch placement leaves every selected root at its committed position
+PASS: MD05 dropping a selection on a folder carries all selected identities
+PASS: MD06 mixed root and child selection detaches and places the whole selection atomically
+PASS: MD07 Alt cancels a selection containing embedded children
+PASS: MD08 dragging a selected descendant moves its selected ancestor once
+PASS: MD09 a changed selection invalidates a stale preview before persistence
+PASS: MD10 a parent and child selection commits only the ancestor when dragged from its child
+PASS: MD11 hiding a selected peer cancels the frozen drag without moving the remaining selection
+PASS: MD12 a hidden card cannot start or commit a detached move
+RESULT: 45 multi-selection checks passed.
