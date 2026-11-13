@@ -4,7 +4,7 @@ Windows 탐색기·Excel·Word·PowerPoint·메모장의 작업 위치와 Edge·
 
 **0.2.21 · 여러 책갈피 선택과 함께 이동:** 목록과 스티커에서 **Ctrl+클릭**으로 여러 책갈피를 선택하고, 선택한 항목 하나를 끌어 함께 옮깁니다. 폴더에 넣기·순서 변경·새 폴더로 묶기·최상위로 꺼내기를 한 번에 처리하며, **Ctrl+Z 한 번**으로 전체 이동을 되돌립니다. 부모와 자식을 같이 선택해도 부모를 한 번만 이동해 하위 관계를 유지합니다.
 
-구현 단계의 Core **116개**·Desktop **769개** 자동검사를 통과했으며, 다중 선택·이동 집중검사 **45개**는 Desktop 결과에 포함됩니다. 선택 테두리는 구성요소 렌더로 확인했습니다. 배포 전체 검사와 패키지·게시 자산 대조의 최종 결과는 [0.2.21 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.21)의 본문과 첨부 검증 자료를 기준으로 합니다. 이번 검사의 범위와 미실행 항목은 [릴리스 안내](docs/release-notes-v0.2.21.md), 이전 버전에서 수행한 사람의 직접 조작 검증은 [0.2.20 기록](docs/release-notes-v0.2.20.md)에 구분합니다.
+구현 단계의 Core **106개**·Desktop **769개** 자동검사를 통과했으며, 다중 선택·이동 집중검사 **45개**는 Desktop 결과에 포함됩니다. 선택 테두리는 구성요소 렌더로 확인했습니다. 배포 전체 검사와 패키지·게시 자산 대조의 최종 결과는 [0.2.21 릴리스](https://github.com/prozac0401/BookMark/releases/tag/v0.2.21)의 본문과 첨부 검증 자료를 기준으로 합니다. 이번 검사의 범위와 미실행 항목은 [릴리스 안내](docs/release-notes-v0.2.21.md), 이전 버전에서 수행한 사람의 직접 조작 검증은 [0.2.20 기록](docs/release-notes-v0.2.20.md)에 구분합니다.
 
 **[0.2.21 MSI 다운로드](https://github.com/prozac0401/BookMark/releases/download/v0.2.21/WorkBookmark-0.2.21-win-x64.msi)** · [전체 배포 파일](https://github.com/prozac0401/BookMark/releases/tag/v0.2.21) · [변경 사항과 검증 범위](docs/release-notes-v0.2.21.md) · [설치 및 사용 매뉴얼](docs/user-manual.ko.md) · [빠른 시작](docs/quick-start.ko.md)
 
