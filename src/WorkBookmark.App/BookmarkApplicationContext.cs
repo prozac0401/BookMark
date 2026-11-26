@@ -536,23 +536,24 @@ public sealed class BookmarkApplicationContext : ApplicationContext
             result = response.RequestId == id && response.ProtocolVersion == 1 ? response.Code : ResultCode.ResumeOutcomeUnknown;
             recordingResult = true;
             await WriteAsync(() => _repository.RecordResume(bookmark.Id, result));
-            if (!_exiting) await RefreshBookmarkAsync(bookmark.Id);
+            if (_exiting) return;
+            var current = await RefreshBookmarkAsync(bookmark.Id);
             if (!_exiting)
             {
                 if (webOffice && result == ResultCode.OfficeResumePending)
                     Notify(UiStyle.Result(result), "사이트 로그인", () => _ = OpenOfficeSiteAsync(bookmark.Target), 10000);
-                else NotifyResumeResult(result);
+                else NotifyResumeResult(result, current?.Target == bookmark.Target ? current : null);
             }
         }
         catch (Exception exception)
         {
             DiagnosticLog.Write("resume", exception is BookmarkException known ? known.Code : ResultCode.PersistenceFailed);
             if (recordingResult) Notify("재개 기록을 저장하지 못했을 수 있습니다.");
-            else NotifyResumeResult(exception is BookmarkException typed ? typed.Code : ResultCode.ResumeOutcomeUnknown);
+            else NotifyResumeResult(exception is BookmarkException typed ? typed.Code : ResultCode.ResumeOutcomeUnknown, null);
         }
         finally { EndOperation(id); }
     }
-    private void NotifyResumeResult(ResultCode result)
+    private void NotifyResumeResult(ResultCode result, Bookmark? bookmark)
     {
         // Preserve the actual result in history without interrupting work after Office
         // opens the document, or when the final outcome could not be confirmed.
@@ -561,6 +562,15 @@ public sealed class BookmarkApplicationContext : ApplicationContext
         {
             _toast?.Close();
             _toast = null;
+            return;
+        }
+        if (result == ResultCode.TargetUnavailable && bookmark is { DeletedAtUtc: null } && UiStyle.CanRelink(bookmark))
+        {
+            bool webPage = bookmark.Target.Kind == TargetKind.WebPage;
+            string message = webPage ? "브라우저에 웹페이지 열기를 요청하지 못했습니다."
+                : "저장한 위치에 접근할 수 없습니다. 옮긴 파일이나 폴더의 새 위치를 선택할 수 있습니다.";
+            Notify($"{bookmark.DisplayName}\n{message}", webPage ? "웹 주소 수정…" : "위치 다시 지정…",
+                () => _ = RelinkAsync(bookmark), 10000);
             return;
         }
         Notify(UiStyle.Result(result));
@@ -913,9 +923,25 @@ public sealed class BookmarkApplicationContext : ApplicationContext
     }
     private async Task RelinkAsync(Bookmark bookmark)
     {
-        if (bookmark.IsFolder) return;
-        if (bookmark.LastResumeResult != ResultCode.TargetUnavailable || bookmark.Target.Kind is TargetKind.WebPage or TargetKind.NotepadSnapshot || OfficeLocation.IsWebTarget(bookmark.Target) || _operationInFlight) return;
+        if (_exiting || _exitRequested || !UiStyle.CanRelink(bookmark)) return;
+        if (_operationInFlight) { Notify("진행 중인 요청이 끝나면 다시 시도해 주세요."); return; }
         _recent.Hide();
+        if (bookmark.Target.Kind == TargetKind.WebPage)
+        {
+            using var editor = new WebBookmarkForm(async target =>
+            {
+                if (_exiting || _exitRequested || _structureCommandPending || !_mutatingBookmarks.Add(bookmark.Id))
+                    throw new BookmarkException(ResultCode.AppBusy);
+                try
+                {
+                    await WriteAsync(() => _repository.UpdateWebAddress(bookmark.Id, bookmark.Target.Path, target.Path));
+                    if (!_exiting) await RefreshBookmarkAsync(bookmark.Id);
+                }
+                finally { _mutatingBookmarks.Remove(bookmark.Id); UpdateUndoMenu(); }
+            }, bookmark);
+            if (editor.ShowDialog(DialogOwner()) == DialogResult.OK) Notify("책갈피의 웹 주소를 수정했습니다.");
+            return;
+        }
         string? path = null;
         if (bookmark.Target.Kind == TargetKind.Folder)
         {

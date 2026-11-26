@@ -51,5 +51,6 @@ public interface IBookmarkRepository : IDisposable {
  void Restore(Guid id);
  void RecordResume(Guid id, ResultCode result);
  void Relink(Guid id, CapturedTarget validatedTarget);
+ void UpdateWebAddress(Guid id, string originalUrl, string newUrl) => throw new BookmarkException(ResultCode.InvalidRequest);
 }
 public sealed class BookmarkException(ResultCode code) : Exception(code.ToString()) { public ResultCode Code { get; } = code; }

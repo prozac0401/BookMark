@@ -44,6 +44,9 @@ internal static class UiStyle
         : bookmark.Target.Kind == TargetKind.NotepadSnapshot
         ? PositionLabel(bookmark.Target).Trim(' ', '·') + "   자동 보관한 내용 · 원본 파일 저장 불필요"
         : PositionLabel(bookmark.Target).Trim(' ', '·') + (PositionLabel(bookmark.Target).Length > 0 ? "   " : "") + bookmark.Target.Path;
+    public static bool CanRelink(Bookmark bookmark) => bookmark.Target.Kind == TargetKind.WebPage ||
+        bookmark.LastResumeResult == ResultCode.TargetUnavailable && !bookmark.IsFolder &&
+        bookmark.Target.Kind != TargetKind.NotepadSnapshot && !OfficeLocation.IsWebTarget(bookmark.Target);
     public static string Result(ResultCode code) => code switch
     {
         ResultCode.CaptureCommitted => "책갈피를 남겼습니다.",

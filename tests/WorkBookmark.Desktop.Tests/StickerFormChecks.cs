@@ -93,15 +93,15 @@ internal static class StickerFormChecks
         assert(!form.IsDisposed && !form.Visible && removed is null,
             "STK11 Escape hides the sticker without deleting or disposing its bookmark");
         Invoke(form, "UpdateBookmark", updated with { LastResumeResult = ResultCode.TargetUnavailable });
-        assert(Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("접근할 수 없습니다", StringComparison.Ordinal) == true &&
-            resume.AccessibleDescription?.Contains("접근할 수 없습니다", StringComparison.Ordinal) == true,
+        assert(Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("위치를 다시 지정", StringComparison.Ordinal) == true &&
+            resume.AccessibleDescription?.Contains("지난번에 열 때", StringComparison.Ordinal) == true,
             "STK12 failed resume retains an actionable message on the shortcut icon tooltip");
         form.Show();
         form.PerformLayout();
         var status = Field<Label>(form, "_resumeStatus");
         assert(!status.Visible && form.Size == minimum && resume.Right <= minimumTitle.Left &&
             form.Controls.Cast<Control>().Where(control => control.Visible).ToHashSet().SetEquals([minimumTitle, resume, Field<Control>(form, "_resizeGrip")]) &&
-            Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("접근할 수 없습니다", StringComparison.Ordinal) == true,
+            Field<ToolTip>(form, "_tooltip").GetToolTip(resume)?.Contains("지난번에 열 때", StringComparison.Ordinal) == true,
             "STK13 failed resume keeps only the title and shortcut icon without adding a row or enlarging the sticker");
         assert(defaultClientSize == new Size(Px(form, 260), Px(form, 36)) &&
             Math.Abs(form.Font.SizeInPoints - 9F) < .01F &&

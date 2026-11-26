@@ -567,7 +567,7 @@ internal sealed class StickerForm : Form
         UpdateTreeMark();
         string? issue = value.LastResumeResult switch
         {
-            ResultCode.TargetUnavailable => "대상에 접근할 수 없습니다. 다시 확인해 주세요.",
+            ResultCode.TargetUnavailable => "지난번에 열 때 대상에 접근하지 못했습니다.",
             ResultCode.OpenedPositionFailed => "파일은 열렸지만 작업 위치로 이동하지 못했습니다.",
             ResultCode.ResumeOutcomeUnknown => "처리 결과를 확인하지 못했습니다. 대상 앱을 확인해 주세요.",
             ResultCode.AppBusy => "편집이나 대화상자를 마친 뒤 다시 시도해 주세요.",
@@ -575,7 +575,7 @@ internal sealed class StickerForm : Form
         };
         _resumeStatus.Text = value.LastResumeResult switch
         {
-            ResultCode.TargetUnavailable => "대상에 접근할 수 없습니다.",
+            ResultCode.TargetUnavailable => "지난번에 열 때 접근하지 못했습니다.",
             ResultCode.OpenedPositionFailed => "작업 위치로 이동하지 못했습니다.",
             ResultCode.ResumeOutcomeUnknown => "대상 앱에서 결과를 확인해 주세요.",
             ResultCode.AppBusy => "대상 앱에서 편집을 마쳐 주세요.",
@@ -588,7 +588,12 @@ internal sealed class StickerForm : Form
         if (_childCount > 0) details += $"\n하위 책갈피 {_childCount}개 · 함께 드래그하여 이동";
         if (value.Target.HadUnsavedChanges == true) details += "\n저장 당시 문서에 미저장 변경이 있었습니다.";
         if (value.LastResumeResult == ResultCode.TargetUnavailable)
-            details += CanRelink(value) ? "\n우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "\n대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
+        {
+            string recovery = value.Target.Kind == TargetKind.WebPage ? "우클릭 메뉴에서 웹 주소를 수정할 수 있습니다."
+                : UiStyle.CanRelink(value) ? "우클릭 메뉴에서 위치를 다시 지정할 수 있습니다." : "대상 앱과 저장한 주소를 확인한 뒤 다시 시도해 주세요.";
+            details += "\n" + recovery;
+            issue += " " + recovery;
+        }
         string dragHint = ManagedTreeInteractions
             ? value.ParentId is not null
                 ? "드래그: 순서·폴더 변경 · 바탕화면에 놓기: 최상위로 꺼내기 · Alt: 이동 취소"
@@ -1318,7 +1323,8 @@ internal sealed class StickerForm : Form
         _sortNameMenu.Enabled = _sortRecentMenu.Enabled = !_busy && !IsEditingNote;
         _folderToggleMenu.Text = Bookmark.FolderExpanded ? "폴더 닫기" : "폴더 열기";
         _folderToggleMenu.Enabled = _renameFolderMenu.Enabled = _createFolderMenu.Enabled = !_busy && !IsEditingNote;
-        _relinkMenu.Visible = CanRelink(Bookmark);
+        _relinkMenu.Visible = UiStyle.CanRelink(Bookmark);
+        _relinkMenu.Text = Bookmark.Target.Kind == TargetKind.WebPage ? "웹 주소 수정…" : "위치 다시 지정";
         _relinkMenu.Enabled = !_busy && !IsEditingNote;
         _undoMenu.Enabled = !IsEditingNote;
         _deleteMenu.Enabled = !_busy && !IsEditingNote;
@@ -1513,9 +1519,6 @@ internal sealed class StickerForm : Form
         string name = Path.GetFileName(target.Path);
         return string.IsNullOrWhiteSpace(name) ? bookmark.DisplayName : name;
     }
-
-    private static bool CanRelink(Bookmark bookmark) => bookmark.LastResumeResult == ResultCode.TargetUnavailable &&
-        !bookmark.IsFolder && bookmark.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(bookmark.Target);
 
     private static void ConfigureButton(Button button, string text, string accessibleName, int tabIndex)
     {

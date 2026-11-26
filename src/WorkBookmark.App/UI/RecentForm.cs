@@ -148,8 +148,8 @@ internal sealed class RecentForm : Form
             delete.Visible = detach.Visible = _colorMenu.Visible = Selected is not null;
             BookmarkColors.UpdateMenu(_colorMenu, Selected);
             detach.Enabled = Selected?.ParentId is not null;
-            relink.Visible = Selected is { IsFolder: false, LastResumeResult: ResultCode.TargetUnavailable } value &&
-                value.Target.Kind is not (TargetKind.WebPage or TargetKind.NotepadSnapshot) && !OfficeLocation.IsWebTarget(value.Target);
+            relink.Visible = Selected is { } value && UiStyle.CanRelink(value);
+            relink.Text = Selected?.Target.Kind == TargetKind.WebPage ? "웹 주소 수정…" : "위치 다시 지정";
             copy.Text = Selected?.Target.Kind == TargetKind.NotepadSnapshot ? "보관 ID 복사" : "전체 경로/URL 복사";
             _keepOpen = true;
         };

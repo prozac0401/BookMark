@@ -19,6 +19,8 @@ internal static class ExtendedTargetChecks
             Run("Version 2 migration preserves all target kinds and history with backup", VersionTwoMigration);
             Run("Version 2 migration failure restores schema, rows and sequence before retry", VersionTwoRollback);
             Run("Browser exact-URL recapture updates title and preserves notes", BrowserIdentity);
+            Run("Web address repair preserves bookmark identity, hierarchy and undo", BrowserAddressRepair);
+            Run("Web address repair rejects stale, duplicate and unsupported targets atomically", BrowserAddressConflicts);
             Run("Word offsets, stable slide IDs and PDF pages survive persistence", PositionIdentity);
             Run("Position relink preserves coordinates and rejects collisions", PositionRelink);
             Run("Extended-target mutation failures preserve metadata and sequence", ExtendedRollback);
@@ -136,6 +138,58 @@ internal static class ExtendedTargetChecks
             using var reopened = new SqliteBookmarkRepository(database);
             Check(reopened.Get(id)!.Target == Web(url, "Updated title") && reopened.Get(id)!.Note == "keep browser note", "Browser state must survive restart.");
             Check(reopened.UpsertCapture(Web("https://example.invalid/next", "Next")).Bookmark.CaptureSequence == lastSequence + 1, "Browser sequence must survive restart.");
+        }
+
+        void BrowserAddressRepair()
+        {
+            string database = Db();
+            const string original = "https://old.invalid/report#one";
+            const string newUrl = "https://new.invalid/Case/%2Freport?x=2&x=1#Section";
+            Bookmark expected;
+            using (var repo = new SqliteBookmarkRepository(database))
+            {
+                var page = repo.UpsertCapture(Web(original, "Quarterly report")).Bookmark;
+                repo.UpdateNote(page.Id, "Review figures");
+                repo.SetParent(page.Id, repo.CreateFolder("Reports").Id);
+                repo.SetColor(page.Id, BookmarkColor.Blue);
+                repo.RecordResume(page.Id, ResultCode.TargetUnavailable);
+                var before = repo.Get(page.Id)!;
+
+                repo.UpdateWebAddress(page.Id, original, newUrl);
+                expected = before with { Target = before.Target with { Path = newUrl }, NormalizedPath = newUrl };
+                Check(repo.Get(page.Id) == expected, "Only the URL and its identity key should change.");
+                Check(repo.Undo().ChangedIds.Contains(page.Id) && repo.Get(page.Id) == before, "Undo must restore the original bookmark.");
+                repo.UpdateWebAddress(page.Id, original, newUrl);
+
+                var untitled = repo.UpsertCapture(Web("https://old.invalid/home", "")).Bookmark;
+                repo.UpdateWebAddress(untitled.Id, untitled.Target.Path, "https://new.invalid/home");
+                var renamed = repo.Get(untitled.Id)!;
+                Check(renamed.DisplayName == "new.invalid" && renamed.Target.PageTitle == "new.invalid", "Host-based labels should name the new host.");
+            }
+            using var reopened = new SqliteBookmarkRepository(database);
+            Check(reopened.Get(expected.Id) == expected, "A repaired URL should survive restart with its metadata intact.");
+            Check(reopened.UpsertCapture(Web(newUrl, "Updated title")).Bookmark.Id == expected.Id, "Recapture of the repaired URL must reuse the same bookmark.");
+        }
+
+        void BrowserAddressConflicts()
+        {
+            bool fail = false;
+            using var repo = new SqliteBookmarkRepository(Db(), operation => { if (fail && operation == "web-address") throw new IOException("Synthetic repair failure"); });
+            var page = repo.UpsertCapture(Web("https://old.invalid/", "Original")).Bookmark;
+            var collision = repo.UpsertCapture(Web("https://new.invalid/one", "Other")).Bookmark;
+            var file = repo.UpsertCapture(Pdf(1)).Bookmark;
+            const string newUrl = "https://new.invalid/two";
+
+            Fails(() => repo.UpdateWebAddress(file.Id, file.Target.Path, newUrl), ResultCode.InvalidRequest);
+            Fails(() => repo.UpdateWebAddress(page.Id, page.Target.Path, "file:///C:/report.pdf"));
+            Fails(() => repo.UpdateWebAddress(page.Id, page.Target.Path, collision.Target.Path), ResultCode.DuplicateTarget);
+            repo.SoftDelete(collision.Id);
+            Fails(() => repo.UpdateWebAddress(page.Id, page.Target.Path, collision.Target.Path), ResultCode.DuplicateTarget);
+            Fails(() => repo.UpdateWebAddress(collision.Id, collision.Target.Path, newUrl), ResultCode.TargetUnavailable);
+            Fails(() => repo.UpdateWebAddress(page.Id, "https://stale.invalid/", newUrl), ResultCode.ContextChanged);
+            fail = true;
+            Fails(() => repo.UpdateWebAddress(page.Id, page.Target.Path, newUrl), ResultCode.PersistenceFailed);
+            Check(repo.Get(page.Id) == page && repo.Get(collision.Id)!.DeletedAtUtc is not null, "A failed repair must preserve both bookmarks.");
         }
 
         void PositionIdentity()

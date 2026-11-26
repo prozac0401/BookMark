@@ -523,7 +523,7 @@ SELECT $folder,monitor_device,left_offset,top_offset,width,height,is_collapsed,a
         string normalized = PathPolicy.Normalize(validatedTarget.Path);
         Write("relink", (db, tx) =>
         {
-            Bookmark old = FindId(db, tx, id) ?? throw new BookmarkException(ResultCode.TargetUnavailable);
+            Bookmark old = RequireActive(db, tx, id);
             if (old.IsFolder) throw new BookmarkException(ResultCode.InvalidRequest);
             if (OfficeLocation.IsWebTarget(old.Target)) throw new BookmarkException(ResultCode.InvalidRequest);
             if (old.Target.Kind != validatedTarget.Kind || !string.Equals(old.Target.SheetName, validatedTarget.SheetName, StringComparison.Ordinal)
@@ -533,6 +533,27 @@ SELECT $folder,monitor_device,left_offset,top_offset,width,height,is_collapsed,a
             if (duplicate != null && duplicate.Id != id) throw new BookmarkException(ResultCode.DuplicateTarget);
             return ExecuteExisting(db, tx, id, "UPDATE bookmarks SET path=$path,normalized_path=$normalized,display_name=$display WHERE id=$id",
                 ("$path", validatedTarget.Path), ("$normalized", normalized), ("$display", PathPolicy.DisplayName(validatedTarget)));
+        });
+    }
+
+    public void UpdateWebAddress(Guid id, string originalUrl, string newUrl)
+    {
+        var replacement = BrowserProtocol.ValidateTarget(new CapturedTarget(TargetKind.WebPage, newUrl, PageTitle: ""));
+        Write("web-address", (db, tx) =>
+        {
+            var bookmark = RequireActive(db, tx, id);
+            if (bookmark.Target.Kind != TargetKind.WebPage) throw new BookmarkException(ResultCode.InvalidRequest);
+            if (bookmark.Target.Path != originalUrl) throw new BookmarkException(ResultCode.ContextChanged);
+            if (FindTarget(db, tx, replacement, replacement.Path) is { } duplicate && duplicate.Id != id)
+                throw new BookmarkException(ResultCode.DuplicateTarget);
+
+            // A page without a captured title displays its host. Keep meaningful titles across a move.
+            string? title = bookmark.Target.PageTitle;
+            if (string.IsNullOrWhiteSpace(title) || Uri.TryCreate(originalUrl, UriKind.Absolute, out var uri) && title == uri.Host)
+                title = replacement.PageTitle;
+            return ExecuteExisting(db, tx, id,
+                "UPDATE bookmarks SET path=$url,normalized_path=$url,page_title=$title,display_name=$title WHERE id=$id",
+                ("$url", replacement.Path), ("$title", title));
         });
     }
 

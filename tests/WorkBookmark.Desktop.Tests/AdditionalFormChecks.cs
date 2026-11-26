@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using WorkBookmark.App;
 using WorkBookmark.Core;
+using WorkBookmark.Storage;
 
 namespace WorkBookmark.Desktop.Tests;
 
@@ -19,6 +20,8 @@ internal static class AdditionalFormChecks
         RelinkPreviewDecisions(assert);
         SessionUndoAndMenu(assert);
         WebBookmarkInput(assert);
+        WebAddressEdit(assert);
+        WebAddressEditFromList(assert);
         InstallerShutdown(assert);
     }
 
@@ -83,6 +86,88 @@ internal static class AdditionalFormChecks
             null, null, ResultCode.TargetUnavailable, null);
     }
 
+    private static void WebAddressEdit(Action<bool, string> assert)
+    {
+        Type formType = AppAssembly.GetType("WorkBookmark.App.UI.WebBookmarkForm")!;
+        var original = Sample() with { Target = new CapturedTarget(TargetKind.WebPage, "https://example.invalid/Old#Part", PageTitle: "자료실") };
+        CapturedTarget? stored = null;
+        int attempts = 0;
+        bool duplicate = true;
+        Func<CapturedTarget, Task> persist = target =>
+        {
+            attempts++;
+            if (duplicate) throw new BookmarkException(ResultCode.DuplicateTarget);
+            stored = target;
+            return Task.CompletedTask;
+        };
+        using var editor = (Form)Activator.CreateInstance(formType, persist, original)!;
+        var url = Field<TextBox>(editor, "_url");
+        assert(url.Text == original.Target.Path && editor.Controls.OfType<TextBox>().Any(text => text.ReadOnly && text.Text == original.Target.Path),
+            "WEB04 URL editor displays the saved address and prefills the editable destination");
+        Pump(InvokeTask(editor, "SaveAsync"));
+        assert(attempts == 0, "WEB05 submitting the unchanged address makes no write");
+        url.Text = "https://new.example.invalid/Doc?Key=Q#Part";
+        Pump(InvokeTask(editor, "SaveAsync"));
+        assert(attempts == 1 && !editor.IsDisposed && !url.ReadOnly && Field<Label>(editor, "_status").Text.Contains("이미"),
+            "WEB06 duplicate address reports the conflict inline and keeps the replacement editable");
+        duplicate = false;
+        Pump(InvokeTask(editor, "SaveAsync"));
+        assert(attempts == 2 && stored == original.Target with { Path = "https://new.example.invalid/Doc?Key=Q#Part" } && editor.DialogResult == DialogResult.OK,
+            "WEB07 repair confirms the exact replacement URL while retaining the saved title");
+        using var cancelled = (Form)Activator.CreateInstance(formType, persist, original)!;
+        Field<TextBox>(cancelled, "_url").Text = "https://discard.example.invalid/";
+        Command(cancelled, Keys.Escape);
+        assert(attempts == 2 && cancelled.DialogResult != DialogResult.OK, "WEB08 cancelling URL repair discards the draft");
+    }
+
+    private static void WebAddressEditFromList(Action<bool, string> assert)
+    {
+        string directory = Directory.CreateTempSubdirectory("WorkBookmark-WebAddressEdit-").FullName;
+        (UserSettings.Default with
+        {
+            CaptureHotkey = new Hotkey(7, (int)Keys.F13), RecentHotkey = new Hotkey(7, (int)Keys.F14),
+            IntroShown = true, DisplayMode = BookmarkDisplayMode.List,
+            StickerPresentationVersion = UserSettings.CurrentStickerPresentationVersion
+        }).Save(directory);
+        using var repository = new SqliteBookmarkRepository(Path.Combine(directory, "bookmarks.db"));
+        const string originalUrl = "https://docs.invalid/KB?topic=OLD#before";
+        const string newUrl = "https://docs.invalid/KB?topic=New%20ID#After";
+        var captured = repository.UpsertCapture(new CapturedTarget(TargetKind.WebPage, originalUrl, PageTitle: "참고 자료")).Bookmark;
+        repository.UpdateNote(captured.Id, "검토 메모");
+        using var worker = new WorkerClient();
+        using var context = new BookmarkApplicationContext(repository, worker, directory);
+        try
+        {
+            var recent = Field<Form>(context, "_recent");
+            Pump((Task)recent.GetType().GetMethod("OpenAsync")!.Invoke(recent, null)!);
+            var rows = Field<ListBox>(recent, "_items");
+            var menu = Field<ContextMenuStrip>(recent, "_menu");
+            menu.Show(rows, new System.Drawing.Point(5, 5));
+            var edit = menu.Items.OfType<ToolStripMenuItem>().Single(item => item.Available && item.Text == "웹 주소 수정…");
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            bool submitted = false, timedOut = false;
+            using var interaction = new System.Windows.Forms.Timer { Interval = 50 };
+            interaction.Tick += (_, _) =>
+            {
+                var editor = Application.OpenForms.Cast<Form>().FirstOrDefault(form => form.Modal && form.Visible);
+                if (editor is null) return;
+                if (DateTime.UtcNow > deadline) { timedOut = true; editor.Close(); return; }
+                if (submitted || editor.Text != "웹 주소 수정") return;
+                Field<TextBox>(editor, "_url").Text = newUrl;
+                submitted = true;
+                Field<Button>(editor, "_save").PerformClick();
+            };
+            interaction.Start();
+            edit.PerformClick();
+            interaction.Stop();
+            var saved = repository.ListActive().Single();
+            assert(submitted && !timedOut && saved.Id == captured.Id && saved.Target == captured.Target with { Path = newUrl } &&
+                saved.Note == "검토 메모" && rows.Items.Cast<Bookmark>().Single() == saved,
+                "WEB09 list menu applies the URL to the original SQLite row and refreshes the existing list item");
+        }
+        finally { context.ExitThread(); }
+    }
+
     private static void NoteCancelAndLength(Action<bool, string> assert)
     {
         var noteType = AppAssembly.GetType("WorkBookmark.App.UI.NoteForm")!;
@@ -124,7 +209,7 @@ internal static class AdditionalFormChecks
         {
             using var preview = (Form)Activator.CreateInstance(previewType, original, candidate)!;
             var text = preview.Controls.OfType<TextBox>().Single();
-            assert(text.ReadOnly && text.Text.Contains(candidate.Path, StringComparison.Ordinal) &&
+            assert(text.ReadOnly && text.Text.Contains(original.Target.Path, StringComparison.Ordinal) && text.Text.Contains(candidate.Path, StringComparison.Ordinal) &&
                 text.Text.Contains(original.Note, StringComparison.Ordinal) &&
                 text.Text.Contains("확정자", StringComparison.Ordinal) && text.Text.Contains("$D$127", StringComparison.Ordinal),
                 $"RL01 {expected} relink preview shows candidate path, retained note and existing cell read-only");
